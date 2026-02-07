@@ -25,9 +25,9 @@ Our platform is built with a focus on core engineering concepts and data structu
 ## 🛠️ Technology Stack
 We use modern technologies to ensure our system is scalable and secure:
 
-* **Frontend:** React.js (for the user interface) and Leaflet.js (for location mapping).
+* **Frontend:** React.js (for the user interface)
 * **Backend:** Java with Spring Boot (for managing data and logic).
-* **Database:** PostgreSQL (for reliable data storage) and Redis (for fast caching).
+* **Database:** PostgreSQL (for reliable data storage)
 * **Real-Time:** WebSockets (STOMP) for low-latency messaging.
 
 ## 🎯 Conclusion
