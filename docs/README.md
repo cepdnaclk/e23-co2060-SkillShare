@@ -19,14 +19,15 @@ If your followed all the given instructions correctly, your repository will be a
 
 A HTML template integrated with the given GitHub repository templates, based on github.com/cepdnaclk/eYY-project-theme . If you like to remove this default theme and make your own web page, you can remove the file, docs/_config.yml and create the site using HTML. -->
 
-# Project Title
+# Skill-Share by ZenWare
 
 ---
 
 ## Team
--  eNumber, Name, [email](mailto:name@email.com)
--  eNumber, Name, [email](mailto:name@email.com)
--  eNumber, Name, [email](mailto:name@email.com)
+-  E/23/035, Irusha Bandara, [email](e23035@eng.pdn.ac.lk)
+-  E/23/104, Poorna Gamage, [email](e23104@eng.pdn.ac.lk)
+-  E/23/430, Hiruni Weerasinghe, [email](e23430@eng.pdn.ac.lk)
+-  E/23/317, Sashika Rathnayake, [email](e23317@eng.pdn.ac.lk)
 
 <!-- Image (photo/drawing of the final hardware) should be here -->
 
@@ -46,7 +47,7 @@ A HTML template integrated with the given GitHub repository templates, based on 
 
 In today’s academic environments, students often possess valuable skills but lack a structured way to share them, leading to underutilized peer knowledge. Current methods for finding mentors or study partners are inefficient, relying on manual coordination and failing to solve complex scheduling conflicts. Skill-Share by ZenWare addresses this by providing a campus-oriented, full-stack platform that uses smart algorithms to connect students.
 
-The solution goes beyond simple searching; it identifies multi-user "skill cycles" (where Student A teaches B, and B teaches C) and automatically syncs free time slots to eliminate scheduling headaches. By integrating a Trust Score System and real-time communication, it builds a reliable learning community. 🤝
+The solution goes beyond simple searching; it identifies multi-user "skill cycles" (where Student A teaches B, and B teaches C) and automatically syncs free time slots to eliminate scheduling headaches. By integrating a Trust Score System and real-time communication, it builds a reliable learning community.
 
 The impact is a more connected university ecosystem where learning is accessible and collaborative. It empowers students to trade knowledge as a resource, reducing reliance on expensive external tutoring and maximizing the collective potential of the student body.
 
