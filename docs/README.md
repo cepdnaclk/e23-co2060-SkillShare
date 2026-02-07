@@ -44,7 +44,11 @@ A HTML template integrated with the given GitHub repository templates, based on 
 
 ## Introduction
 
-Description of the real world problem and solution, impact
+In today’s academic environments, students often possess valuable skills but lack a structured way to share them, leading to underutilized peer knowledge. Current methods for finding mentors or study partners are inefficient, relying on manual coordination and failing to solve complex scheduling conflicts. Skill-Share by ZenWare addresses this by providing a campus-oriented, full-stack platform that uses smart algorithms to connect students.
+
+The solution goes beyond simple searching; it identifies multi-user "skill cycles" (where Student A teaches B, and B teaches C) and automatically syncs free time slots to eliminate scheduling headaches. By integrating a Trust Score System and real-time communication, it builds a reliable learning community. 🤝
+
+The impact is a more connected university ecosystem where learning is accessible and collaborative. It empowers students to trade knowledge as a resource, reducing reliance on expensive external tutoring and maximizing the collective potential of the student body.
 
 
 ## Solution Architecture
@@ -65,8 +69,8 @@ What was achieved, future developments, commercialization plans
 
 ## Links
 
-- [Project Repository](https://github.com/cepdnaclk/{{ page.repository-name }}){:target="_blank"}
-- [Project Page](https://cepdnaclk.github.io/{{ page.repository-name}}){:target="_blank"}
+- [Project Repository]([https://github.com/cepdnaclk/{{ page.repository-name }}](https://github.com/cepdnaclk/e23-2YP-SkillShare.git)){:target="_blank"}
+- [Project Page]([https://cepdnaclk.github.io/{{ page.repository-name}}](https://cepdnaclk.github.io/e23-2YP-SkillShare/)){:target="_blank"}
 - [Department of Computer Engineering](http://www.ce.pdn.ac.lk/)
 - [University of Peradeniya](https://eng.pdn.ac.lk/)
 
