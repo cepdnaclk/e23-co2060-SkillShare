@@ -1,57 +1,34 @@
-___
-# DELETE THIS INSTRUCTIONS AND ADD AN INTRODUCTION ABOUT YOUR PROJECT
-___
+# Skill-Share by ZenWare 🚀
 
-# eYY-co2060-project-template
+**An Algorithmic Peer-to-Peer Knowledge & Resource Sharing Platform**
 
-This is a sample repository you can use for your Software Systems Design Project. Once you followed these instructions, remove the text and add a brief introduction to here.
+Skill-Share is a campus-oriented, full-stack web application designed to help students connect and share their skills, knowledge, and resources. Developed by **ZenWare**, this project aims to bridge the gap between students who want to learn and those who can teach, using smart algorithms to make collaboration easier.
 
-### Enable GitHub Pages
+## 📖 Project Overview
+In many university environments, students have unique skills and learning needs, but they often struggle to find the right people to help them. Current methods for finding tutors or study partners are often slow and inefficient. 
 
-You can put the things to be shown in GitHub pages into the _docs/_ folder. Both html and md file formats are supported. You need to go to settings and enable GitHub pages and select _main_ branch and _docs_ folder from the dropdowns, as shown in the below image.
+**Skill-Share** solves this by providing a dedicated platform where students can:
+* **Discover Peers:** Find students nearby with specific skills or shared interests.
+* **Match Efficiently:** Use smart logic to connect multiple users (e.g., A teaches B, B teaches C, and C teaches A).
+* **Sync Schedules:** Automatically find common free time slots to avoid manual coordination.
+* **Build Trust:** Use a rating system to ensure reliable and high-quality mentorship.
 
-![image](https://user-images.githubusercontent.com/11540782/98789936-028d3600-2429-11eb-84be-aaba665fdc75.png)
+## ✨ Key Features
+Our platform is built with a focus on core engineering concepts and data structures to ensure a smooth experience:
 
-### Special Configurations
+* **Smart Matching & Scheduling:** Automatically detects skill-sharing cycles and identifies overlapping free time for meetings.
+* **Search & Discovery:** Features instant search suggestions and location-based discovery to find active users near you.
+* **Real-Time Interaction:** A built-in chat system for instant communication and group messaging.
+* **Trust Score System:** A reliability rating for mentors based on peer feedback and endorsements.
+* **Progressive Web App (PWA):** Works seamlessly on both desktop and mobile devices with a single codebase.
 
-These projects will be automatically added into [https://projects.ce.pdn.ac.lk](). If you like to show more details about your project on this site, you can fill the parameters in the file, _/docs/index.json_
+## 🛠️ Technology Stack
+We use modern technologies to ensure our system is scalable and secure:
 
-```
-{
-  "title": "This is the title of the project",
-  "team": [
-    {
-      "name": "Team Member Name 1",
-      "email": "email@eng.pdn.ac.lk",
-      "eNumber": "E/yy/xxx"
-    },
-    {
-      "name": "Team Member Name 2",
-      "email": "email@eng.pdn.ac.lk",
-      "eNumber": "E/yy/xxx"
-    },
-    {
-      "name": "Team Member Name 3",
-      "email": "email@eng.pdn.ac.lk",
-      "eNumber": "E/yy/xxx"
-    }
-  ],
-  "supervisors": [
-    {
-      "name": "Dr. Supervisor 1",
-      "email": "email@eng.pdn.ac.lk"
-    },
-    {
-      "name": "Supervisor 2",
-      "email": "email@eng.pdn.ac.lk"
-    }
-  ],
-  "tags": ["Web", "Software Systems", "CO2060"]
-}
-```
+* **Frontend:** React.js (for the user interface) and Leaflet.js (for location mapping).
+* **Backend:** Java with Spring Boot (for managing data and logic).
+* **Database:** PostgreSQL (for reliable data storage) and Redis (for fast caching).
+* **Real-Time:** WebSockets (STOMP) for low-latency messaging.
 
-Once you filled this _index.json_ file, please verify the syntax is correct. (You can use [this](https://jsonlint.com/) tool).
-
-### Page Theme
-
-A custom theme integrated with this GitHub Page, which is based on [github.com/cepdnaclk/eYY-project-theme](https://github.com/cepdnaclk/eYY-project-theme). If you like to remove this default theme, you can remove the file, _docs/\_config.yml_ and use HTML based website.
+## 🎯 Conclusion
+Skill-Share by ZenWare is more than just a tutoring app. It is a technical solution that applies algorithmic thinking to real-world collaboration problems. Our goal is to create a more connected and efficient learning community for students everywhere.
