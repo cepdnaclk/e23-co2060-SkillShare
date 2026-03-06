@@ -1,0 +1,42 @@
+package com.zenware.skillsharebackend.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "feedbacks")
+@Data
+public class Feedback {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    // Logic: We must link the exact session so we know what class this was for.
+    @ManyToOne
+    @JoinColumn(name = "session_id", nullable = false)
+    private Session session;
+
+    // Logic: The person clicking the button.
+    @ManyToOne
+    @JoinColumn(name = "giver_id", nullable = false)
+    private User giver;
+
+    // Logic: The person receiving the reputation score.
+    @ManyToOne
+    @JoinColumn(name = "receiver_id", nullable = false)
+    private User receiver;
+
+    @Column(name = "feedback_tag", nullable = false)
+    private String feedbackTag; // e.g., "Great Explanations"
+
+    @Column(name = "weight", nullable = false)
+    private Integer weight; // e.g., +5 or -2
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+}
