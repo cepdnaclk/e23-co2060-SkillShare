@@ -1,6 +1,7 @@
 package com.zenware.skillsharebackend.service;
 
 import com.zenware.skillsharebackend.dto.FeedbackRequest;
+import com.zenware.skillsharebackend.dto.FeedbackTagDto;
 import com.zenware.skillsharebackend.entity.*;
 import com.zenware.skillsharebackend.repository.FeedbackRepository;
 import com.zenware.skillsharebackend.repository.SessionRepository;
@@ -9,8 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class FeedbackService {
@@ -38,7 +41,7 @@ public class FeedbackService {
 
         // 2. STATUS GUARD RAIL
         // LOGIC: Using a case-insensitive String check since we don't have a SessionStatus Enum.
-        if (session.getStatus() == SessionStatus.COMPLETED) {
+        if (session.getStatus() != SessionStatus.COMPLETED) {
             throw new RuntimeException("You can only leave feedback for COMPLETED sessions!");
         }
 
@@ -92,5 +95,15 @@ public class FeedbackService {
     // LOGIC: Fetch all reviews given to a specific mentor
     public List<Feedback> getMentorFeedback(UUID mentorId) {
         return feedbackRepository.findByReceiverId(mentorId);
+    }
+
+    public List<FeedbackTagDto> getAllAvailableTags() {
+        return Arrays.stream(FeedbackTag.values())
+                .map(tag -> new FeedbackTagDto(
+                        tag.name(),
+                        tag.getWeight(),
+                        tag.getWeight() > 0 ? "POSITIVE" : "NEGATIVE"
+                ))
+                .collect(Collectors.toList());
     }
 }
