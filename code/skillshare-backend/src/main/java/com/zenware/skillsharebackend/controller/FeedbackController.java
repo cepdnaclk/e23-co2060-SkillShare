@@ -25,10 +25,10 @@ public class FeedbackController {
         return ResponseEntity.ok(newFeedback);
     }
 
-    @GetMapping("/mentor/{mentorId}")
-    public ResponseEntity<List<Feedback>> getFeedbackForMentor(@PathVariable UUID mentorId) {
-        // LOGIC: Retrieve the list of feedbacks and return them with a 200 OK status.
-        return ResponseEntity.ok(feedbackService.getMentorFeedback(mentorId));
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Feedback>> getFeedbackForUser(@PathVariable UUID userId) {
+        // Now it fetches feedback for ANY user!
+        return ResponseEntity.ok(feedbackService.getUserFeedback(userId));
     }
 
     @GetMapping("/tags")
