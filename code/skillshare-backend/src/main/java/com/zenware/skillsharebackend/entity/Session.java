@@ -34,8 +34,10 @@ public class Session {
     @Column(name = "end_time", nullable = false)
     private LocalDateTime endTime;
 
+    // In Session.java
+    @Enumerated(EnumType.STRING) // LOGIC: This tells the DB to save it as text, but Java to treat it as a strict Rule!
     @Column(name = "status")
-    private String status = "PENDING"; // PENDING, ACCEPTED, REJECTED, COMPLETED
+    private SessionStatus status = SessionStatus.PENDING;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

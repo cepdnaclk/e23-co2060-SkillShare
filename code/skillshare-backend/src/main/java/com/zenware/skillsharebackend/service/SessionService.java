@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
-
 @Service
 public class SessionService {
 
@@ -19,7 +18,7 @@ public class SessionService {
     @Autowired private SkillRepository skillRepository;
     @Autowired private AvailabilityRepository availabilityRepository;
 
-    @Transactional // CRITICAL ADDITION!
+    @Transactional
     public Session bookSession(SessionRequest request) {
 
         // 1. Fetch the Learner
@@ -57,10 +56,13 @@ public class SessionService {
         // 6. Build the Session
         Session session = new Session();
         session.setLearner(learner);
-        session.setMentor(availability.getUser()); // Extracted securely from the database
+        session.setMentor(availability.getUser());
         session.setSkill(skill);
-        session.setStartTime(availability.getStartTime()); // Extracted securely
-        session.setEndTime(availability.getEndTime()); // Extracted securely
+        session.setStartTime(availability.getStartTime());
+        session.setEndTime(availability.getEndTime());
+
+        // LOGIC EXPLANATION: Explicitly set the initial state using the Enum!
+        session.setStatus(SessionStatus.PENDING);
 
         // 7. Update the Availability to show it is now taken
         availability.setIsBooked(true);
@@ -71,80 +73,62 @@ public class SessionService {
     }
 
     @Transactional
-    public Session updateSessionStatus(UUID sessionId, UUID mentorId, String newStatus) {
+    // LOGIC EXPLANATION: Changed 'String newStatus' to 'SessionStatus newStatus'
+    // Now, nobody can accidentally pass a fake word into this method!
+    public Session updateSessionStatus(UUID sessionId, UUID mentorId, SessionStatus newStatus) {
 
-        // Logic 1: Find the exact session in the database
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Session not found"));
 
-        // Logic 2: Security Check! 🛡️
-        // We must guarantee that only the assigned Mentor can accept or reject this.
-        // A Learner cannot forcefully accept their own request!
         if (!session.getMentor().getId().equals(mentorId)) {
             throw new IllegalStateException("Only the assigned mentor can update this session!");
         }
 
-        // Logic 3: Update the status (Convert to uppercase to keep the database clean)
-        session.setStatus(newStatus.toUpperCase());
+        // LOGIC EXPLANATION: We just assign the Enum directly.
+        session.setStatus(newStatus);
 
-        // Logic 4: What happens if the Mentor says NO?
-        // If rejected, we must give the time slot back to the public so someone else can book it.
-        if (newStatus.equalsIgnoreCase("REJECTED")) {
+        // LOGIC EXPLANATION: Using the '==' operator because Enums are memory-safe singletons.
+        if (newStatus == SessionStatus.REJECTED) {
             Availability availability = availabilityRepository.findByUserIdAndStartTime(
-                    mentorId, session.getStartTime() // We use a custom query to find the exact slot
+                    mentorId, session.getStartTime()
             ).orElseThrow(() -> new IllegalStateException("Original time slot missing"));
 
-            // Logic: The Refund
             User learner = session.getLearner();
-            learner.setCredits(learner.getCredits() + 10); // Give the 10 credits back
+            learner.setCredits(learner.getCredits() + 10);
             userRepository.save(learner);
 
-            availability.setIsBooked(false); // Make it available again!
+            availability.setIsBooked(false);
             availabilityRepository.save(availability);
         }
 
-        // Logic 5: Save and return the updated session
         return sessionRepository.save(session);
     }
 
     @Transactional
     public Session completeSession(UUID sessionId) {
 
-        // Logic 1: Find the exact session in the database
-        // Reason: We must fetch the current state of the session from PostgreSQL before we can modify it. If it doesn't exist, we stop immediately to prevent a crash.
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Session not found"));
 
-        // Logic 2: Validate the current status
-        // Reason: A mentor should not be able to "complete" a session that was already REJECTED, is still PENDING, or was already COMPLETED. This prevents double-paying the mentor!
-        if (!session.getStatus().equalsIgnoreCase("ACCEPTED")) {
+        // LOGIC EXPLANATION: Checking the state machine rules strictly using the Enum.
+        if (session.getStatus() != SessionStatus.ACCEPTED) {
             throw new IllegalStateException("Only ACCEPTED sessions can be marked as COMPLETED!");
         }
 
-        // Logic 3: Fetch the Mentor
-        // Reason: We only need the mentor object here because the learner already paid their 10 credits upfront during the booking phase.
         User mentor = session.getMentor();
-
-        // Logic 4: The Payout (Release the Escrow)
-        // Reason: The job is done! We take the 10 credits that the system was holding and permanently add them to the mentor's wallet.
         mentor.setCredits(mentor.getCredits() + 10);
 
-        // Logic 5: Update the session status
-        // Reason: This officially closes the lifecycle of this booking and unlocks the ability for users to leave Reputation Feedback.
-        session.setStatus("COMPLETED");
+        // LOGIC EXPLANATION: Moving the state forward safely.
+        session.setStatus(SessionStatus.COMPLETED);
 
-        // Logic 6: Save the changes to the database
-        // Reason: Because of the @Transactional annotation, both of these saves happen simultaneously. The mentor's new balance and the completed session are locked in permanently.
         userRepository.save(mentor);
         return sessionRepository.save(session);
     }
 
-    // Logic: Fetch everything where this specific user is the student
     public List<Session> getLearnerSessions(UUID learnerId) {
         return sessionRepository.findByLearnerId(learnerId);
     }
 
-    // Logic: Fetch everything where this specific user is the teacher
     public List<Session> getMentorSessions(UUID mentorId) {
         return sessionRepository.findByMentorId(mentorId);
     }
