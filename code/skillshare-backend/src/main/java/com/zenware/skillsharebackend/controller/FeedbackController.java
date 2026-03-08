@@ -1,6 +1,7 @@
 package com.zenware.skillsharebackend.controller;
 
 import com.zenware.skillsharebackend.dto.FeedbackRequest;
+import com.zenware.skillsharebackend.dto.FeedbackTagDto;
 import com.zenware.skillsharebackend.entity.Feedback;
 import com.zenware.skillsharebackend.service.FeedbackService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,5 +29,10 @@ public class FeedbackController {
     public ResponseEntity<List<Feedback>> getFeedbackForMentor(@PathVariable UUID mentorId) {
         // LOGIC: Retrieve the list of feedbacks and return them with a 200 OK status.
         return ResponseEntity.ok(feedbackService.getMentorFeedback(mentorId));
+    }
+
+    @GetMapping("/tags")
+    public ResponseEntity<List<FeedbackTagDto>> getAvailableTags() {
+        return ResponseEntity.ok(feedbackService.getAllAvailableTags());
     }
 }
