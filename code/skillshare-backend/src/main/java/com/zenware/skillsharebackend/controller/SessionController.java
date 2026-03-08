@@ -2,6 +2,7 @@ package com.zenware.skillsharebackend.controller;
 
 import com.zenware.skillsharebackend.dto.SessionRequest;
 import com.zenware.skillsharebackend.entity.Session;
+import com.zenware.skillsharebackend.entity.SessionStatus;
 import com.zenware.skillsharebackend.service.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,37 +19,26 @@ public class SessionController {
     private SessionService sessionService;
 
     @PostMapping("/book")
-    public ResponseEntity<?> bookSession(@RequestBody SessionRequest request) {
-        try {
-            Session newSession = sessionService.bookSession(request);
-            return ResponseEntity.ok(newSession);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<Session> bookSession(@RequestBody SessionRequest request) {
+        // LOGIC: No try-catch. If the service throws an error, the GlobalExceptionHandler catches it!
+        Session newSession = sessionService.bookSession(request);
+        return ResponseEntity.ok(newSession);
     }
 
     @PatchMapping("/{sessionId}/status")
-    public ResponseEntity<?> updateStatus(
+    public ResponseEntity<Session> updateStatus(
             @PathVariable UUID sessionId,
             @RequestParam UUID mentorId,
-            @RequestParam String status) {
-        try {
-            Session updatedSession = sessionService.updateSessionStatus(sessionId, mentorId, status);
-            return ResponseEntity.ok(updatedSession);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+            @RequestParam SessionStatus status) { // LOGIC: Accept the Enum directly! Spring auto-converts the URL string.
+
+        Session updatedSession = sessionService.updateSessionStatus(sessionId, mentorId, status);
+        return ResponseEntity.ok(updatedSession);
     }
 
     @PatchMapping("/{sessionId}/complete")
-    public ResponseEntity<?> completeSession(@PathVariable UUID sessionId) {
-        try {
-            // Logic: We pass the ID from the URL directly into the Service we just updated!
-            Session completedSession = sessionService.completeSession(sessionId);
-            return ResponseEntity.ok(completedSession);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<Session> completeSession(@PathVariable UUID sessionId) {
+        Session completedSession = sessionService.completeSession(sessionId);
+        return ResponseEntity.ok(completedSession);
     }
 
     @GetMapping("/learner/{userId}")
@@ -60,5 +50,4 @@ public class SessionController {
     public ResponseEntity<List<Session>> getMyTeachingSchedule(@PathVariable UUID userId) {
         return ResponseEntity.ok(sessionService.getMentorSessions(userId));
     }
-
 }

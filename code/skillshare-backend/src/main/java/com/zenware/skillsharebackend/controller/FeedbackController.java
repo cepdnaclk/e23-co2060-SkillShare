@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/feedback")
 public class FeedbackController {
@@ -15,12 +18,15 @@ public class FeedbackController {
     private FeedbackService feedbackService;
 
     @PostMapping("/leave")
-    public ResponseEntity<?> submitFeedback(@RequestBody FeedbackRequest request) {
-        try {
-            Feedback newFeedback = feedbackService.leaveFeedback(request);
-            return ResponseEntity.ok(newFeedback);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<Feedback> submitFeedback(@RequestBody FeedbackRequest request) {
+        // LOGIC: No try-catch! If it fails, the GlobalExceptionHandler will automatically take over!
+        Feedback newFeedback = feedbackService.leaveFeedback(request);
+        return ResponseEntity.ok(newFeedback);
+    }
+
+    @GetMapping("/mentor/{mentorId}")
+    public ResponseEntity<List<Feedback>> getFeedbackForMentor(@PathVariable UUID mentorId) {
+        // LOGIC: Retrieve the list of feedbacks and return them with a 200 OK status.
+        return ResponseEntity.ok(feedbackService.getMentorFeedback(mentorId));
     }
 }

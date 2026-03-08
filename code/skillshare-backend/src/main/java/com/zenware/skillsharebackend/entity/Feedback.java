@@ -1,14 +1,20 @@
 package com.zenware.skillsharebackend.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "feedbacks")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString
+@Getter
+@Setter
 public class Feedback {
 
     @Id
