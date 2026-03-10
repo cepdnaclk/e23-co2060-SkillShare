@@ -1,6 +1,7 @@
 package com.zenware.skillsharebackend.service;
 
 import com.zenware.skillsharebackend.entity.User;
+import com.zenware.skillsharebackend.repository.SkillRepository;
 import com.zenware.skillsharebackend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -10,6 +11,9 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private SkillRepository skillRepository;
 
     public User registerNewUser(User user) {
         // Business Logic 1: Check if email already exists
@@ -25,4 +29,7 @@ public class UserService {
         // Finally, save and return
         return userRepository.save(user);
     }
+
+
+
 }
