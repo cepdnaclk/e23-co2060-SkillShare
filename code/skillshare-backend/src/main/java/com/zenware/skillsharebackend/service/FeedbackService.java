@@ -22,6 +22,9 @@ public class FeedbackService {
     @Autowired private SessionRepository sessionRepository;
     @Autowired private UserRepository userRepository;
 
+    // 1. INJECT THE NOTIFICATION SERVICE HERE
+    @Autowired private NotificationService notificationService;
+
     @Transactional
     public Feedback leaveFeedback(FeedbackRequest request) {
 
@@ -35,13 +38,11 @@ public class FeedbackService {
         }
 
         // 3. SECURITY GUARD RAIL
-        // LOGIC: We extract the true IDs from the database session to prevent front-end spoofing.
         UUID trueLearnerId = session.getLearner().getId();
         UUID trueMentorId = session.getMentor().getId();
         UUID incomingGiver = request.getGiverId();
         UUID incomingReceiver = request.getReceiverId();
 
-        // MATH LOGIC: Check Direction 1 (Learner -> Mentor) OR Direction 2 (Mentor -> Learner)
         boolean isLearnerToMentor = incomingGiver.equals(trueLearnerId) && incomingReceiver.equals(trueMentorId);
         boolean isMentorToLearner = incomingGiver.equals(trueMentorId) && incomingReceiver.equals(trueLearnerId);
 
@@ -82,10 +83,35 @@ public class FeedbackService {
         feedback.setFeedbackTag(String.join(", ", request.getSelectedTags()));
         feedback.setWeight(totalReputationChange);
 
-        return feedbackRepository.save(feedback);
+        Feedback savedFeedback = feedbackRepository.save(feedback);
+
+        // ---------------------------------------------------------
+        // NOTIFICATION TRIGGER 1: Tell the receiver they got rated!
+        // ---------------------------------------------------------
+        String sign = totalReputationChange >= 0 ? "+" : "";
+        notificationService.sendNotification(
+                receiver,
+                "You received new feedback! Reputation changed by " + sign + totalReputationChange,
+                NotificationType.FEEDBACK_RECEIVED
+        );
+
+        // 8. THE FEEDBACK LOOP CLOSURE ENGINE
+        long totalFeedbacks = feedbackRepository.countBySessionId(session.getId());
+
+        if (totalFeedbacks == 2) {
+            session.setStatus(SessionStatus.CLOSED);
+            sessionRepository.save(session);
+
+            // ---------------------------------------------------------
+            // NOTIFICATION TRIGGER 2: Tell both parties it's officially over
+            // ---------------------------------------------------------
+            notificationService.sendNotification(session.getLearner(), "Your session is fully closed. Thank you for leaving feedback!", NotificationType.SYSTEM_ALERT);
+            notificationService.sendNotification(session.getMentor(), "Your session is fully closed. Thank you for leaving feedback!", NotificationType.SYSTEM_ALERT);
+        }
+
+        return savedFeedback;
     }
 
-    // both Learners and Mentors can now receive feedback!
     public List<Feedback> getUserFeedback(UUID userId) {
         return feedbackRepository.findByReceiverId(userId);
     }

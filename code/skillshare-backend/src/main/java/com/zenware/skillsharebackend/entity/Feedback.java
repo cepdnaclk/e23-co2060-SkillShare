@@ -21,17 +21,17 @@ public class Feedback {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Logic: We must link the exact session so we know what class this was for.
+    // We must link the exact session so we know what class this was for.
     @ManyToOne
     @JoinColumn(name = "session_id", nullable = false)
     private Session session;
 
-    // Logic: The person clicking the button.
+    // The person clicking the button.
     @ManyToOne
     @JoinColumn(name = "giver_id", nullable = false)
     private User giver;
 
-    // Logic: The person receiving the reputation score.
+    // The person receiving the reputation score.
     @ManyToOne
     @JoinColumn(name = "receiver_id", nullable = false)
     private User receiver;

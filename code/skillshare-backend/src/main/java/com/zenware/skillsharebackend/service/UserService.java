@@ -18,7 +18,7 @@ public class UserService {
     public User registerNewUser(User user) {
         // Business Logic 1: Check if email already exists
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email is already taken!");
+                throw new IllegalArgumentException("Email is already taken!");
         }
 
         // Business Logic 2: (Later, we will hash the password here)

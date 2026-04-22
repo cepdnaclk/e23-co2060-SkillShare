@@ -1,5 +1,5 @@
 package com.zenware.skillsharebackend.entity;
 
 public enum SessionStatus {
-    PENDING, ACCEPTED, REJECTED, COMPLETED
+    PENDING, ACCEPTED, REJECTED, COMPLETED, CLOSED
 }

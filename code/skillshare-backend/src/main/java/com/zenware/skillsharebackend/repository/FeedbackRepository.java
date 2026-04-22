@@ -14,4 +14,6 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     boolean existsBySessionIdAndGiverId(UUID sessionId, UUID giverId);
 
     List<Feedback> findByReceiverId(UUID receiverId);
+
+    long countBySessionId(UUID id);
 }

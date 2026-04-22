@@ -19,7 +19,7 @@ public class Availability {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Logic: Many time slots can belong to One user.
+    // Many time slots can belong to One user.
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

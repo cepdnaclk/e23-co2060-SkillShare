@@ -15,7 +15,7 @@ public class Session {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    // Logic: Two foreign keys pointing to the EXACT same 'users' table!
+    // Two foreign keys pointing to the EXACT same 'users' table!
     @ManyToOne
     @JoinColumn(name = "learner_id", nullable = false)
     private User learner;
@@ -35,7 +35,7 @@ public class Session {
     private LocalDateTime endTime;
 
     // In Session.java
-    @Enumerated(EnumType.STRING) // LOGIC: This tells the DB to save it as text, but Java to treat it as a strict Rule!
+    @Enumerated(EnumType.STRING) // This tells the DB to save it as text, but Java to treat it as a strict Rule
     @Column(name = "status")
     private SessionStatus status = SessionStatus.PENDING;
 

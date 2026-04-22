@@ -17,6 +17,7 @@ public class SessionService {
     @Autowired private UserRepository userRepository;
     @Autowired private SkillRepository skillRepository;
     @Autowired private AvailabilityRepository availabilityRepository;
+    @Autowired private NotificationService notificationService;
 
     @Transactional
     public Session bookSession(SessionRequest request) {
@@ -68,13 +69,18 @@ public class SessionService {
         availability.setIsBooked(true);
         availabilityRepository.save(availability);
 
+        // --- NOTIFICATION TRIGGER: Step 2 ---
+        notificationService.sendNotification(
+                availability.getUser(),
+                "New session request! Someone wants to learn from you.",
+                NotificationType.SESSION_UPDATE
+        );
+
         // 8. Save the final Session
         return sessionRepository.save(session);
     }
 
     @Transactional
-    // LOGIC EXPLANATION: Changed 'String newStatus' to 'SessionStatus newStatus'
-    // Now, nobody can accidentally pass a fake word into this method!
     public Session updateSessionStatus(UUID sessionId, UUID mentorId, SessionStatus newStatus) {
 
         Session session = sessionRepository.findById(sessionId)
@@ -88,7 +94,14 @@ public class SessionService {
         session.setStatus(newStatus);
 
         // LOGIC EXPLANATION: Using the '==' operator because Enums are memory-safe singletons.
-        if (newStatus == SessionStatus.REJECTED) {
+        if (newStatus == SessionStatus.ACCEPTED) {
+            // --- NOTIFICATION TRIGGER: Step 3 ---
+            notificationService.sendNotification(
+                    session.getLearner(),
+                    "Great news! Your session with " + session.getMentor().getFullName() + " was ACCEPTED. Credits are locked in Escrow.",
+                    NotificationType.SESSION_UPDATE
+            );
+        } else if (newStatus == SessionStatus.REJECTED) {
             Availability availability = availabilityRepository.findByUserIdAndStartTime(
                     mentorId, session.getStartTime()
             ).orElseThrow(() -> new IllegalStateException("Original time slot missing"));
@@ -99,6 +112,13 @@ public class SessionService {
 
             availability.setIsBooked(false);
             availabilityRepository.save(availability);
+
+            // --- NOTIFICATION TRIGGER: Step 4 ---
+            notificationService.sendNotification(
+                    session.getLearner(),
+                    "Your session request to " + session.getMentor().getFullName() + " was declined. Your credits have been refunded.",
+                    NotificationType.SESSION_UPDATE
+            );
         }
 
         return sessionRepository.save(session);
