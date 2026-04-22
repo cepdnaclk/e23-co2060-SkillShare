@@ -124,6 +124,74 @@ public class SessionService {
         return sessionRepository.save(session);
     }
 
+    // ---------------------------------------------------------
+    // THE CANCELLATION ENGINE
+    // ---------------------------------------------------------
+    @Transactional
+    public Session cancelSession(UUID sessionId, UUID cancelingUserId) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Session not found"));
+
+        if (session.getStatus() != SessionStatus.ACCEPTED && session.getStatus() != SessionStatus.PENDING) {
+            throw new IllegalStateException("You can only cancel upcoming sessions!");
+        }
+
+        User learner = session.getLearner();
+        User mentor = session.getMentor();
+        int originalCost = 10;
+        int penaltyAmount = 5;
+
+        if (cancelingUserId.equals(learner.getId())) {
+
+            if (session.getStatus() == SessionStatus.PENDING) {
+                // LOGIC: Learner cancels a PENDING request. Full refund, no mentor compensation.
+                learner.setCredits(learner.getCredits() + originalCost);
+
+                notificationService.sendNotification(mentor, "The learner cancelled their session request.", NotificationType.SESSION_UPDATE);
+                notificationService.sendNotification(learner, "You cancelled your session request. You were refunded your full 10 credits.", NotificationType.SESSION_UPDATE);
+            } else {
+                // LOGIC: Learner Cancels an ACCEPTED session. They get halfback, Mentor gets half as compensation.
+                learner.setCredits(learner.getCredits() + (originalCost - penaltyAmount));
+                mentor.setCredits(mentor.getCredits() + penaltyAmount);
+
+                notificationService.sendNotification(mentor, "The learner cancelled the session. You received " + penaltyAmount + " credits as compensation.", NotificationType.SESSION_UPDATE);
+                notificationService.sendNotification(learner, "You cancelled the session. You were refunded 5 credits (Penalty applied). Please leave cancellation feedback.", NotificationType.SESSION_UPDATE);
+            }
+
+        } else if (cancelingUserId.equals(mentor.getId())) {
+
+            if (session.getStatus() == SessionStatus.PENDING) {
+                // LOGIC: Mentor cancels a PENDING request. Learner gets full refund, no penalty to Mentor.
+                learner.setCredits(learner.getCredits() + originalCost);
+
+                notificationService.sendNotification(learner, "The mentor cancelled the session request. You received a full refund.", NotificationType.SESSION_UPDATE);
+                notificationService.sendNotification(mentor, "You cancelled the pending session request. No penalty was applied.", NotificationType.SESSION_UPDATE);
+            } else {
+                // LOGIC: Mentor Cancels an ACCEPTED session. Learner gets full refund + 5 from Mentor's pocket.
+                learner.setCredits(learner.getCredits() + originalCost + penaltyAmount);
+                mentor.setCredits(mentor.getCredits() - penaltyAmount);
+
+                notificationService.sendNotification(learner, "The mentor cancelled the session. You received a full refund PLUS " + penaltyAmount + " credits compensation. Please leave feedback.", NotificationType.SESSION_UPDATE);
+                notificationService.sendNotification(mentor, "You cancelled the session. A penalty of " + penaltyAmount + " credits was applied.", NotificationType.SESSION_UPDATE);
+            }
+
+        } else {
+            throw new IllegalArgumentException("User is not part of this session!");
+        }
+
+        userRepository.save(learner);
+        userRepository.save(mentor);
+
+        // Free up the time slot again!
+        Availability availability = availabilityRepository.findByUserIdAndStartTime(mentor.getId(), session.getStartTime())
+                .orElseThrow(() -> new IllegalStateException("Original time slot missing"));
+        availability.setIsBooked(false);
+        availabilityRepository.save(availability);
+
+        session.setStatus(SessionStatus.CANCELLED);
+        return sessionRepository.save(session);
+    }
+
     @Transactional
     public Session completeSession(UUID sessionId) {
 

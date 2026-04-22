@@ -41,6 +41,17 @@ public class SessionController {
         return ResponseEntity.ok(completedSession);
     }
 
+    // ---------------------------------------------------------
+    // 4. NEW FEATURE: Cancel an upcoming session
+    // ---------------------------------------------------------
+    @PutMapping("/{sessionId}/cancel")
+    public ResponseEntity<Session> cancelSession(
+            @PathVariable UUID sessionId,
+            @RequestParam UUID userId) {
+        // LOGIC: userId is the person who clicked the "Cancel" button!
+        return ResponseEntity.ok(sessionService.cancelSession(sessionId, userId));
+    }
+
     @GetMapping("/learner/{userId}")
     public ResponseEntity<List<Session>> getMyClasses(@PathVariable UUID userId) {
         return ResponseEntity.ok(sessionService.getLearnerSessions(userId));
