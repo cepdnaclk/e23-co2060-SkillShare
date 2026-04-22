@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -219,5 +221,42 @@ public class SessionService {
 
     public List<Session> getMentorSessions(UUID mentorId) {
         return sessionRepository.findByMentorId(mentorId);
+    }
+
+    // ---------------------------------------------------------
+    // THE EXPIRATION ENGINE
+    // ---------------------------------------------------------
+    @Transactional
+    public int expireOverdueSessions() {
+        LocalDateTime now = LocalDateTime.now();
+
+        List<SessionStatus> targetStatuses = Arrays.asList(SessionStatus.PENDING, SessionStatus.ACCEPTED);
+
+        // LOGIC: This leverages the custom query we just added to the SessionRepository!
+        List<Session> overdueSessions = sessionRepository.findByStatusInAndEndTimeBefore(targetStatuses, now);
+
+        for (Session session : overdueSessions) {
+            User learner = session.getLearner();
+
+            learner.setCredits(learner.getCredits() + 10);
+            userRepository.save(learner);
+
+            session.setStatus(SessionStatus.EXPIRED);
+            sessionRepository.save(session);
+
+            notificationService.sendNotification(
+                    learner,
+                    "Your session with " + session.getMentor().getFullName() + " expired without completion. Your 10 credits have been refunded.",
+                    NotificationType.SYSTEM_ALERT
+            );
+
+            notificationService.sendNotification(
+                    session.getMentor(),
+                    "The session with " + learner.getFullName() + " expired. No credits were awarded.",
+                    NotificationType.SYSTEM_ALERT
+            );
+        }
+
+        return overdueSessions.size();
     }
 }

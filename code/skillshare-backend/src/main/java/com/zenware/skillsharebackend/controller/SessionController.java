@@ -61,4 +61,13 @@ public class SessionController {
     public ResponseEntity<List<Session>> getMyTeachingSchedule(@PathVariable UUID userId) {
         return ResponseEntity.ok(sessionService.getMentorSessions(userId));
     }
+
+    // ---------------------------------------------------------
+    // Trigger Expiration Engine Manually
+    // ---------------------------------------------------------
+    @PostMapping("/expire-overdue")
+    public ResponseEntity<String> triggerExpirationEngine() {
+        int expiredCount = sessionService.expireOverdueSessions();
+        return ResponseEntity.ok("Expiration Engine Run Complete! Automatically refunded and expired " + expiredCount + " sessions.");
+    }
 }
