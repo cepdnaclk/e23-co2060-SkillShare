@@ -8,80 +8,72 @@ import com.zenware.skillsharebackend.entity.UserSkillId;
 import com.zenware.skillsharebackend.repository.SkillRepository;
 import com.zenware.skillsharebackend.repository.UserRepository;
 import com.zenware.skillsharebackend.repository.UserSkillRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class UserSkillService {
 
-    @Autowired
-    private UserSkillRepository userSkillRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private SkillRepository skillRepository;
+    private final UserSkillRepository userSkillRepository;
+    private final UserRepository userRepository;
+    private final SkillRepository skillRepository;
 
     @Transactional
     public UserSkill addUserSkill(UserSkillRequest request) {
 
-        // Logic 1: Fetch the real User from the database
+        // Logic 1: Fetch User
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found!"));
 
-        // Logic 2: Clean the incoming skill name from the DTO
+        // Logic 2: Clean name
         String cleanName = request.getSkillName().trim();
         if (cleanName.isEmpty()) {
             throw new IllegalArgumentException("Skill name cannot be empty!");
         }
 
-        // Logic 3: THE FIND OR CREATE ENGINE!
+        // Logic 3: Find or Create Engine
         Skill skill = skillRepository.findByNameIgnoreCase(cleanName)
                 .orElseGet(() -> {
-                    // IF NOT FOUND: We dynamically create it!
                     Skill brandNewSkill = new Skill();
-
-                    // Format Skill Name (e.g., "python" -> "Python")
                     String formattedName = cleanName.substring(0, 1).toUpperCase() + cleanName.substring(1).toLowerCase();
                     brandNewSkill.setName(formattedName);
 
-                    // LOGIC: Clean and Format the Category!
                     if (request.getSkillCategory() != null && !request.getSkillCategory().trim().isEmpty()) {
                         String cleanCat = request.getSkillCategory().trim();
-                        // Format Category (e.g., "technology" -> "Technology")
                         String formattedCat = cleanCat.substring(0, 1).toUpperCase() + cleanCat.substring(1).toLowerCase();
                         brandNewSkill.setCategory(formattedCat);
                     } else {
                         brandNewSkill.setCategory("User Defined");
                     }
-
-                    // Save it to Postgres so it instantly gets a real ID
                     return skillRepository.save(brandNewSkill);
                 });
 
-        // Logic 4: Create the Composite Primary Key using the found/created Skill ID
+        // Logic 4: Primary Key Setup
+        UserSkill userSkill = getUserSkill(request, user, skill);
+
+        return userSkillRepository.save(userSkill);
+    }
+
+    private static @NonNull UserSkill getUserSkill(UserSkillRequest request, User user, Skill skill) {
         UserSkillId id = new UserSkillId();
         id.setUserId(user.getId());
         id.setSkillId(skill.getId());
 
-        // --- THE SKILL TYPE GUARD RAIL ---
-        // LOGIC: We force it to act exactly like an Enum. If it's not TEACH or LEARN, we crash it!
+        // Logic 5: Type Guard Rail
         String type = request.getSkillType().trim().toUpperCase();
         if (!type.equals("TEACH") && !type.equals("LEARN")) {
-            throw new IllegalArgumentException("Security Violation: Skill type must be exactly 'TEACH' or 'LEARN'.");
+            throw new IllegalArgumentException("Invalid Skill type. Must be TEACH or LEARN.");
         }
         id.setSkillType(type);
-        // -----------------------------------------
 
-        // Logic 5: Assemble the final Entity
+        // Logic 6: Save Linkage
         UserSkill userSkill = new UserSkill();
         userSkill.setId(id);
         userSkill.setUser(user);
         userSkill.setSkill(skill);
-
-        // Logic 6: Save the linkage to Postgres!
-        return userSkillRepository.save(userSkill);
+        return userSkill;
     }
 }

@@ -1,35 +1,66 @@
 package com.zenware.skillsharebackend.service;
 
+import com.zenware.skillsharebackend.dto.UserSkillRequest;
+import com.zenware.skillsharebackend.entity.Skill;
 import com.zenware.skillsharebackend.entity.User;
 import com.zenware.skillsharebackend.repository.SkillRepository;
 import com.zenware.skillsharebackend.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor // Using the cleaner constructor injection we discussed!
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final SkillRepository skillRepository;
 
-    @Autowired
-    private SkillRepository skillRepository;
+    // LOGIC: We removed 'registerNewUser' from here because it is now handled
+    // more securely in AuthenticationService.java (with hashing and JWT).
 
-    public User registerNewUser(User user) {
-        // Business Logic 1: Check if email already exists
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-                throw new IllegalArgumentException("Email is already taken!");
-        }
+    // 1. Fetch User Profile
+    public User getUserById(UUID id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + id));
+    }
 
-        // Business Logic 2: (Later, we will hash the password here)
-
-        // Business Logic 3: Ensure they start with exactly 100 credits
-        user.setCredits(100);
-
-        // Finally, save and return
+    // 2. Update Profile (Example)
+    @Transactional
+    public User updateBio(UUID id, String newBio) {
+        User user = getUserById(id);
+        user.setBio(newBio);
         return userRepository.save(user);
     }
 
+    // 3. The Dynamic Skill Engine (Previously built)
+    @Transactional
+    public void addSkillToUser(UserSkillRequest request) {
+        User user = getUserById(request.getUserId());
+        String cleanName = request.getSkillName().trim();
 
+        if (cleanName.isEmpty()) {
+            throw new IllegalArgumentException("Skill name cannot be empty!");
+        }
 
+        Skill skill = skillRepository.findByNameIgnoreCase(cleanName)
+                .orElseGet(() -> {
+                    Skill brandNewSkill = new Skill();
+                    String formattedName = cleanName.substring(0, 1).toUpperCase() + cleanName.substring(1).toLowerCase();
+                    brandNewSkill.setName(formattedName);
+                    return skillRepository.save(brandNewSkill);
+                });
+
+        if ("TEACH".equalsIgnoreCase(request.getSkillType())) {
+            user.getTeachingSkills().add(skill);
+        } else if ("LEARN".equalsIgnoreCase(request.getSkillType())) {
+            user.getLearningSkills().add(skill);
+        } else {
+            throw new IllegalArgumentException("Invalid type. Must be TEACH or LEARN.");
+        }
+
+        userRepository.save(user);
+    }
 }

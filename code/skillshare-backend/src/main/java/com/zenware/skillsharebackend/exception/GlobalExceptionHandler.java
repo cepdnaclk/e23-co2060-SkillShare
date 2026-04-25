@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
- * LOGIC: The @RestControllerAdvice makes this class a global "Intercepter".
+ * LOGIC: The @RestControllerAdvice makes this class a global "Interceptor".
  * It catches exceptions thrown by any controller and converts them
  * into our custom ErrorResponse JSON.
  */
@@ -30,7 +30,6 @@ public class GlobalExceptionHandler {
     // REASON: Catches "User not found", "Email taken", or "Skill name cannot be empty"
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
-        // LOGIC: Since we use this for bad inputs, 400 Bad Request is the safest universal code.
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 "Invalid Request",
@@ -50,14 +49,18 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
-    // 4. Handle Unexpected Server Crashes
-    // REASON: This is the "Safety Net" preventing raw stack traces from leaking to the frontend.
+    // 4. Handle Unexpected Server Crashes (The Safety Net)
+    // LOGIC: Merged your two Exception handlers.
+    // This logs the full error to IntelliJ but shows the message in Postman for easier debugging.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex) {
+        // This is crucial for you! It prints the red error text in your IntelliJ console.
+        ex.printStackTrace();
+
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Server Error",
-                "An unexpected error occurred on our end."
+                ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred on our end."
         );
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }

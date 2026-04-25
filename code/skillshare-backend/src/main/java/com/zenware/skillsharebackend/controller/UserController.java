@@ -1,26 +1,40 @@
 package com.zenware.skillsharebackend.controller;
 
+import com.zenware.skillsharebackend.dto.UserSkillRequest;
 import com.zenware.skillsharebackend.entity.User;
 import com.zenware.skillsharebackend.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/users")
+@RequiredArgsConstructor
 public class UserController {
 
-    @Autowired
-    private UserService userService; // We inject the Service
+    private final UserService userService;
 
-    @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody User user) {
-        try {
-            User savedUser = userService.registerNewUser(user);
-            return ResponseEntity.ok(savedUser);
-        } catch (IllegalArgumentException e) {
-            // If the Service throws an error (like duplicate email), return a 400 Bad Request
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    // LOGIC: The /register endpoint is REMOVED from here.
+    // Use POST /api/auth/register instead.
+
+    // GET: /api/users/{id}
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUserProfile(@PathVariable UUID id) {
+        return ResponseEntity.ok(userService.getUserById(id));
+    }
+
+    // POST: /api/users/skills
+    @PostMapping("/skills")
+    public ResponseEntity<String> addSkill(@RequestBody UserSkillRequest request) {
+        userService.addSkillToUser(request);
+        return ResponseEntity.ok("Skill linked to user successfully!");
+    }
+
+    // PATCH: /api/users/{id}/bio
+    @PatchMapping("/{id}/bio")
+    public ResponseEntity<User> updateBio(@PathVariable UUID id, @RequestBody String bio) {
+        return ResponseEntity.ok(userService.updateBio(id, bio));
     }
 }

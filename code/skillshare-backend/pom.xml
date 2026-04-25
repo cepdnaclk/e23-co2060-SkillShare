@@ -72,6 +72,12 @@
             <scope>compile</scope>
         </dependency>
 
+        <!-- 1. JJWT Core Dependencies -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.12.6</version>
+        </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
@@ -79,18 +85,18 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- 2. THE FIX: Standard Jackson for JWT Serialization -->
+        <!-- We use the stable 2.x version that matches JJWT's requirements -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-jackson</artifactId>
             <version>0.12.6</version>
             <scope>runtime</scope>
-            <!-- LOGIC: Block the vulnerable transitive dependency -->
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.17.2</version>
         </dependency>
 
     </dependencies>

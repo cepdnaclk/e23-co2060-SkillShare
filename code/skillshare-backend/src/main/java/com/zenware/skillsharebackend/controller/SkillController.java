@@ -2,7 +2,7 @@ package com.zenware.skillsharebackend.controller;
 
 import com.zenware.skillsharebackend.entity.Skill;
 import com.zenware.skillsharebackend.service.SkillService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,10 +10,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/skills")
+@RequiredArgsConstructor
 public class SkillController {
 
-    @Autowired
-    private SkillService skillService;
+    private final SkillService skillService;
 
     @PostMapping("/add")
     public ResponseEntity<Skill> addSkill(@RequestBody Skill skill) {
