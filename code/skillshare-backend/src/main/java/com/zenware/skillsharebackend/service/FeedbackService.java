@@ -6,7 +6,8 @@ import com.zenware.skillsharebackend.entity.*;
 import com.zenware.skillsharebackend.repository.FeedbackRepository;
 import com.zenware.skillsharebackend.repository.SessionRepository;
 import com.zenware.skillsharebackend.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,14 +17,21 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor // LOGIC: Modern Constructor Injection!
 public class FeedbackService {
 
-    @Autowired private FeedbackRepository feedbackRepository;
-    @Autowired private SessionRepository sessionRepository;
-    @Autowired private UserRepository userRepository;
+    private final FeedbackRepository feedbackRepository;
+    private final SessionRepository sessionRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
-    // 1. INJECT THE NOTIFICATION SERVICE HERE
-    @Autowired private NotificationService notificationService;
+    // --- THE SECURITY ENGINE ---
+    // LOGIC: Extracts the exact user making the request from the JWT Token.
+    private User getAuthenticatedUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Authenticated user not found!"));
+    }
 
     @Transactional
     public Feedback leaveFeedback(FeedbackRequest request) {
@@ -34,25 +42,25 @@ public class FeedbackService {
 
         // 2. STATUS GUARD RAIL
         if (session.getStatus() != SessionStatus.COMPLETED) {
-            throw new RuntimeException("You can only leave feedback for COMPLETED sessions!");
+            throw new IllegalStateException("You can only leave feedback for COMPLETED sessions!");
         }
 
-        // 3. SECURITY GUARD RAIL
-        UUID trueLearnerId = session.getLearner().getId();
-        UUID trueMentorId = session.getMentor().getId();
-        UUID incomingGiver = request.getGiverId();
-        UUID incomingReceiver = request.getReceiverId();
+        // 3. ZERO-TRUST SECURITY GUARD RAIL
+        // LOGIC: We dynamically deduce the Giver and Receiver. No spoofing allowed!
+        User giver = getAuthenticatedUser();
+        User receiver;
 
-        boolean isLearnerToMentor = incomingGiver.equals(trueLearnerId) && incomingReceiver.equals(trueMentorId);
-        boolean isMentorToLearner = incomingGiver.equals(trueMentorId) && incomingReceiver.equals(trueLearnerId);
-
-        if (!isLearnerToMentor && !isMentorToLearner) {
-            throw new RuntimeException("Security Violation: Giver and Receiver do not match this session's participants!");
+        if (giver.getId().equals(session.getLearner().getId())) {
+            receiver = session.getMentor(); // Learner is reviewing Mentor
+        } else if (giver.getId().equals(session.getMentor().getId())) {
+            receiver = session.getLearner(); // Mentor is reviewing Learner
+        } else {
+            throw new IllegalArgumentException("Security Violation: You were not a participant in this session!");
         }
 
         // 4. DUPLICATE GUARD RAIL
-        if (feedbackRepository.existsBySessionIdAndGiverId(request.getSessionId(), request.getGiverId())) {
-            throw new RuntimeException("You have already left feedback for this session!");
+        if (feedbackRepository.existsBySessionIdAndGiverId(request.getSessionId(), giver.getId())) {
+            throw new IllegalStateException("You have already left feedback for this session!");
         }
 
         // 5. THE SUMMATION LOGIC
@@ -62,26 +70,23 @@ public class FeedbackService {
                 FeedbackTag tag = FeedbackTag.valueOf(tagString.toUpperCase());
                 totalReputationChange += tag.getWeight();
             } catch (IllegalArgumentException e) {
-                throw new RuntimeException("Invalid feedback tag selected: " + tagString);
+                // Caught by your GlobalExceptionHandler as a 400 Bad Request
+                throw new IllegalArgumentException("Invalid feedback tag selected: " + tagString);
             }
         }
 
         // 6. Update the Receiver's Score
-        User receiver = userRepository.findById(request.getReceiverId())
-                .orElseThrow(() -> new IllegalArgumentException("Receiver not found"));
-
         receiver.setReputationScore(receiver.getReputationScore() + totalReputationChange);
         userRepository.save(receiver);
 
-        // 7. Save the Feedback Entity
-        Feedback feedback = new Feedback();
-        feedback.setSession(session);
-
-        User giverProxy = userRepository.getReferenceById(request.getGiverId());
-        feedback.setGiver(giverProxy);
-        feedback.setReceiver(receiver);
-        feedback.setFeedbackTag(String.join(", ", request.getSelectedTags()));
-        feedback.setWeight(totalReputationChange);
+        // 7. Save the Feedback Entity (Using the new Builder pattern)
+        Feedback feedback = Feedback.builder()
+                .session(session)
+                .giver(giver)
+                .receiver(receiver)
+                .feedbackTag(String.join(", ", request.getSelectedTags()))
+                .weight(totalReputationChange)
+                .build();
 
         Feedback savedFeedback = feedbackRepository.save(feedback);
 
@@ -92,12 +97,13 @@ public class FeedbackService {
         notificationService.sendNotification(
                 receiver,
                 "You received new feedback! Reputation changed by " + sign + totalReputationChange,
-                NotificationType.FEEDBACK_RECEIVED
+                NotificationType.SYSTEM_ALERT // Fallback to SYSTEM_ALERT to match our Enum
         );
 
         // 8. THE FEEDBACK LOOP CLOSURE ENGINE
         long totalFeedbacks = feedbackRepository.countBySessionId(session.getId());
 
+        // LOGIC: Once both the Learner and Mentor leave feedback, the session is officially CLOSED.
         if (totalFeedbacks == 2) {
             session.setStatus(SessionStatus.CLOSED);
             sessionRepository.save(session);

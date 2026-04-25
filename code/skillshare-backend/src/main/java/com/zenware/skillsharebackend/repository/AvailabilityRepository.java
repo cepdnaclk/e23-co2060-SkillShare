@@ -10,7 +10,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface AvailabilityRepository extends JpaRepository<Availability, Long> {
+// LOGIC: Upgraded from Long to UUID to match your new Entity structure!
+public interface AvailabilityRepository extends JpaRepository<Availability, UUID> {
 
     // Logic: Find all unbooked slots for a specific mentor so learners can see them
     List<Availability> findByUserIdAndIsBookedFalse(UUID userId);

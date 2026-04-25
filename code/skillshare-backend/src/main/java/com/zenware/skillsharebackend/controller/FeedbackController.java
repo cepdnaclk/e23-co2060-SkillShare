@@ -4,7 +4,7 @@ import com.zenware.skillsharebackend.dto.FeedbackRequest;
 import com.zenware.skillsharebackend.dto.FeedbackTagDto;
 import com.zenware.skillsharebackend.entity.Feedback;
 import com.zenware.skillsharebackend.service.FeedbackService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,26 +13,28 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/feedback")
+@RequiredArgsConstructor // LOGIC: Modern Constructor Injection!
 public class FeedbackController {
 
-    @Autowired
-    private FeedbackService feedbackService;
+    private final FeedbackService feedbackService;
 
     @PostMapping("/leave")
     public ResponseEntity<Feedback> submitFeedback(@RequestBody FeedbackRequest request) {
-        // LOGIC: No try-catch! If it fails, the GlobalExceptionHandler will automatically take over!
+        // LOGIC: No try-catch! If it fails, the GlobalExceptionHandler will automatically take over.
+        // SECURITY: The giver is determined strictly by the JWT token, not the request body.
         Feedback newFeedback = feedbackService.leaveFeedback(request);
         return ResponseEntity.ok(newFeedback);
     }
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Feedback>> getFeedbackForUser(@PathVariable UUID userId) {
-        // Now it fetches feedback for ANY user!
+        // LOGIC: Public endpoint. Anyone can see the public reviews of any Mentor/Learner.
         return ResponseEntity.ok(feedbackService.getUserFeedback(userId));
     }
 
     @GetMapping("/tags")
     public ResponseEntity<List<FeedbackTagDto>> getAvailableTags() {
+        // LOGIC: Feeds the frontend the exact dropdown options and weights dynamically.
         return ResponseEntity.ok(feedbackService.getAllAvailableTags());
     }
 }

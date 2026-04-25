@@ -2,21 +2,24 @@ package com.zenware.skillsharebackend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Data
 @Table(name = "notifications")
+@Data
+@Builder // LOGIC: Modern builder pattern
+@NoArgsConstructor
+@AllArgsConstructor
 public class Notification {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID) // LOGIC: Upgraded to specific UUID strategy
     private UUID id;
 
-    // LOGIC: Many notifications can belong to one User (The Recipient)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "recipient_id", nullable = false)
     @JsonIgnore // Prevents infinite loops when sending JSON to the frontend
@@ -29,16 +32,13 @@ public class Notification {
     @Column(nullable = false)
     private NotificationType type;
 
-    // LOGIC: Defaults to false so the UI knows to show a red "Unread" badge
+    // LOGIC: Boolean object type works perfectly with Lombok Builder and Jackson JSON
     @Column(nullable = false)
-    private boolean isRead = false;
+    @Builder.Default
+    private Boolean isRead = false;
 
+    // LOGIC: Much cleaner than @PrePersist. Hibernate handles this automatically now!
+    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    // LOGIC: Automatically sets the timestamp right before saving to Postgres
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-    }
 }
