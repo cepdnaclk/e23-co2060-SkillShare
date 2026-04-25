@@ -11,9 +11,9 @@ import java.util.UUID;
 @Repository
 public interface UserSkillRepository extends JpaRepository<UserSkill, UserSkillId> {
 
-    // Logic: Find all skills (both TEACH and LEARN) for a specific user
     List<UserSkill> findByUserId(UUID userId);
 
-    // Logic: Find all users who want to TEACH a specific skill
-    List<UserSkill> findBySkillIdAndIdSkillType(Long skillId, String skillType);
+    List<UserSkill> findBySkillIdAndIdSkillType(UUID skillId, String skillType);
+
+    List<UserSkill> findByUserIdAndIdSkillType(UUID userId, String skillType);
 }
