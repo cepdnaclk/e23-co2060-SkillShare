@@ -5,40 +5,67 @@ import com.zenware.skillsharebackend.entity.Availability;
 import com.zenware.skillsharebackend.entity.User;
 import com.zenware.skillsharebackend.repository.AvailabilityRepository;
 import com.zenware.skillsharebackend.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor // LOGIC: Modern constructor injection
 public class AvailabilityService {
 
-    @Autowired
-    private AvailabilityRepository availabilityRepository;
+    private final AvailabilityRepository availabilityRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    // --- THE SECURITY ENGINE ---
+    // LOGIC: Extracts the exact user making the request from the JWT Token.
+    private User getAuthenticatedUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Authenticated user not found!"));
+    }
 
+    @Transactional
     public Availability addAvailability(AvailabilityRequest request) {
         // Business Logic 1: Time Travel Check!
-        // A mentor cannot say their free time ends before it even begins.
         if (request.getStartTime().isAfter(request.getEndTime())) {
             throw new IllegalArgumentException("Start time must be before end time!");
         }
 
-        // Business Logic 2: Fetch the actual User from the database
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found!"));
+        // Business Logic 2: Securely identify the mentor from the Token!
+        User mentor = getAuthenticatedUser();
 
-        // Business Logic 3: Build the actual Entity and save it
-        Availability availability = new Availability();
-        availability.setUser(user);
-        availability.setStartTime(request.getStartTime());
-        availability.setEndTime(request.getEndTime());
-        // isBooked is already false by default in the Entity
+        // Business Logic 3: Build the actual Entity using the Builder pattern
+        Availability availability = Availability.builder()
+                .user(mentor)
+                .startTime(request.getStartTime())
+                .endTime(request.getEndTime())
+                .isBooked(false)
+                .build();
 
         return availabilityRepository.save(availability);
+    }
+
+    // --- NEW FEATURE: Delete Slot ---
+    @Transactional
+    public void deleteAvailability(UUID availabilityId) {
+        Availability availability = availabilityRepository.findById(availabilityId)
+                .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+
+        // GUARD: You can only delete your own slots!
+        if (!availability.getUser().getId().equals(getAuthenticatedUser().getId())) {
+            throw new IllegalStateException("Security Violation: You can only delete your own availability!");
+        }
+
+        // GUARD: Cannot delete an actively booked slot
+        if (availability.getIsBooked()) {
+            throw new IllegalStateException("You cannot delete a slot that is already booked!");
+        }
+
+        availabilityRepository.delete(availability);
     }
 
     public List<Availability> getMentorFreeSlots(UUID mentorId) {

@@ -3,36 +3,34 @@ package com.zenware.skillsharebackend.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "feedbacks")
 @Data
+@Builder // LOGIC: Added Builder pattern for clean creation
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
-@Getter
-@Setter
 public class Feedback {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
-    // We must link the exact session so we know what class this was for.
-    @ManyToOne
+    // LOGIC: Added FetchType.LAZY to prevent massive database slow-downs
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "session_id", nullable = false)
     private Session session;
 
-    // The person clicking the button.
-    @ManyToOne
+    // The person leaving the feedback (Identified securely via JWT)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "giver_id", nullable = false)
     private User giver;
 
-    // The person receiving the reputation score.
-    @ManyToOne
+    // The person receiving the feedback (Deduced automatically from the Session)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_id", nullable = false)
     private User receiver;
 

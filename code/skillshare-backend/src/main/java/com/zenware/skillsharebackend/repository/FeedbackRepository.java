@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
+// LOGIC: Upgraded from Long to UUID to match your modern Entity structure!
+public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
 
     // Logic: A critical security check! We use this to see if the user already reviewed this session.
     boolean existsBySessionIdAndGiverId(UUID sessionId, UUID giverId);

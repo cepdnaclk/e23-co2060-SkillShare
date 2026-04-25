@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/e23-co2060-SkillShare.iml" filepath="$PROJECT_DIR$/.idea/e23-co2060-SkillShare.iml" />
+      <module fileurl="file://$PROJECT_DIR$/code/skillshare-backend/skillshare-backend.iml" filepath="$PROJECT_DIR$/code/skillshare-backend/skillshare-backend.iml" />
     </modules>
   </component>
 </project>

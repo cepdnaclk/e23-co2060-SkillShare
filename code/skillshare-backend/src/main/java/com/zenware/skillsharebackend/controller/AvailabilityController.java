@@ -3,7 +3,7 @@ package com.zenware.skillsharebackend.controller;
 import com.zenware.skillsharebackend.dto.AvailabilityRequest;
 import com.zenware.skillsharebackend.entity.Availability;
 import com.zenware.skillsharebackend.service.AvailabilityService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,19 +12,24 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/availability")
+@RequiredArgsConstructor // LOGIC: Modern constructor injection
 public class AvailabilityController {
 
-    @Autowired
-    private AvailabilityService availabilityService;
+    private final AvailabilityService availabilityService;
 
     @PostMapping("/add")
-    public ResponseEntity<?> addAvailability(@RequestBody AvailabilityRequest request) {
-        try {
-            Availability savedSlot = availabilityService.addAvailability(request);
-            return ResponseEntity.ok(savedSlot);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<Availability> addAvailability(@RequestBody AvailabilityRequest request) {
+        // LOGIC: try-catch is GONE!
+        // Any error thrown by the service is caught by your GlobalExceptionHandler.
+        return ResponseEntity.ok(availabilityService.addAvailability(request));
+    }
+
+    // --- NEW FEATURE: Secure Delete Endpoint ---
+    @DeleteMapping("/{availabilityId}")
+    public ResponseEntity<String> deleteAvailability(@PathVariable UUID availabilityId) {
+        // LOGIC: No userId needed in the URL. The service extracts it securely from JWT!
+        availabilityService.deleteAvailability(availabilityId);
+        return ResponseEntity.ok("Availability slot deleted successfully.");
     }
 
     @GetMapping("/mentor/{mentorId}")

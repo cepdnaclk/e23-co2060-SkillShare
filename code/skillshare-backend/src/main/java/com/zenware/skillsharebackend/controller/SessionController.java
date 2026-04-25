@@ -4,7 +4,7 @@ import com.zenware.skillsharebackend.dto.SessionRequest;
 import com.zenware.skillsharebackend.entity.Session;
 import com.zenware.skillsharebackend.entity.SessionStatus;
 import com.zenware.skillsharebackend.service.SessionService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,25 +13,24 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/sessions")
+@RequiredArgsConstructor // LOGIC: Constructor Injection
 public class SessionController {
 
-    @Autowired
-    private SessionService sessionService;
+    private final SessionService sessionService;
 
     @PostMapping("/book")
     public ResponseEntity<Session> bookSession(@RequestBody SessionRequest request) {
-        // LOGIC: No try-catch. If the service throws an error, the GlobalExceptionHandler catches it!
-        Session newSession = sessionService.bookSession(request);
-        return ResponseEntity.ok(newSession);
+        return ResponseEntity.ok(sessionService.bookSession(request));
     }
 
     @PatchMapping("/{sessionId}/status")
     public ResponseEntity<Session> updateStatus(
             @PathVariable UUID sessionId,
-            @RequestParam UUID mentorId,
-            @RequestParam SessionStatus status) { // LOGIC: Accept the Enum directly! Spring auto-converts the URL string.
+            @RequestParam SessionStatus status) {
 
-        Session updatedSession = sessionService.updateSessionStatus(sessionId, mentorId, status);
+        // SECURITY UPGRADE: Removed @RequestParam UUID mentorId
+        // The Mentor's identity is now pulled directly from the JWT Context!
+        Session updatedSession = sessionService.updateSessionStatus(sessionId, status);
         return ResponseEntity.ok(updatedSession);
     }
 
@@ -41,15 +40,11 @@ public class SessionController {
         return ResponseEntity.ok(completedSession);
     }
 
-    // ---------------------------------------------------------
-    // 4. NEW FEATURE: Cancel an upcoming session
-    // ---------------------------------------------------------
     @PutMapping("/{sessionId}/cancel")
-    public ResponseEntity<Session> cancelSession(
-            @PathVariable UUID sessionId,
-            @RequestParam UUID userId) {
-        // LOGIC: userId is the person who clicked the "Cancel" button!
-        return ResponseEntity.ok(sessionService.cancelSession(sessionId, userId));
+    public ResponseEntity<Session> cancelSession(@PathVariable UUID sessionId) {
+        // SECURITY UPGRADE: Removed @RequestParam UUID userId
+        // The Canceling User's identity is pulled directly from JWT!
+        return ResponseEntity.ok(sessionService.cancelSession(sessionId));
     }
 
     @GetMapping("/learner/{userId}")
@@ -62,9 +57,6 @@ public class SessionController {
         return ResponseEntity.ok(sessionService.getMentorSessions(userId));
     }
 
-    // ---------------------------------------------------------
-    // Trigger Expiration Engine Manually
-    // ---------------------------------------------------------
     @PostMapping("/expire-overdue")
     public ResponseEntity<String> triggerExpirationEngine() {
         int expiredCount = sessionService.expireOverdueSessions();

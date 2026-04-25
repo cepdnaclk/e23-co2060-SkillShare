@@ -2,27 +2,25 @@ package com.zenware.skillsharebackend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
-@Table(name = "availability")
+@Table(name = "availabilities")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
-@Getter
-@Setter
 public class Availability {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
-    // Many time slots can belong to One user.
-    @ManyToOne
+    // LOGIC: Added FetchType.LAZY for better database performance
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private User user; // The Mentor
 
     @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;
@@ -31,5 +29,6 @@ public class Availability {
     private LocalDateTime endTime;
 
     @Column(name = "is_booked")
+    @Builder.Default
     private Boolean isBooked = false;
 }

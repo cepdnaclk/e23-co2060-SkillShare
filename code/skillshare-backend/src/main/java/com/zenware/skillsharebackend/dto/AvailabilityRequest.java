@@ -2,11 +2,14 @@ package com.zenware.skillsharebackend.dto;
 
 import lombok.Data;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Data
 public class AvailabilityRequest {
-    private UUID userId;
+
+    // SECURITY UPGRADE: 'userId' has been removed!
+    // The Mentor's identity will be securely extracted from their JWT token
+    // in the AvailabilityService. Hackers cannot spoof other users' slots now.
+
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 }

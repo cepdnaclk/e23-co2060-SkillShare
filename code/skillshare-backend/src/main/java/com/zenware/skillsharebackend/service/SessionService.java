@@ -3,7 +3,8 @@ package com.zenware.skillsharebackend.service;
 import com.zenware.skillsharebackend.dto.SessionRequest;
 import com.zenware.skillsharebackend.entity.*;
 import com.zenware.skillsharebackend.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,20 +14,29 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor // LOGIC: Switched to Constructor Injection for modern Spring Boot!
 public class SessionService {
 
-    @Autowired private SessionRepository sessionRepository;
-    @Autowired private UserRepository userRepository;
-    @Autowired private SkillRepository skillRepository;
-    @Autowired private AvailabilityRepository availabilityRepository;
-    @Autowired private NotificationService notificationService;
+    private final SessionRepository sessionRepository;
+    private final UserRepository userRepository;
+    private final SkillRepository skillRepository;
+    private final AvailabilityRepository availabilityRepository;
+    private final NotificationService notificationService;
+
+    // --- THE SECURITY ENGINE ---
+    // LOGIC: This helper method grabs the exact user currently making the API request
+    // directly from the validated JWT token. No spoofing allowed!
+    private User getAuthenticatedUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Authenticated user not found!"));
+    }
 
     @Transactional
     public Session bookSession(SessionRequest request) {
 
-        // 1. Fetch the Learner
-        User learner = userRepository.findById(request.getLearnerId())
-                .orElseThrow(() -> new IllegalArgumentException("Learner not found"));
+        // 1. Fetch the Learner (From JWT, NOT from the request body!)
+        User learner = getAuthenticatedUser();
 
         // 2. Fetch the Skill
         Skill skill = skillRepository.findById(request.getSkillId())
@@ -63,41 +73,38 @@ public class SessionService {
         session.setSkill(skill);
         session.setStartTime(availability.getStartTime());
         session.setEndTime(availability.getEndTime());
-
-        // LOGIC EXPLANATION: Explicitly set the initial state using the Enum!
         session.setStatus(SessionStatus.PENDING);
 
         // 7. Update the Availability to show it is now taken
         availability.setIsBooked(true);
         availabilityRepository.save(availability);
 
-        // --- NOTIFICATION TRIGGER: Step 2 ---
+        // 8. Notification
         notificationService.sendNotification(
                 availability.getUser(),
                 "New session request! Someone wants to learn from you.",
                 NotificationType.SESSION_UPDATE
         );
 
-        // 8. Save the final Session
         return sessionRepository.save(session);
     }
 
     @Transactional
-    public Session updateSessionStatus(UUID sessionId, UUID mentorId, SessionStatus newStatus) {
+    public Session updateSessionStatus(UUID sessionId, SessionStatus newStatus) {
 
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Session not found"));
 
-        if (!session.getMentor().getId().equals(mentorId)) {
-            throw new IllegalStateException("Only the assigned mentor can update this session!");
+        User authenticatedMentor = getAuthenticatedUser();
+
+        // SECURITY GUARD: Only the mentor assigned to this session can accept/reject it
+        if (!session.getMentor().getId().equals(authenticatedMentor.getId())) {
+            throw new IllegalStateException("Security Violation: Only the assigned mentor can update this session!");
         }
 
-        // LOGIC EXPLANATION: We just assign the Enum directly.
         session.setStatus(newStatus);
 
-        // LOGIC EXPLANATION: Using the '==' operator because Enums are memory-safe singletons.
         if (newStatus == SessionStatus.ACCEPTED) {
-            // --- NOTIFICATION TRIGGER: Step 3 ---
             notificationService.sendNotification(
                     session.getLearner(),
                     "Great news! Your session with " + session.getMentor().getFullName() + " was ACCEPTED. Credits are locked in Escrow.",
@@ -105,7 +112,7 @@ public class SessionService {
             );
         } else if (newStatus == SessionStatus.REJECTED) {
             Availability availability = availabilityRepository.findByUserIdAndStartTime(
-                    mentorId, session.getStartTime()
+                    authenticatedMentor.getId(), session.getStartTime()
             ).orElseThrow(() -> new IllegalStateException("Original time slot missing"));
 
             User learner = session.getLearner();
@@ -115,7 +122,6 @@ public class SessionService {
             availability.setIsBooked(false);
             availabilityRepository.save(availability);
 
-            // --- NOTIFICATION TRIGGER: Step 4 ---
             notificationService.sendNotification(
                     session.getLearner(),
                     "Your session request to " + session.getMentor().getFullName() + " was declined. Your credits have been refunded.",
@@ -130,7 +136,7 @@ public class SessionService {
     // THE CANCELLATION ENGINE
     // ---------------------------------------------------------
     @Transactional
-    public Session cancelSession(UUID sessionId, UUID cancelingUserId) {
+    public Session cancelSession(UUID sessionId) {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Session not found"));
 
@@ -138,53 +144,47 @@ public class SessionService {
             throw new IllegalStateException("You can only cancel upcoming sessions!");
         }
 
+        // SECURITY GUARD: Fetch canceling user from JWT
+        User cancelingUser = getAuthenticatedUser();
         User learner = session.getLearner();
         User mentor = session.getMentor();
+
         int originalCost = 10;
         int penaltyAmount = 5;
 
-        if (cancelingUserId.equals(learner.getId())) {
-
+        if (cancelingUser.getId().equals(learner.getId())) {
+            // Learner Cancels Logic
             if (session.getStatus() == SessionStatus.PENDING) {
-                // LOGIC: Learner cancels a PENDING request. Full refund, no mentor compensation.
                 learner.setCredits(learner.getCredits() + originalCost);
-
                 notificationService.sendNotification(mentor, "The learner cancelled their session request.", NotificationType.SESSION_UPDATE);
                 notificationService.sendNotification(learner, "You cancelled your session request. You were refunded your full 10 credits.", NotificationType.SESSION_UPDATE);
             } else {
-                // LOGIC: Learner Cancels an ACCEPTED session. They get halfback, Mentor gets half as compensation.
                 learner.setCredits(learner.getCredits() + (originalCost - penaltyAmount));
                 mentor.setCredits(mentor.getCredits() + penaltyAmount);
-
                 notificationService.sendNotification(mentor, "The learner cancelled the session. You received " + penaltyAmount + " credits as compensation.", NotificationType.SESSION_UPDATE);
-                notificationService.sendNotification(learner, "You cancelled the session. You were refunded 5 credits (Penalty applied). Please leave cancellation feedback.", NotificationType.SESSION_UPDATE);
+                notificationService.sendNotification(learner, "You cancelled the session. You were refunded 5 credits (Penalty applied).", NotificationType.SESSION_UPDATE);
             }
 
-        } else if (cancelingUserId.equals(mentor.getId())) {
-
+        } else if (cancelingUser.getId().equals(mentor.getId())) {
+            // Mentor Cancels Logic
             if (session.getStatus() == SessionStatus.PENDING) {
-                // LOGIC: Mentor cancels a PENDING request. Learner gets full refund, no penalty to Mentor.
                 learner.setCredits(learner.getCredits() + originalCost);
-
                 notificationService.sendNotification(learner, "The mentor cancelled the session request. You received a full refund.", NotificationType.SESSION_UPDATE);
                 notificationService.sendNotification(mentor, "You cancelled the pending session request. No penalty was applied.", NotificationType.SESSION_UPDATE);
             } else {
-                // LOGIC: Mentor Cancels an ACCEPTED session. Learner gets full refund + 5 from Mentor's pocket.
                 learner.setCredits(learner.getCredits() + originalCost + penaltyAmount);
                 mentor.setCredits(mentor.getCredits() - penaltyAmount);
-
-                notificationService.sendNotification(learner, "The mentor cancelled the session. You received a full refund PLUS " + penaltyAmount + " credits compensation. Please leave feedback.", NotificationType.SESSION_UPDATE);
+                notificationService.sendNotification(learner, "The mentor cancelled the session. You received a full refund PLUS " + penaltyAmount + " credits compensation.", NotificationType.SESSION_UPDATE);
                 notificationService.sendNotification(mentor, "You cancelled the session. A penalty of " + penaltyAmount + " credits was applied.", NotificationType.SESSION_UPDATE);
             }
 
         } else {
-            throw new IllegalArgumentException("User is not part of this session!");
+            throw new IllegalArgumentException("Security Violation: You are not part of this session!");
         }
 
         userRepository.save(learner);
         userRepository.save(mentor);
 
-        // Free up the time slot again!
         Availability availability = availabilityRepository.findByUserIdAndStartTime(mentor.getId(), session.getStartTime())
                 .orElseThrow(() -> new IllegalStateException("Original time slot missing"));
         availability.setIsBooked(false);
@@ -196,19 +196,21 @@ public class SessionService {
 
     @Transactional
     public Session completeSession(UUID sessionId) {
-
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Session not found"));
 
-        // LOGIC EXPLANATION: Checking the state machine rules strictly using the Enum.
         if (session.getStatus() != SessionStatus.ACCEPTED) {
             throw new IllegalStateException("Only ACCEPTED sessions can be marked as COMPLETED!");
         }
 
+        // SECURITY GUARD: Only the mentor can mark it complete
+        User authenticatedUser = getAuthenticatedUser();
+        if (!session.getMentor().getId().equals(authenticatedUser.getId())) {
+            throw new IllegalStateException("Security Violation: Only the Mentor can complete the session!");
+        }
+
         User mentor = session.getMentor();
         mentor.setCredits(mentor.getCredits() + 10);
-
-        // LOGIC EXPLANATION: Moving the state forward safely.
         session.setStatus(SessionStatus.COMPLETED);
 
         userRepository.save(mentor);
@@ -216,47 +218,37 @@ public class SessionService {
     }
 
     public List<Session> getLearnerSessions(UUID learnerId) {
+        // SECURITY GUARD: You can only view your own history
+        if (!getAuthenticatedUser().getId().equals(learnerId)) {
+            throw new IllegalStateException("Security Violation: You can only view your own classes!");
+        }
         return sessionRepository.findByLearnerId(learnerId);
     }
 
     public List<Session> getMentorSessions(UUID mentorId) {
+        if (!getAuthenticatedUser().getId().equals(mentorId)) {
+            throw new IllegalStateException("Security Violation: You can only view your own schedule!");
+        }
         return sessionRepository.findByMentorId(mentorId);
     }
 
-    // ---------------------------------------------------------
-    // THE EXPIRATION ENGINE
-    // ---------------------------------------------------------
     @Transactional
     public int expireOverdueSessions() {
         LocalDateTime now = LocalDateTime.now();
-
         List<SessionStatus> targetStatuses = Arrays.asList(SessionStatus.PENDING, SessionStatus.ACCEPTED);
-
-        // LOGIC: This leverages the custom query we just added to the SessionRepository!
         List<Session> overdueSessions = sessionRepository.findByStatusInAndEndTimeBefore(targetStatuses, now);
 
         for (Session session : overdueSessions) {
             User learner = session.getLearner();
-
             learner.setCredits(learner.getCredits() + 10);
             userRepository.save(learner);
 
             session.setStatus(SessionStatus.EXPIRED);
             sessionRepository.save(session);
 
-            notificationService.sendNotification(
-                    learner,
-                    "Your session with " + session.getMentor().getFullName() + " expired without completion. Your 10 credits have been refunded.",
-                    NotificationType.SYSTEM_ALERT
-            );
-
-            notificationService.sendNotification(
-                    session.getMentor(),
-                    "The session with " + learner.getFullName() + " expired. No credits were awarded.",
-                    NotificationType.SYSTEM_ALERT
-            );
+            notificationService.sendNotification(learner, "Your session expired. Your 10 credits have been refunded.", NotificationType.SYSTEM_ALERT);
+            notificationService.sendNotification(session.getMentor(), "The session expired. No credits were awarded.", NotificationType.SYSTEM_ALERT);
         }
-
         return overdueSessions.size();
     }
 }
