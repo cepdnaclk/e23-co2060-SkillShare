@@ -7,6 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/user-skills")
 @RequiredArgsConstructor
@@ -14,10 +17,36 @@ public class UserSkillController {
 
     private final UserSkillService userSkillService;
 
-    // If userSkillService throws an error, GlobalExceptionHandler
-    // will catch it and send the exact message to the user automatically.
     @PostMapping("/add")
     public ResponseEntity<UserSkill> addSkillToUser(@RequestBody UserSkillRequest request) {
         return ResponseEntity.ok(userSkillService.addUserSkill(request));
+    }
+
+    // --- NEW FEATURE: Secure Delete Endpoint ---
+    @DeleteMapping("/remove")
+    public ResponseEntity<String> removeSkillFromUser(
+            @RequestParam UUID skillId,
+            @RequestParam String skillType) {
+        // LOGIC: No userId in the request! Security context handles it.
+        userSkillService.deleteUserSkill(skillId, skillType);
+        return ResponseEntity.ok("Skill removed from profile successfully.");
+    }
+
+    // LOGIC: Public endpoint to view a user's skills
+    @GetMapping("/{userId}")
+    public ResponseEntity<List<UserSkill>> getUserSkills(@PathVariable UUID userId) {
+        return ResponseEntity.ok(userSkillService.getUserProfileSkills(userId));
+    }
+
+    // GET: /api/user-skills/{userId}/teach
+    @GetMapping("/{userId}/teach")
+    public ResponseEntity<List<UserSkill>> getTeachingSkills(@PathVariable UUID userId) {
+        return ResponseEntity.ok(userSkillService.getUserTeachingSkills(userId));
+    }
+
+    // GET: /api/user-skills/{userId}/learn
+    @GetMapping("/{userId}/learn")
+    public ResponseEntity<List<UserSkill>> getLearningSkills(@PathVariable UUID userId) {
+        return ResponseEntity.ok(userSkillService.getUserLearningSkills(userId));
     }
 }

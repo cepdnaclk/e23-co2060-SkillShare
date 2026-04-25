@@ -1,12 +1,13 @@
 package com.zenware.skillsharebackend.dto;
 
 import lombok.Data;
-import java.util.UUID;
 
 @Data
 public class UserSkillRequest {
-    // This allows the frontend to send either an existing skill name or a brand new one.
-    private UUID userId;
+
+    // SECURITY UPGRADE: 'userId' has been permanently removed!
+    // We will extract the exact user securely from the JWT token.
+
     private String skillName;
     private String skillType; // "TEACH" or "LEARN"
     private String skillCategory;

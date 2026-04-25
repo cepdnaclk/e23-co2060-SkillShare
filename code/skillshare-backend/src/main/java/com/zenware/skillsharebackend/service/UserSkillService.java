@@ -9,9 +9,12 @@ import com.zenware.skillsharebackend.repository.SkillRepository;
 import com.zenware.skillsharebackend.repository.UserRepository;
 import com.zenware.skillsharebackend.repository.UserSkillRepository;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.NonNull;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -21,20 +24,26 @@ public class UserSkillService {
     private final UserRepository userRepository;
     private final SkillRepository skillRepository;
 
+    // --- THE SECURITY ENGINE ---
+    private User getAuthenticatedUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Authenticated user not found!"));
+    }
+
     @Transactional
     public UserSkill addUserSkill(UserSkillRequest request) {
 
-        // Logic 1: Fetch User
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found!"));
+        // SECURITY: Fetch User directly from the token!
+        User user = getAuthenticatedUser();
 
-        // Logic 2: Clean name
-        String cleanName = request.getSkillName().trim();
-        if (cleanName.isEmpty()) {
+        // DEFENSIVE PROGRAMMING: Prevent NullPointerException
+        if (request.getSkillName() == null || request.getSkillName().trim().isEmpty()) {
             throw new IllegalArgumentException("Skill name cannot be empty!");
         }
+        String cleanName = request.getSkillName().trim();
 
-        // Logic 3: Find or Create Engine
+        // Logic: Find or Create Engine
         Skill skill = skillRepository.findByNameIgnoreCase(cleanName)
                 .orElseGet(() -> {
                     Skill brandNewSkill = new Skill();
@@ -51,29 +60,61 @@ public class UserSkillService {
                     return skillRepository.save(brandNewSkill);
                 });
 
-        // Logic 4: Primary Key Setup
-        UserSkill userSkill = getUserSkill(request, user, skill);
+        // DEFENSIVE PROGRAMMING: Prevent NullPointerException
+        if (request.getSkillType() == null || request.getSkillType().trim().isEmpty()) {
+            throw new IllegalArgumentException("Skill type cannot be empty!");
+        }
 
-        return userSkillRepository.save(userSkill);
-    }
-
-    private static @NonNull UserSkill getUserSkill(UserSkillRequest request, User user, Skill skill) {
-        UserSkillId id = new UserSkillId();
-        id.setUserId(user.getId());
-        id.setSkillId(skill.getId());
-
-        // Logic 5: Type Guard Rail
+        // Type Guard Rail
         String type = request.getSkillType().trim().toUpperCase();
         if (!type.equals("TEACH") && !type.equals("LEARN")) {
             throw new IllegalArgumentException("Invalid Skill type. Must be TEACH or LEARN.");
         }
-        id.setSkillType(type);
 
-        // Logic 6: Save Linkage
-        UserSkill userSkill = new UserSkill();
-        userSkill.setId(id);
-        userSkill.setUser(user);
-        userSkill.setSkill(skill);
-        return userSkill;
+        // Clean Primary Key Setup using Builder
+        UserSkillId id = UserSkillId.builder()
+                .userId(user.getId())
+                .skillId(skill.getId())
+                .skillType(type)
+                .build();
+
+        UserSkill userSkill = UserSkill.builder()
+                .id(id)
+                .user(user)
+                .skill(skill)
+                .build();
+
+        return userSkillRepository.save(userSkill);
+    }
+
+    // --- NEW FEATURE: Secure Delete ---
+    @Transactional
+    public void deleteUserSkill(UUID skillId, String skillType) {
+        User me = getAuthenticatedUser();
+
+        UserSkillId id = UserSkillId.builder()
+                .userId(me.getId())
+                .skillId(skillId)
+                .skillType(skillType.toUpperCase())
+                .build();
+
+        // LOGIC: The user can only delete their own records because the ID requires their JWT token ID!
+        if (!userSkillRepository.existsById(id)) {
+            throw new IllegalArgumentException("Skill linkage not found in your profile!");
+        }
+
+        userSkillRepository.deleteById(id);
+    }
+
+    public List<UserSkill> getUserProfileSkills(UUID userId) {
+        return userSkillRepository.findByUserId(userId);
+    }
+
+    public List<UserSkill> getUserTeachingSkills(UUID userId) {
+        return userSkillRepository.findByUserIdAndIdSkillType(userId, "TEACH");
+    }
+
+    public List<UserSkill> getUserLearningSkills(UUID userId) {
+        return userSkillRepository.findByUserIdAndIdSkillType(userId, "LEARN");
     }
 }

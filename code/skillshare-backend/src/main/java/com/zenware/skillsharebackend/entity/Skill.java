@@ -2,20 +2,19 @@ package com.zenware.skillsharebackend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.UUID;
 
 @Entity
 @Table(name = "skills")
 @Data
+@Builder // LOGIC: Added Builder pattern for consistency
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
-@Getter
-@Setter
 public class Skill {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id; // LOGIC: Upgraded to UUID!
 
     @Column(name = "name", nullable = false, unique = true)
     private String name;
