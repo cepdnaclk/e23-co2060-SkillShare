@@ -16,4 +16,9 @@ public interface UserSkillRepository extends JpaRepository<UserSkill, UserSkillI
     List<UserSkill> findBySkillIdAndIdSkillType(UUID skillId, String skillType);
 
     List<UserSkill> findByUserIdAndIdSkillType(UUID userId, String skillType);
+
+    // --- THE DISCOVERY ENGINE ---
+    // LOGIC: Finds all users who are tagged as "TEACH" for a specific skill ID.
+    // This is how the Learner finds a list of Mentors!
+    List<UserSkill> findByIdSkillIdAndIdSkillType(UUID skillId, String skillType);
 }
