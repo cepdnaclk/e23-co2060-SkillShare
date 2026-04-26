@@ -10,6 +10,11 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -22,30 +27,60 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. Disable CSRF (Cross-Site Request Forgery) because we are using stateless JWTs
+                // 1. TURN ON CORS HERE!
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                // 2. Disable CSRF (Cross-Site Request Forgery) because we are using stateless JWTs
                 .csrf(AbstractHttpConfigurer::disable)
 
-                // 2. Configure which endpoints are public and which are private
+                // 3. Configure which endpoints are public and which are private
                 .authorizeHttpRequests(auth -> auth
-                        // WHITELIST: Anyone can access the login and register endpoints
+                        // WHITELIST: Anyone can access the login, register, and public skills endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        // You can also whitelist your public profile endpoints here if needed
+                        .requestMatchers("/api/skills/**").permitAll()
 
                         // BLACKLIST: Every other single endpoint requires a valid JWT Token!
                         .anyRequest().authenticated()
                 )
 
-                // 3. Set Session Management to STATELESS (No cookies! Every request must have a JWT)
+                // 4. Set Session Management to STATELESS (No cookies! Every request must have a JWT)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // 4. Tell Spring to use our database Auth Provider
+                // 5. Tell Spring to use our database Auth Provider
                 .authenticationProvider(authenticationProvider)
 
-                // 5. Insert our Custom JWT Bouncer BEFORE the standard password filter
+                // 6. Insert our Custom JWT Bouncer BEFORE the standard password filter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    // --- NEW: DEFINE THE CORS RULES HERE! ---
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        // Let React (3000) or Vite/Vue/Angular (5173, 4200) talk to the backend
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://localhost:4200"
+        ));
+
+        // Allow all standard HTTP methods
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+
+        // Allow the frontend to send the 'Authorization' header (which holds our JWT!)
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+
+        // Allow credentials (important if you ever add cookies later)
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration); // Apply to ALL endpoints
+
+        return source;
     }
 }
