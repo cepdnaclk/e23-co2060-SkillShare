@@ -38,6 +38,13 @@ public class UserSkillController {
         return ResponseEntity.ok(userSkillService.getUserProfileSkills(userId));
     }
 
+    // --- THE DISCOVERY ENDPOINT ---
+    // GET: /api/user-skills/mentors/{skillId}
+    @GetMapping("/mentors/{skillId}")
+    public ResponseEntity<List<UserSkill>> getMentorsBySkill(@PathVariable UUID skillId) {
+        return ResponseEntity.ok(userSkillService.findMentorsBySkill(skillId));
+    }
+
     // GET: /api/user-skills/{userId}/teach
     @GetMapping("/{userId}/teach")
     public ResponseEntity<List<UserSkill>> getTeachingSkills(@PathVariable UUID userId) {

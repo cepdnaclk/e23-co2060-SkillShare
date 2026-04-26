@@ -117,4 +117,10 @@ public class UserSkillService {
     public List<UserSkill> getUserLearningSkills(UUID userId) {
         return userSkillRepository.findByUserIdAndIdSkillType(userId, "LEARN");
     }
+
+    // --- DISCOVERY LOGIC ---
+    public List<UserSkill> findMentorsBySkill(UUID skillId) {
+        // We only want users who are teaching ("TEACH") this skill
+        return userSkillRepository.findByIdSkillIdAndIdSkillType(skillId, "TEACH");
+    }
 }
