@@ -50,8 +50,7 @@ public class GlobalExceptionHandler {
     }
 
     // 4. Handle Unexpected Server Crashes (The Safety Net)
-    // LOGIC: Merged your two Exception handlers.
-    // This logs the full error to IntelliJ but shows the message in Postman for easier debugging.
+    // LOGIC: This logs the full error to IntelliJ but shows the clean message in Postman for easier debugging.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex) {
         // This is crucial for you! It prints the red error text in your IntelliJ console.
