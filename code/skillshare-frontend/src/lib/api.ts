@@ -148,6 +148,13 @@ export const availabilityApi = {
     getMentorSlots: (mentorId: string) =>
         apiFetch<Availability[]>(`/api/availability/mentor/${mentorId}`),
 };
+/**
+export const myavailabilityApi = {
+
+    getMyAvailabilities: (mentorId: string) =>
+        apiFetch<Availability[]>(`/api/availability/mentor/my-slots`),
+};
+    */
 
 export const sessionsApi = {
     book: (learnerId: string, skillId: number, availabilityId: number) =>
