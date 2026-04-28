@@ -57,7 +57,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // --- NEW: DEFINE THE CORS RULES HERE! ---
+    // --- NEW: DEFINE THE CORS RULES! ---
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

@@ -17,4 +17,6 @@ public interface AvailabilityRepository extends JpaRepository<Availability, UUID
     List<Availability> findByUserIdAndIsBookedFalse(UUID userId);
 
     Optional<Availability> findByUserIdAndStartTime(UUID userId, LocalDateTime startTime);
+
+    List<Availability> findByUserId(UUID mentorId);
 }
