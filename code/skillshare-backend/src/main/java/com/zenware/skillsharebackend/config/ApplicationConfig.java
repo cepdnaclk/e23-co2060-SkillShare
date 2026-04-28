@@ -27,7 +27,6 @@ public class ApplicationConfig {
     }
 
     // 2. Authentication Provider
-    // FIX: Passed userDetailsService directly into the constructor!
     @Bean
     public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);

@@ -22,7 +22,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService; // We will configure this bean in Phase 5!
+    private final UserDetailsService userDetailsService;
 
     @Override
     protected void doFilterInternal(
