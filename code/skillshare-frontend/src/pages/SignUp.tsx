@@ -1,27 +1,41 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, Mail, Lock, User, Eye, EyeOff, Sparkles, Zap, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import ErrorBanner from "@/components/ErrorBanner";
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const { login, register, isLoading, error, clearError } = useAuth();
   const [isLogin, setIsLogin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // For now, just navigate to create profile
-    navigate("/create-profile");
+    clearError();
+    try {
+      if (isLogin) {
+        await login(form.email, form.password);
+        navigate("/dashboard");
+      } else {
+        await register(form.name, form.email, form.password);
+        navigate("/create-profile");
+      }
+    } catch {
+      // error is set in context
+    }
   };
-
+  const features = [
+    { icon: Zap, text: "Skill-based matching algorithm" },
+    { icon: Users, text: "P2P session booking with credits" },
+    { icon: Sparkles, text: "Reputation system & feedback tags" },
+  ];
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left side - Form */}
