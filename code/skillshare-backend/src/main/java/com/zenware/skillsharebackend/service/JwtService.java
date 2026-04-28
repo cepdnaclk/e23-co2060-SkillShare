@@ -16,7 +16,7 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    // LOGIC: This is your secret encryption key.
+    // LOGIC: This is the secret encryption key.
     // In production, this should NEVER be hardcoded. It should be in your application.properties!
     // This is a 256-bit secure Base64 key generated specifically for your app.
     private static final String SECRET_KEY = "M2I0ZTU2Yjc4OWFiY2RlZjAxMjM0NTY3ODkwYWJjZGVmMDEyMzQ1Njc4OTBhYmNkZWYwMTIzNDU2Nzg5MGFiY2RlZg==";

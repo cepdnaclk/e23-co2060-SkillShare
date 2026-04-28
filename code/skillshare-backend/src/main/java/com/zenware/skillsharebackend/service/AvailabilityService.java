@@ -72,4 +72,16 @@ public class AvailabilityService {
         // Just ask the repository for the unbooked slots!
         return availabilityRepository.findByUserIdAndIsBookedFalse(mentorId);
     }
+
+    public List<Availability> getMyAvailabilities() {
+        // 1. Get the email from the current JWT token
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        // 2. Find the user in the database
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Authenticated user not found!"));
+
+        // 3. Return only their slots
+        return availabilityRepository.findByUserId(currentUser.getId());
+    }
 }
