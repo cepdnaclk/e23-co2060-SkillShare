@@ -36,4 +36,9 @@ public class AvailabilityController {
     public ResponseEntity<List<Availability>> getMentorSlots(@PathVariable UUID mentorId) {
         return ResponseEntity.ok(availabilityService.getMentorFreeSlots(mentorId));
     }
+
+    @GetMapping("/my-slots")
+    public ResponseEntity<List<Availability>> getMyAvailabilities() {
+        return ResponseEntity.ok(availabilityService.getMyAvailabilities());
+    }
 }
