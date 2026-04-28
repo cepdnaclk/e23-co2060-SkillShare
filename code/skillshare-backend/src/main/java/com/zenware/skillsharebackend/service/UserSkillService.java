@@ -1,5 +1,6 @@
 package com.zenware.skillsharebackend.service;
 
+import com.zenware.skillsharebackend.dto.UserSearchResponse;
 import com.zenware.skillsharebackend.dto.UserSkillRequest;
 import com.zenware.skillsharebackend.entity.Skill;
 import com.zenware.skillsharebackend.entity.User;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -122,5 +124,24 @@ public class UserSkillService {
     public List<UserSkill> findMentorsBySkill(UUID skillId) {
         // We only want users who are teaching ("TEACH") this skill
         return userSkillRepository.findByIdSkillIdAndIdSkillType(skillId, "TEACH");
+    }
+
+
+    // --- Auto-Suggestion Logic ---
+    public List<UserSearchResponse> searchUserProfiles(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            return List.of();
+        }
+
+        // 1. Fetch the UserSkills using the magic method
+        return userSkillRepository.findByUserFullNameContainingIgnoreCase(name.trim())
+                .stream()
+                // 2. Extract the User from the UserSkill
+                .map(UserSkill::getUser)
+                // 3. Keep only the unique users
+                .distinct()
+                .limit(10)
+                .map(user -> new UserSearchResponse(user.getId(), user.getFullName()))
+                .collect(Collectors.toList());
     }
 }

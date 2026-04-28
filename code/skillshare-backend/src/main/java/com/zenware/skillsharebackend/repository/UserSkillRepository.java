@@ -21,4 +21,8 @@ public interface UserSkillRepository extends JpaRepository<UserSkill, UserSkillI
     // LOGIC: Finds all users who are tagged as "TEACH" for a specific skill ID.
     // This is how the Learner finds a list of Mentors!
     List<UserSkill> findByIdSkillIdAndIdSkillType(UUID skillId, String skillType);
+
+    // Auto-Suggest Profile Discovery (Magic Method) ---
+    // LOGIC: Searches the UserSkill table for users matching the name.
+    List<UserSkill> findByUserFullNameContainingIgnoreCase(String fullName);
 }
