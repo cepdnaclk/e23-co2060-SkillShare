@@ -1,5 +1,6 @@
 package com.zenware.skillsharebackend.controller;
 
+import com.zenware.skillsharebackend.dto.UserSearchResponse;
 import com.zenware.skillsharebackend.dto.UserSkillRequest;
 import com.zenware.skillsharebackend.entity.UserSkill;
 import com.zenware.skillsharebackend.service.UserSkillService;
@@ -55,5 +56,12 @@ public class UserSkillController {
     @GetMapping("/{userId}/learn")
     public ResponseEntity<List<UserSkill>> getLearningSkills(@PathVariable UUID userId) {
         return ResponseEntity.ok(userSkillService.getUserLearningSkills(userId));
+    }
+
+    // --- Auto-Suggest Profile Search Endpoint ---
+    // Example Request from React: GET /api/user-skills/search-profiles?name=John
+    @GetMapping("/search-profiles")
+    public ResponseEntity<List<UserSearchResponse>> searchProfiles(@RequestParam("name") String name) {
+        return ResponseEntity.ok(userSkillService.searchUserProfiles(name));
     }
 }
