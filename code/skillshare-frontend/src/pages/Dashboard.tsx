@@ -28,7 +28,15 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user?.id) return;
+    /**console.log("Dashboard useEffect running");
+     console.log("Current user:", user);
+     console.log("Current user id:", user?.id);*/
+
+    if (!user?.id) {
+      setLoading(false)
+      return;
+    }
+
     const uid = user.id;
     setLoading(true);
     Promise.all([
@@ -48,7 +56,7 @@ const Dashboard = () => {
 
   const upcomingLearner = learnerSessions.filter(s => ["PENDING", "ACCEPTED"].includes(s.status));
   const upcomingMentor = mentorSessions.filter(s => s.status === "PENDING");
-  const teachSkills = skills.filter(s => s.id.skillType === "TEACH");
+  const teachSkills = skills.filter(s => s.id?.skillType === "TEACH");
 
   const stats = [
     { icon: BookOpen, label: "Booked Sessions", value: upcomingLearner.length, color: "text-primary", bg: "bg-primary/10" },
@@ -169,7 +177,7 @@ const Dashboard = () => {
                 <div className="flex flex-wrap gap-2">
                   {teachSkills.map(us => (
                       <Badge key={us.id.skillId + us.id.skillType} className="px-3 py-1 bg-primary/10 text-primary border border-primary/20">
-                        {us.skill.name}
+                        {us.skill?.name?? "Unnamed Skill"}
                       </Badge>
                   ))}
                 </div>
