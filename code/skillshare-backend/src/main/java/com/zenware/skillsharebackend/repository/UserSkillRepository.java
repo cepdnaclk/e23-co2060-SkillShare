@@ -25,4 +25,7 @@ public interface UserSkillRepository extends JpaRepository<UserSkill, UserSkillI
     // Auto-Suggest Profile Discovery (Magic Method) ---
     // LOGIC: Searches the UserSkill table for users matching the name.
     List<UserSkill> findByUserFullNameContainingIgnoreCase(String fullName);
+
+    // Counts how many skills the user is offering to teach
+    long countByUserIdAndIdSkillType(UUID userId, String skillType);
 }

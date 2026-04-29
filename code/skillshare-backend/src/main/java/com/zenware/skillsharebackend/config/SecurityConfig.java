@@ -66,7 +66,8 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:3000",
                 "http://localhost:5173",
-                "http://localhost:4200"
+                "http://localhost:4200",
+                "http://10.30.6.151:5173"
         ));
 
         // Allow all standard HTTP methods
