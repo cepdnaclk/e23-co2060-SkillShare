@@ -16,14 +16,14 @@ public class NotificationController {
 
     private final NotificationService notificationService;
 
-    // 🛡️ SECURITY UPGRADE: URL changed from /{userId} to /my-inbox
+    // SECURITY UPGRADE: URL changed from /{userId} to /my-inbox
     @GetMapping("/my-inbox")
     public ResponseEntity<List<Notification>> getUserInbox() {
         // The token automatically tells the service whose inbox to fetch!
         return ResponseEntity.ok(notificationService.getMyNotifications());
     }
 
-    // 🛡️ SECURITY UPGRADE: URL changed from /{userId}/unread-count to /unread-count
+    // SECURITY UPGRADE: URL changed from /{userId}/unread-count to /unread-count
     @GetMapping("/unread-count")
     public ResponseEntity<Long> getUnreadCount() {
         return ResponseEntity.ok(notificationService.getMyUnreadCount());
