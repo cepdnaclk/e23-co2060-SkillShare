@@ -71,13 +71,13 @@ async function apiFetch<T>(
 // ============================================================
 export const authApi = {
     register: (fullName: string, email: string, password: string) =>
-        apiFetch<{ token: string }>("/api/auth/register", {
+        apiFetch<AuthResponse>("/api/auth/register", {
             method: "POST",
             body: JSON.stringify({ fullName, email, password }),
         }, true),
 
     login: (email: string, password: string) =>
-        apiFetch<{ token: string }>("/api/auth/login", {
+        apiFetch<AuthResponse>("/api/auth/login", {
             method: "POST",
             body: JSON.stringify({ email, password }),
         }, true),
@@ -217,6 +217,11 @@ export interface User {
     role: string;
     isActive: boolean;
     createdAt: string;
+}
+
+export interface AuthResponse {
+    token: string;
+    user: User;
 }
 
 export interface Skill {
