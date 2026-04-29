@@ -1,337 +1,230 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Clock,
-  Users,
-  Sparkles,
-  ArrowRight,
-  Calendar,
-  TrendingUp,
+  Clock, Sparkles, ArrowRight, Calendar, TrendingUp,
+  BookOpen, Coins, Star, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import { sessionsApi, feedbackApi, userSkillsApi, type Session, type Feedback, type UserSkill, type ApiError } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { SkeletonStats } from "@/components/SkeletonCard";
+import ErrorBanner from "@/components/ErrorBanner";
 
-interface TimeSlot {
-  day: string;
-  startHour: number;
-  endHour: number;
-}
-
-interface DraftProfile {
-  name?: string;
-  university?: string;
-  major?: string;
-  skills?: string[];
-  timeSlots?: TimeSlot[];
-}
-
-const API_BASE_URL = "http://localhost:8080";
+const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const [username, setUsername] = useState("");
-  const [skills, setSkills] = useState<string[]>([]);
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
-  const [matchCount, setMatchCount] = useState(0);
-  const [viewCount, setViewCount] = useState(0);
+  const [learnerSessions, setLearnerSessions] = useState<Session[]>([]);
+  const [mentorSessions, setMentorSessions] = useState<Session[]>([]);
+  const [feedback, setFeedback] = useState<Feedback[]>([]);
+  const [skills, setSkills] = useState<UserSkill[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const getDashboardData = async () => {
-      try {
-        const userId = localStorage.getItem("userId");
-        const draftProfileRaw = localStorage.getItem("userProfile");
+    if (!user?.id) return;
+    const uid = user.id;
+    setLoading(true);
+    Promise.all([
+      sessionsApi.getLearnerSessions(uid).catch(() => [] as Session[]),
+      sessionsApi.getMentorSessions(uid).catch(() => [] as Session[]),
+      feedbackApi.getForUser(uid).catch(() => [] as Feedback[]),
+      userSkillsApi.getByUser(uid).catch(() => [] as UserSkill[]),
+    ]).then(([ls, ms, fb, sk]) => {
+      setLearnerSessions(ls);
+      setMentorSessions(ms);
+      setFeedback(fb);
+      setSkills(sk);
+    }).catch((err: ApiError) => {
+      setError(err.message ?? "Failed to load dashboard data.");
+    }).finally(() => setLoading(false));
+  }, [user?.id]);
 
-        let draftProfile: DraftProfile | null = null;
-        if (draftProfileRaw) {
-          try {
-            draftProfile = JSON.parse(draftProfileRaw);
-          } catch (error) {
-            console.error("Failed to parse local userProfile:", error);
-          }
-        }
+  const upcomingLearner = learnerSessions.filter(s => ["PENDING", "ACCEPTED"].includes(s.status));
+  const upcomingMentor = mentorSessions.filter(s => s.status === "PENDING");
+  const teachSkills = skills.filter(s => s.id.skillType === "TEACH");
 
-        // Fallbacks from local draft/profile
-        if (draftProfile?.name) {
-          setUsername(draftProfile.name);
-        }
+  const stats = [
+    { icon: BookOpen, label: "Booked Sessions", value: upcomingLearner.length, color: "text-primary", bg: "bg-primary/10" },
+    { icon: Zap, label: "Pending Requests", value: upcomingMentor.length, color: "text-yellow-400", bg: "bg-yellow-400/10" },
+    { icon: Sparkles, label: "Skills Added", value: skills.length, color: "text-accent", bg: "bg-accent/10" },
+    { icon: Star, label: "Feedback Received", value: feedback.length, color: "text-emerald-400", bg: "bg-emerald-400/10" },
+  ];
 
-        if (draftProfile?.skills && Array.isArray(draftProfile.skills)) {
-          setSkills(draftProfile.skills);
-        }
-
-        if (draftProfile?.timeSlots && Array.isArray(draftProfile.timeSlots)) {
-          setTimeSlots(draftProfile.timeSlots);
-        }
-
-        if (!userId) {
-          console.warn("No userId found in localStorage. Showing fallback data only.");
-          setViewCount(0);
-          return;
-        }
-        //username
-        let name = "";
-
-        try {
-          const res = await fetch(`/api/users/${userId}`);
-          if (res.ok) {
-            const data = await res.json();
-            name = data.fullName || data.name || "";
-          }
-        } catch (e) {
-          console.warn("Backend username not ready");
-        }
-
-        if (!name) {
-          const draft = localStorage.getItem("profileDraft");
-          if (draft) {
-            const parsed = JSON.parse(draft);
-            name = parsed.name || "";
-          }
-        }
-
-        setUsername(name);
-
-        // 2) TIME SLOTS
-        // This matches the AvailabilityController route you showed:
-        // GET /api/availability/mentor/{mentorId}
-        try {
-          const availabilityResponse = await fetch(
-              `${API_BASE_URL}/api/availability/mentor/${userId}`
-          );
-
-          if (availabilityResponse.ok) {
-            const availabilityData = await availabilityResponse.json();
-
-            if (Array.isArray(availabilityData)) {
-              const mappedSlots: TimeSlot[] = availabilityData.map((slot: any) => ({
-                day: slot.day ?? "",
-                startHour: slot.startHour ?? 0,
-                endHour: slot.endHour ?? 0,
-              }));
-
-              setTimeSlots(mappedSlots);
-            }
-          } else {
-            console.warn("Availability endpoint returned non-OK status.");
-          }
-        } catch (error) {
-          console.warn("Could not fetch time slots from backend:", error);
-        }
-        // 3) MATCHES
-        // TODO: replace with the real AvailabilityController matches endpoint once backend dev adds it.
-        // Example possibilities:
-        // GET /api/availability/matches/{userId}
-        // GET /api/availability/matches/count/{userId}
-        try {
-          const matchesResponse = await fetch(
-              `${API_BASE_URL}/api/availability/matches/${userId}`
-          );
-
-          if (matchesResponse.ok) {
-            const matchesData = await matchesResponse.json();
-
-            if (Array.isArray(matchesData)) {
-              setMatchCount(matchesData.length);
-            } else if (typeof matchesData?.count === "number") {
-              setMatchCount(matchesData.count);
-            }
-          } else {
-            console.warn("Matches endpoint not available yet.");
-          }
-        } catch (error) {
-          console.warn("Could not fetch matches from backend yet:", error);
-        }
-
-        // 4) SKILLS
-        let fetchedSkills: string[] = [];
-
-        try {
-          const res = await fetch(`/api/user-skills/user/${userId}`);
-          if (res.ok) {
-            const data = await res.json();
-            fetchedSkills = data.map((s: any) => s.name || s.skill?.name || "");
-          }
-        } catch (e) {
-          console.warn("Backend skills not ready");
-        }
-
-        if (fetchedSkills.length === 0) {
-          const draft = localStorage.getItem("profileDraft");
-          if (draft) {
-            const parsed = JSON.parse(draft);
-            fetchedSkills = parsed.skills || [];
-          }
-        }
-
-        setSkills(fetchedSkills);
-
-        // 5) VIEWS
-        // No backend route yet, so keep this at 0 for now.
-        setViewCount(0);
-      } catch (error) {
-        console.error("Error loading dashboard:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getDashboardData();
-  }, []);
-
-  const hasSchedule = timeSlots.length > 0;
-
-  if (loading) {
-    return (
-        <AppLayout>
-          <div className="p-8 text-center">Loading your stats...</div>
-        </AppLayout>
-    );
-  }
+  const firstName = user?.fullName?.split(" ")[0] ?? "there";
 
   return (
       <AppLayout>
         <div className="p-6 md:p-8 max-w-5xl mx-auto pb-24 md:pb-8">
+
           {/* Welcome */}
-          <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-8"
-          >
-            <h1 className="text-2xl md:text-3xl font-heading font-bold mb-1">
-              Welcome back{username ? `, ${username.split(" ")[0]}` : ""}! 👋
-            </h1>
-            <p className="text-muted-foreground">
-              Here's what's happening with your skill matching
-            </p>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-heading font-bold mb-1">
+                  Welcome back, {firstName}! 👋
+                </h1>
+                <p className="text-muted-foreground text-sm">Here's your skill-sharing activity at a glance.</p>
+              </div>
+              {/* Credits chip */}
+              <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border">
+                <Coins className="w-4 h-4 text-yellow-400" />
+                <span className="font-heading font-semibold text-sm">{user?.credits ?? 0}</span>
+                <span className="text-muted-foreground text-xs">credits</span>
+              </div>
+            </div>
           </motion.div>
 
-          {/* Quick stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {[
-              {
-                icon: Users,
-                label: "Matches",
-                value: matchCount,
-                color: "bg-primary/10 text-primary",
-              },
-              {
-                icon: Clock,
-                label: "Time Slots",
-                value: timeSlots.length,
-                color: "bg-accent/10 text-accent",
-              },
-              {
-                icon: Sparkles,
-                label: "Skills",
-                value: skills.length,
-                color: "bg-blue-500/10 text-blue-500",
-              },
-              {
-                icon: TrendingUp,
-                label: "Views",
-                value: viewCount,
-                color: "bg-green-500/10 text-green-500",
-              },
-            ].map((stat, i) => (
-                <motion.div
-                    key={stat.label}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="p-4 rounded-xl bg-card border border-border"
-                >
-                  <div
-                      className={`w-10 h-10 rounded-lg ${stat.color} flex items-center justify-center mb-3`}
-                  >
-                    <stat.icon className="w-5 h-5" />
-                  </div>
-                  <p className="text-2xl font-heading font-bold">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
-                </motion.div>
-            ))}
+          <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-6" />
+
+          {/* Stats */}
+          <div className="mb-8">
+            {loading ? (
+                <SkeletonStats />
+            ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {stats.map((stat, i) => (
+                      <motion.div
+                          key={stat.label}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.08 }}
+                          className="p-4 rounded-xl bg-card border border-border glow-border"
+                      >
+                        <div className={`w-10 h-10 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
+                          <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                        </div>
+                        <p className="text-2xl font-heading font-bold">{stat.value}</p>
+                        <p className="text-xs text-muted-foreground">{stat.label}</p>
+                      </motion.div>
+                  ))}
+                </div>
+            )}
           </div>
 
-          {/* Quick actions */}
+          {/* Action Cards */}
           <div className="grid md:grid-cols-2 gap-4 mb-8">
-            {!hasSchedule && (
-                <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="p-6 rounded-2xl bg-primary/5 border border-primary/20"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Calendar className="w-6 h-6 text-primary" />
-                    </div>
-                    <Badge variant="secondary" className="text-xs">
-                      Action needed
-                    </Badge>
-                  </div>
-                  <h3 className="font-heading font-bold text-lg mb-2">
-                    Set Your Schedule
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Add your free time slots to start getting matched with other students.
-                  </p>
-                  <Button onClick={() => navigate("/my-schedule")} className="gap-2">
-                    Add Time Slots <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </motion.div>
-            )}
-
-            <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="p-6 rounded-2xl bg-accent/5 border border-accent/20"
+            {/* Find Mentors */}
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
+                        className="p-6 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 glow-border"
             >
               <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
-                  <Users className="w-6 h-6 text-accent" />
+                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-primary" />
                 </div>
-                <Badge className="bg-accent text-accent-foreground text-xs">
-                  {matchCount} new
-                </Badge>
+                <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">Explore</Badge>
               </div>
-              <h3 className="font-heading font-bold text-lg mb-2">
-                View Your Matches
-              </h3>
+              <h3 className="font-heading font-bold text-lg mb-2">Find Mentors</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                You have {matchCount} students who match your skills and schedule.
+                Search by skill to discover mentors who match what you want to learn.
               </p>
-              <Button
-                  onClick={() => navigate("/search")}
-                  variant="outline"
-                  className="gap-2"
-              >
-                Find Matches <ArrowRight className="w-4 h-4" />
+              <Button onClick={() => navigate("/search")} className="gap-2">
+                Search Skills <ArrowRight className="w-4 h-4" />
+              </Button>
+            </motion.div>
+
+            {/* Pending Mentor Requests */}
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
+                        className="p-6 rounded-2xl bg-gradient-to-br from-yellow-500/10 to-yellow-500/5 border border-yellow-500/20 glow-border"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-yellow-400" />
+                </div>
+                {upcomingMentor.length > 0 && (
+                    <Badge className="bg-yellow-400/20 text-yellow-400 border-yellow-400/30 text-xs">
+                      {upcomingMentor.length} pending
+                    </Badge>
+                )}
+              </div>
+              <h3 className="font-heading font-bold text-lg mb-2">Session Requests</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {upcomingMentor.length > 0
+                    ? `You have ${upcomingMentor.length} session request(s) waiting for your response.`
+                    : "No pending session requests right now."}
+              </p>
+              <Button onClick={() => navigate("/sessions")} variant="outline" className="gap-2">
+                Manage Sessions <ArrowRight className="w-4 h-4" />
               </Button>
             </motion.div>
           </div>
 
-          {/* Your skills */}
-          {skills.length > 0 && (
-              <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="p-6 rounded-2xl bg-card border border-border"
+          {/* Teaching Skills */}
+          {!loading && teachSkills.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+                          className="p-6 rounded-2xl bg-card border border-border"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-heading font-bold">Your Skills</h3>
-                  <Button variant="ghost" size="sm" onClick={() => navigate("/profile/me")}>
-                    Edit
+                  <h3 className="font-heading font-bold">Skills You're Teaching</h3>
+                  <Button variant="ghost" size="sm" onClick={() => navigate("/create-profile")}>
+                    + Add More
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {skills.map((skill) => (
-                      <Badge key={skill} variant="secondary" className="px-3 py-1">
-                        {skill}
+                  {teachSkills.map(us => (
+                      <Badge key={us.id.skillId + us.id.skillType} className="px-3 py-1 bg-primary/10 text-primary border border-primary/20">
+                        {us.skill.name}
                       </Badge>
                   ))}
+                </div>
+              </motion.div>
+          )}
+
+          {/* Upcoming sessions */}
+          {!loading && upcomingLearner.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+                          className="p-6 rounded-2xl bg-card border border-border mt-4"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-heading font-bold flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-primary" /> Your Upcoming Sessions
+                  </h3>
+                  <Button variant="ghost" size="sm" onClick={() => navigate("/sessions")}>View all</Button>
+                </div>
+                <div className="space-y-3">
+                  {upcomingLearner.slice(0, 3).map(s => (
+                      <div key={s.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary">
+                        <div>
+                          <p className="font-medium text-sm">{s.skill.name} with {s.mentor.fullName}</p>
+                          <p className="text-xs text-muted-foreground">{formatDate(s.startTime)}</p>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            s.status === "ACCEPTED" ? "status-accepted" :
+                                s.status === "PENDING" ? "status-pending" : ""
+                        }`}>{s.status}</span>
+                      </div>
+                  ))}
+                </div>
+              </motion.div>
+          )}
+
+          {/* Reputation */}
+          {!loading && user && (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+                          className="p-6 rounded-2xl bg-card border border-border mt-4"
+              >
+                <h3 className="font-heading font-bold flex items-center gap-2 mb-4">
+                  <TrendingUp className="w-4 h-4 text-accent" /> Your Reputation
+                </h3>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="p-3 rounded-xl bg-secondary">
+                    <p className="text-xl font-heading font-bold gradient-text">{user.reputationScore}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Rep Score</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-secondary">
+                    <p className="text-xl font-heading font-bold gradient-text-teal">{user.ratingAvg?.toFixed(1) ?? "0.0"}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Avg Rating</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-secondary">
+                    <p className="text-xl font-heading font-bold text-yellow-400">{user.credits}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Credits</p>
+                  </div>
                 </div>
               </motion.div>
           )}
