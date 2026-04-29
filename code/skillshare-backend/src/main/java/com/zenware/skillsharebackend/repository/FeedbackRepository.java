@@ -17,4 +17,7 @@ public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     List<Feedback> findByReceiverId(UUID receiverId);
 
     long countBySessionId(UUID id);
+
+    // Counts total feedback received as a mentor
+    long countBySessionMentorId(UUID mentorId);
 }

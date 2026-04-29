@@ -24,7 +24,7 @@ public class AvailabilityController {
         return ResponseEntity.ok(availabilityService.addAvailability(request));
     }
 
-    // --- NEW FEATURE: Secure Delete Endpoint ---
+    // --- FEATURE: Secure Delete Endpoint ---
     @DeleteMapping("/{availabilityId}")
     public ResponseEntity<String> deleteAvailability(@PathVariable UUID availabilityId) {
         // LOGIC: No userId needed in the URL. The service extracts it securely from JWT!

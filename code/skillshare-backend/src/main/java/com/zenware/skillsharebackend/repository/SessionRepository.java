@@ -21,4 +21,10 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
     // LOGIC: Finds sessions matching specific statuses where the time has passed!
     // This is the query that powers the Expiration Engine
     List<Session> findByStatusInAndEndTimeBefore(List<SessionStatus> statuses, LocalDateTime endTime);
+
+    // Counts how many sessions are awaiting the mentor's approval
+    long countByMentorIdAndStatus(UUID mentorId, com.zenware.skillsharebackend.entity.SessionStatus status);
+
+    // Counts upcoming sessions for the learner
+    long countByLearnerIdAndStatus(UUID learnerId, com.zenware.skillsharebackend.entity.SessionStatus status);
 }
