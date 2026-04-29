@@ -44,7 +44,15 @@ public class AuthenticationService {
 
         // Generate the token instantly so they don't have to log in immediately after registering
         String jwtToken = jwtService.generateToken(user);
-        return new AuthenticationResponse(jwtToken);
+
+        // Return the token AND the user details!
+        return AuthenticationResponse.builder()
+                .token(jwtToken)
+                .userId(user.getId())
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .build();
     }
 
     // 2. LOG IN EXISTING USER
@@ -66,6 +74,14 @@ public class AuthenticationService {
 
         // Generate their token
         String jwtToken = jwtService.generateToken(user);
-        return new AuthenticationResponse(jwtToken);
+
+        // Return the token AND the user details!
+        return AuthenticationResponse.builder()
+                .token(jwtToken)
+                .userId(user.getId())
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .build();
     }
 }
