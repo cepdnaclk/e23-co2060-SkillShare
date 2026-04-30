@@ -203,10 +203,10 @@ public class SessionService {
             throw new IllegalStateException("Only ACCEPTED sessions can be marked as COMPLETED!");
         }
 
-        // SECURITY GUARD: Only the mentor can mark it complete
+        // SECURITY GUARD: Only the learner can mark it complete
         User authenticatedUser = getAuthenticatedUser();
-        if (!session.getMentor().getId().equals(authenticatedUser.getId())) {
-            throw new IllegalStateException("Security Violation: Only the Mentor can complete the session!");
+        if (!session.getLearner().getId().equals(authenticatedUser.getId())) {
+            throw new IllegalStateException("Security Violation: Only the Learner can complete the session!");
         }
 
         User mentor = session.getMentor();
@@ -235,10 +235,12 @@ public class SessionService {
     @Transactional
     public int expireOverdueSessions() {
         LocalDateTime now = LocalDateTime.now();
-        List<SessionStatus> targetStatuses = Arrays.asList(SessionStatus.PENDING, SessionStatus.ACCEPTED);
-        List<Session> overdueSessions = sessionRepository.findByStatusInAndEndTimeBefore(targetStatuses, now);
 
-        for (Session session : overdueSessions) {
+        // 1. Handle Expired PENDING Sessions (Refund the Learner)
+        List<Session> expiredPending = sessionRepository.findByStatusInAndEndTimeBefore(
+                Arrays.asList(SessionStatus.PENDING), now);
+
+        for (Session session : expiredPending) {
             User learner = session.getLearner();
             learner.setCredits(learner.getCredits() + 10);
             userRepository.save(learner);
@@ -246,9 +248,25 @@ public class SessionService {
             session.setStatus(SessionStatus.EXPIRED);
             sessionRepository.save(session);
 
-            notificationService.sendNotification(learner, "Your session expired. Your 10 credits have been refunded.", NotificationType.SYSTEM_ALERT);
-            notificationService.sendNotification(session.getMentor(), "The session expired. No credits were awarded.", NotificationType.SYSTEM_ALERT);
+            notificationService.sendNotification(learner, "Your session request expired. Your 10 credits have been refunded.", NotificationType.SYSTEM_ALERT);
         }
-        return overdueSessions.size();
+
+        // 2. Handle Forgotten ACCEPTED Sessions (Auto-Pay the Mentor)
+        List<Session> forgottenAccepted = sessionRepository.findByStatusInAndEndTimeBefore(
+                Arrays.asList(SessionStatus.ACCEPTED), now);
+
+        for (Session session : forgottenAccepted) {
+            User mentor = session.getMentor();
+            // The learner forgot to click complete, so we auto-release the escrow to the mentor
+            mentor.setCredits(mentor.getCredits() + 10);
+            userRepository.save(mentor);
+
+            session.setStatus(SessionStatus.COMPLETED); // Auto-completed!
+            sessionRepository.save(session);
+
+            notificationService.sendNotification(mentor, "The session time passed and was auto-completed. You received 10 credits.", NotificationType.SYSTEM_ALERT);
+        }
+
+        return expiredPending.size() + forgottenAccepted.size();
     }
 }
