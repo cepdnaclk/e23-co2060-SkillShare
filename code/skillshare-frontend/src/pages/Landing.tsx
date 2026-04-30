@@ -76,7 +76,11 @@ const Landing = () => {
               <Button size="lg" onClick={() => navigate("/signup")} className="text-base px-8 py-6 rounded-xl gap-2">
                 Get Started <ArrowRight className="w-4 h-4" />
               </Button>
-              <Button size="lg" variant="outline" className="text-base px-8 py-6 rounded-xl">
+              <Button size="lg" variant="outline" className="text-base px-8 py-6 rounded-xl"onClick={() =>
+    document.getElementById("features")?.scrollIntoView({
+      behavior: "smooth",
+    })
+  }>
                 Learn More
               </Button>
             </motion.div>
@@ -88,7 +92,7 @@ const Landing = () => {
       </section>
 
       {/* Features */}
-      <section className="py-24 bg-secondary/30">
+      <section id="features" className="py-24 bg-secondary/30">
         <div className="container mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -210,6 +214,7 @@ const Landing = () => {
                         <div
                           key={i}
                           className={`aspect-square rounded ${
+                          //className={`aspect-square rounded animate-pulse ${
                             [5, 12, 19, 26, 27].includes(i)
                               ? "bg-primary/30"
                               : "bg-secondary/50"
@@ -221,6 +226,19 @@ const Landing = () => {
                 </div>
               </div>
             </motion.div>
+            
+            {/*<motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <img
+                src="/study-group.jpg"
+                alt="Students collaborating"
+                className="w-full rounded-3xl shadow-elevated"
+              />
+            </motion.div>*/}
           </div>
         </div>
       </section>
