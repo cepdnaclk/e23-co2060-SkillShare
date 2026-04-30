@@ -71,13 +71,13 @@ async function apiFetch<T>(
 // ============================================================
 export const authApi = {
     register: (fullName: string, email: string, password: string) =>
-        apiFetch<{ token: string }>("/api/auth/register", {
+        apiFetch<AuthResponse>("/api/auth/register", {
             method: "POST",
             body: JSON.stringify({ fullName, email, password }),
         }, true),
 
     login: (email: string, password: string) =>
-        apiFetch<{ token: string }>("/api/auth/login", {
+        apiFetch<AuthResponse>("/api/auth/login", {
             method: "POST",
             body: JSON.stringify({ email, password }),
         }, true),
@@ -149,6 +149,13 @@ export const availabilityApi = {
         apiFetch<Availability[]>(`/api/availability/mentor/${mentorId}`),
 };
 
+export const myavailabilityApi = {
+
+    getMyAvailabilities: (mentorId: string) =>
+        apiFetch<Availability[]>(`/api/availability/mentor/my-slots`),
+};
+
+
 export const sessionsApi = {
     book: (learnerId: string, skillId: number, availabilityId: number) =>
         apiFetch<Session>("/api/sessions/book", {
@@ -200,16 +207,25 @@ export const notificationsApi = {
 // TypeScript types matching backend entities/DTOs
 // ============================================================
 export interface User {
-    id: string;
+    id: string; //This must be userId
     fullName: string;
     email: string;
     bio?: string;
-    credits: number;
-    reputationScore: number;
-    ratingAvg: number;
+    credits?: number;
+    reputationScore?: number;
+    ratingAvg?: number;
     role: string;
-    isActive: boolean;
-    createdAt: string;
+    isActive?: boolean;
+    createdAt?: string;
+}
+
+
+export interface AuthResponse {
+    token: string;
+    userId: string;
+    fullName: string;
+    email: string;
+    role: string;
 }
 
 export interface Skill {
