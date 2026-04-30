@@ -1,212 +1,213 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Search as SearchIcon, Filter, MapPin, Clock, X } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search as SearchIcon, Filter, X, ChevronRight, BookOpen, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import { publicSkillsApi, userSkillsApi, type Skill, type UserSkill } from "@/lib/api";
+import { SkeletonList } from "@/components/SkeletonCard";
+import ErrorBanner from "@/components/ErrorBanner";
 
-const MOCK_STUDENTS = [
-  {
-    id: "1",
-    name: "Sarah Chen",
-    university: "MIT",
-    major: "Computer Science",
-    avatar: "SC",
-    skills: ["Python", "Machine Learning", "Data Science", "React"],
-    bio: "CS junior passionate about AI and web dev.",
-    commonSlots: 2,
-    location: "Campus Library",
-    shareLocation: true,
-  },
-  {
-    id: "2",
-    name: "James Wilson",
-    university: "Stanford",
-    major: "Design",
-    avatar: "JW",
-    skills: ["Figma", "UI/UX", "React", "JavaScript"],
-    bio: "Design student who loves building interfaces.",
-    commonSlots: 1,
-    location: "Design Studio",
-    shareLocation: true,
-  },
-  {
-    id: "3",
-    name: "Aisha Patel",
-    university: "MIT",
-    major: "Mathematics",
-    avatar: "AP",
-    skills: ["Python", "Statistics", "Data Science", "R"],
-    bio: "Math enthusiast exploring data science.",
-    commonSlots: 3,
-    shareLocation: false,
-  },
-  {
-    id: "4",
-    name: "Marcus Lee",
-    university: "Stanford",
-    major: "Engineering",
-    avatar: "ML",
-    skills: ["JavaScript", "React", "Node.js", "TypeScript"],
-    bio: "Full-stack developer and open source contributor.",
-    commonSlots: 2,
-    location: "Engineering Lab",
-    shareLocation: true,
-  },
-];
-
-const ALL_SKILLS = Array.from(new Set(MOCK_STUDENTS.flatMap((s) => s.skills)));
+// Debounce timer
+let searchTimer: ReturnType<typeof setTimeout>;
 
 const Search = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [matchedSkills, setMatchedSkills] = useState<Skill[]>([]);
+  const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
+  const [mentors, setMentors] = useState<UserSkill[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [loadingSkills, setLoadingSkills] = useState(false);
+  const [loadingMentors, setLoadingMentors] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredStudents = MOCK_STUDENTS.filter((student) => {
-    const matchesQuery =
-      !query ||
-      student.name.toLowerCase().includes(query.toLowerCase()) ||
-      student.skills.some((s) => s.toLowerCase().includes(query.toLowerCase()));
-    const matchesSkills =
-      selectedSkills.length === 0 ||
-      selectedSkills.some((skill) => student.skills.includes(skill));
-    return matchesQuery && matchesSkills;
-  });
+  // Search skills by query (debounced)
+  const handleQueryChange = useCallback((q: string) => {
+    setQuery(q);
+    clearTimeout(searchTimer);
+    if (!q.trim()) { setMatchedSkills([]); return; }
+    searchTimer = setTimeout(async () => {
+      setLoadingSkills(true);
+      try {
+        const results = await publicSkillsApi.search(q);
+        setMatchedSkills(results);
+      } catch {
+        setMatchedSkills([]);
+      } finally { setLoadingSkills(false); }
+    }, 350);
+  }, []);
 
-  const toggleSkill = (skill: string) => {
-    setSelectedSkills((prev) =>
-      prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]
-    );
+  // When a skill is selected, fetch mentors for it
+  const selectSkill = useCallback(async (skill: Skill) => {
+    setSelectedSkill(skill);
+    setMatchedSkills([]);
+    setQuery(skill.name);
+    setLoadingMentors(true);
+    setError(null);
+    try {
+      const result = await userSkillsApi.getMentorsBySkill(String(skill.id));
+      setMentors(result);
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      setError(e.message ?? "Failed to load mentors.");
+      setMentors([]);
+    } finally { setLoadingMentors(false); }
+  }, []);
+
+  const clearSearch = () => {
+    setQuery(""); setMatchedSkills([]); setSelectedSkill(null); setMentors([]); setError(null);
   };
+
+  const getInitials = (name: string) =>
+    name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
   return (
     <AppLayout>
       <div className="p-6 md:p-8 max-w-4xl mx-auto pb-24 md:pb-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl md:text-3xl font-heading font-bold mb-1">Find Students</h1>
-          <p className="text-muted-foreground mb-6">Search by name or skill</p>
+          <h1 className="text-2xl md:text-3xl font-heading font-bold mb-1">Find a Mentor</h1>
+          <p className="text-muted-foreground text-sm mb-6">Search by skill to discover mentors who can teach you.</p>
         </motion.div>
 
         {/* Search bar */}
-        <div className="flex gap-2 mb-4">
-          <div className="relative flex-1">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search students or skills..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="pl-10"
-            />
+        <div className="relative mb-4">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                id="skill-search-input"
+                placeholder="Search for a skill (e.g. Python, React, UI/UX)…"
+                value={query}
+                onChange={(e) => handleQueryChange(e.target.value)}
+                className="pl-10 pr-10 bg-secondary border-border h-11"
+              />
+              {query && (
+                <button onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <Button
+              variant={showFilters ? "default" : "outline"}
+              size="icon"
+              className="h-11 w-11"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="w-4 h-4" />
+            </Button>
           </div>
-          <Button
-            variant={showFilters ? "default" : "outline"}
-            size="icon"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="w-4 h-4" />
-          </Button>
+
+          {/* Skill suggestion dropdown */}
+          <AnimatePresence>
+            {(matchedSkills.length > 0 || loadingSkills) && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                className="absolute top-full mt-1 left-0 right-12 z-50 bg-card border border-border rounded-xl shadow-elevated overflow-hidden"
+              >
+                {loadingSkills ? (
+                  <div className="px-4 py-3 text-sm text-muted-foreground">Searching skills…</div>
+                ) : (
+                  matchedSkills.slice(0, 8).map(skill => (
+                    <button
+                      key={skill.id}
+                      onClick={() => selectSkill(skill)}
+                      className="w-full text-left px-4 py-3 text-sm hover:bg-secondary transition-colors flex items-center justify-between group"
+                    >
+                      <div>
+                        <span className="font-medium">{skill.name}</span>
+                        {skill.category && (
+                          <span className="ml-2 text-xs text-muted-foreground">{skill.category}</span>
+                        )}
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </button>
+                  ))
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Filters */}
-        {showFilters && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            className="mb-6 p-4 rounded-xl bg-secondary"
-          >
-            <p className="text-xs font-medium text-muted-foreground mb-2">Filter by skill:</p>
-            <div className="flex flex-wrap gap-1.5">
-              {ALL_SKILLS.map((skill) => (
-                <button
-                  key={skill}
-                  onClick={() => toggleSkill(skill)}
-                  className={`px-3 py-1 rounded-full text-xs transition-colors ${
-                    selectedSkills.includes(skill)
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card border border-border text-muted-foreground hover:border-primary"
-                  }`}
-                >
-                  {skill}
-                </button>
-              ))}
-            </div>
-            {selectedSkills.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mt-2 text-xs"
-                onClick={() => setSelectedSkills([])}
-              >
-                <X className="w-3 h-3 mr-1" /> Clear filters
-              </Button>
-            )}
-          </motion.div>
-        )}
+        {/* Selected skill header */}
+        <AnimatePresence>
+          {selectedSkill && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Showing mentors for:</span>
+                <Badge className="bg-primary/15 text-primary border-primary/20 gap-1">
+                  <BookOpen className="w-3 h-3" /> {selectedSkill.name}
+                  <button onClick={clearSearch}><X className="w-3 h-3 ml-1" /></button>
+                </Badge>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-4" />
 
         {/* Results */}
-        <div className="space-y-4">
-          {filteredStudents.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <SearchIcon className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p>No students found</p>
-            </div>
-          ) : (
-            filteredStudents.map((student, i) => (
-              <motion.div
-                key={student.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                onClick={() => navigate(`/profile/${student.id}`)}
-                className="p-5 rounded-2xl bg-card border border-border shadow-card hover:shadow-elevated transition-shadow cursor-pointer"
-              >
-                <div className="flex items-start gap-4">
+        {loadingMentors ? (
+          <SkeletonList count={4} />
+        ) : selectedSkill && mentors.length === 0 && !loadingMentors ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16 text-muted-foreground">
+            <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-20" />
+            <p className="font-medium">No mentors found for "{selectedSkill.name}"</p>
+            <p className="text-sm mt-1">Try a different skill or check back later.</p>
+          </motion.div>
+        ) : !selectedSkill && !query ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16 text-muted-foreground">
+            <SearchIcon className="w-12 h-12 mx-auto mb-4 opacity-20" />
+            <p className="font-medium">Search for a skill to find mentors</p>
+            <p className="text-sm mt-1">Type a skill name above and select from the suggestions.</p>
+          </motion.div>
+        ) : (
+          <div className="space-y-3">
+            {mentors.map((us, i) => {
+              const u = us.user;
+              const initials = getInitials(u.fullName);
+              return (
+                <motion.div
+                  key={`${u.id}-${us.id.skillType}`}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  onClick={() => navigate(`/profile/${u.id}`)}
+                  className="p-5 rounded-2xl bg-card border border-border glow-border cursor-pointer flex items-start gap-4"
+                >
+                  {/* Avatar */}
                   <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-heading font-bold text-sm flex-shrink-0">
-                    {student.avatar}
+                    {initials}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-heading font-bold">{student.name}</h3>
-                      <span className="text-xs text-muted-foreground">{student.university}</span>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <h3 className="font-heading font-semibold">{u.fullName}</h3>
+                      <div className="flex items-center gap-1 text-yellow-400">
+                        <Star className="w-3.5 h-3.5 fill-yellow-400" />
+                        <span className="text-xs font-medium">{u.ratingAvg?.toFixed(1) ?? "New"}</span>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-3">{student.major}</p>
-                    <div className="flex flex-wrap gap-1.5 mb-3">
-                      {student.skills.slice(0, 4).map((skill) => (
-                        <Badge
-                          key={skill}
-                          variant={selectedSkills.includes(skill) ? "default" : "secondary"}
-                          className="text-xs"
-                        >
-                          {skill}
-                        </Badge>
-                      ))}
-                      {student.skills.length > 4 && (
-                        <span className="text-xs text-muted-foreground">
-                          +{student.skills.length - 4} more
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground mb-2">{u.email}</p>
+                    {u.bio && <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{u.bio}</p>}
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {student.commonSlots} common slots
+                        <Star className="w-3 h-3" /> Rep: {u.reputationScore}
                       </span>
-                      {student.shareLocation && student.location && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-accent" />
-                          {student.location}
-                        </span>
-                      )}
+                      <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">
+                        Teaches {selectedSkill?.name}
+                      </Badge>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))
-          )}
-        </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </AppLayout>
   );
