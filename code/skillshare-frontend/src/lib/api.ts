@@ -156,6 +156,13 @@ export const myavailabilityApi = {
 };
     */
 
+export const myavailabilityApi = {
+
+    getMyAvailabilities: (mentorId: string) =>
+        apiFetch<Availability[]>(`/api/availability/mentor/my-slots`),
+};
+
+
 export const sessionsApi = {
     book: (learnerId: string, skillId: number, availabilityId: number) =>
         apiFetch<Session>("/api/sessions/book", {
@@ -207,16 +214,25 @@ export const notificationsApi = {
 // TypeScript types matching backend entities/DTOs
 // ============================================================
 export interface User {
-    id: string;
+    id: string; //This must be userId
     fullName: string;
     email: string;
     bio?: string;
-    credits: number;
-    reputationScore: number;
-    ratingAvg: number;
+    credits?: number;
+    reputationScore?: number;
+    ratingAvg?: number;
     role: string;
-    isActive: boolean;
-    createdAt: string;
+    isActive?: boolean;
+    createdAt?: string;
+}
+
+
+export interface AuthResponse {
+    token: string;
+    userId: string;
+    fullName: string;
+    email: string;
+    role: string;
 }
 
 export interface AuthResponse {

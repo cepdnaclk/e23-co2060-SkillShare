@@ -75,13 +75,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setError(null);
 
         try {
-            const { token: jwt, user } = await authApi.login(email, password);
+            const response = await authApi.login(email, password);
 
+            const jwt = response.token;
+
+            /**const user: User = {
+             id: response.userId,
+             fullName: response.fullName,
+             email: response.email,
+             role: response.role,
+             credits: 0,
+             reputationScore: 0,
+             ratingAvg: 0,
+             isActive: true,
+             createdAt: new Date().toISOString(),
+             };*/
+            const fullUser = await usersApi.getById(response.userId);
             setToken(jwt);
             setTokenState(jwt);
 
-            setUser(user);
-            setStoredUser(user);
+            setUser(fullUser);
+            setStoredUser(fullUser);
         } catch (err) {
             const apiErr = err as ApiError;
             setError(apiErr.message ?? "Login failed. Please try again.");
@@ -96,13 +110,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setError(null);
 
         try {
-            const { token: jwt, user } = await authApi.register(fullName, email, password);
+            const response = await authApi.register(fullName, email, password);
+
+            const jwt = response.token;
+
+            /**const user: User = {
+             id: response.userId,
+             fullName: response.fullName,
+             email: response.email,
+             role: response.role,
+             credits: 100, // backend sets this initially
+             reputationScore: 0,
+             ratingAvg: 0,
+             isActive: true,
+             createdAt: new Date().toISOString(),
+             };*/
+            const fullUser = await usersApi.getById(response.userId);
 
             setToken(jwt);
             setTokenState(jwt);
 
-            setUser(user);
-            setStoredUser(user);
+            setUser(fullUser);
+            setStoredUser(fullUser);
+
         } catch (err) {
             const apiErr = err as ApiError;
             setError(apiErr.message ?? "Registration failed. Please try again.");
