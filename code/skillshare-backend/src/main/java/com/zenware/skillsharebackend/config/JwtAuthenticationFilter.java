@@ -31,6 +31,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
+        // If the user is trying to log in or register, completely skip the JWT check!
+        if (request.getServletPath().contains("/api/auth")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // 1. Extract the Authorization header from the incoming request
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
