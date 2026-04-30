@@ -1,211 +1,254 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, MapPin, Clock, MessageCircle, Calendar } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Star, BookOpen, Coins, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import {
+  usersApi, userSkillsApi, availabilityApi, sessionsApi,
+  type User, type UserSkill, type Availability, type ApiError
+} from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import SkeletonCard from "@/components/SkeletonCard";
+import ErrorBanner from "@/components/ErrorBanner";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 
-const MOCK_STUDENTS: Record<string, {
-  name: string;
-  university: string;
-  major: string;
-  avatar: string;
-  skills: string[];
-  bio: string;
-  location?: string;
-  shareLocation: boolean;
-  timeSlots: { day: string; startHour: number; endHour: number }[];
-}> = {
-  "1": {
-    name: "Sarah Chen",
-    university: "MIT",
-    major: "Computer Science",
-    avatar: "SC",
-    skills: ["Python", "Machine Learning", "Data Science", "React", "TensorFlow"],
-    bio: "CS junior passionate about AI and web development. Currently working on a machine learning project for campus sustainability. Love helping others learn to code!",
-    location: "Campus Library, Room 204",
-    shareLocation: true,
-    timeSlots: [
-      { day: "Monday", startHour: 10, endHour: 12 },
-      { day: "Wednesday", startHour: 14, endHour: 16 },
-      { day: "Friday", startHour: 9, endHour: 11 },
-    ],
-  },
-  "2": {
-    name: "James Wilson",
-    university: "Stanford",
-    major: "Design",
-    avatar: "JW",
-    skills: ["Figma", "UI/UX", "React", "JavaScript", "Adobe XD", "Prototyping"],
-    bio: "Design student who loves building beautiful interfaces. Previously interned at a design agency. Happy to help with UI reviews and design feedback.",
-    location: "Design Studio, Building C",
-    shareLocation: true,
-    timeSlots: [
-      { day: "Monday", startHour: 9, endHour: 11 },
-      { day: "Tuesday", startHour: 13, endHour: 15 },
-    ],
-  },
-  "3": {
-    name: "Aisha Patel",
-    university: "MIT",
-    major: "Mathematics",
-    avatar: "AP",
-    skills: ["Python", "Statistics", "Data Science", "R", "Calculus", "Linear Algebra"],
-    bio: "Math enthusiast exploring data science applications. I can help with statistics, calculus, and data analysis.",
-    shareLocation: false,
-    timeSlots: [
-      { day: "Monday", startHour: 11, endHour: 13 },
-      { day: "Wednesday", startHour: 14, endHour: 17 },
-    ],
-  },
-  "4": {
-    name: "Marcus Lee",
-    university: "Stanford",
-    major: "Engineering",
-    avatar: "ML",
-    skills: ["JavaScript", "React", "Node.js", "TypeScript", "MongoDB", "Express"],
-    bio: "Full-stack developer and open source contributor. Love building web apps and teaching others about modern web development.",
-    location: "Engineering Lab 3B",
-    shareLocation: true,
-    timeSlots: [
-      { day: "Tuesday", startHour: 10, endHour: 12 },
-      { day: "Wednesday", startHour: 15, endHour: 17 },
-    ],
-  },
-};
-
-const formatHour = (h: number) => {
-  const period = h >= 12 ? "PM" : "AM";
-  const hour = h > 12 ? h - 12 : h === 0 ? 12 : h;
-  return `${hour}:00 ${period}`;
-};
+const fmt = (iso: string) =>
+  new Date(iso).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
 const ViewProfile = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { id } = useParams();
-  const student = id ? MOCK_STUDENTS[id] : null;
+  const { user: me } = useAuth();
 
-  if (!student) {
+  const [mentor, setMentor] = useState<User | null>(null);
+  const [skills, setSkills] = useState<UserSkill[]>([]);
+  const [slots, setSlots] = useState<Availability[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Booking dialog
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<Availability | null>(null);
+  const [selectedSkill, setSelectedSkill] = useState<UserSkill | null>(null);
+  const [booking, setBooking] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    Promise.all([
+      usersApi.getById(id),
+      userSkillsApi.getTeachingByUser(id).catch(() => [] as UserSkill[]),
+      availabilityApi.getMentorSlots(id).catch(() => [] as Availability[]),
+    ]).then(([u, sk, av]) => {
+      setMentor(u);
+      setSkills(sk);
+      setSlots(av.filter(a => !a.isBooked));
+    }).catch((err: ApiError) => {
+      setError(err.message ?? "Could not load profile.");
+    }).finally(() => setLoading(false));
+  }, [id]);
+
+  const handleBook = async () => {
+    if (!selectedSlot || !selectedSkill || !me?.id) return;
+    setBooking(true);
+    try {
+      await sessionsApi.book(me.id, selectedSkill.skill.id, selectedSlot.id);
+      toast.success("Session booked! Waiting for mentor confirmation.");
+      setBookingOpen(false);
+      // Refresh slots
+      if (id) availabilityApi.getMentorSlots(id).then(av => setSlots(av.filter(a => !a.isBooked)));
+    } catch (err: unknown) {
+      const e = err as ApiError;
+      toast.error(e.message ?? "Booking failed. Please try again.");
+    } finally { setBooking(false); }
+  };
+
+  const getInitials = (name: string) =>
+    name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+
+  if (loading) {
     return (
       <AppLayout>
-        <div className="p-6 md:p-8 text-center">
-          <p className="text-muted-foreground">Student not found</p>
-          <Button onClick={() => navigate("/search")} className="mt-4">
-            Back to Search
-          </Button>
+        <div className="p-6 md:p-8 max-w-2xl mx-auto">
+          <div className="w-20 h-20 rounded-2xl skeleton-shimmer mx-auto mb-4" />
+          <SkeletonCard lines={3} className="mb-4" />
+          <SkeletonCard lines={4} />
         </div>
       </AppLayout>
     );
   }
 
+  if (!mentor) {
+    return (
+      <AppLayout>
+        <div className="p-6 md:p-8 text-center">
+          <ErrorBanner error={error ?? "User not found"} />
+          <Button onClick={() => navigate("/search")} className="mt-4">Back to Search</Button>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const teachSkills = skills.filter(s => s.id.skillType === "TEACH");
+  const isOwnProfile = me?.id === mentor.id;
+
   return (
     <AppLayout>
       <div className="p-6 md:p-8 max-w-2xl mx-auto pb-24 md:pb-8">
-        {/* Back button */}
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
-        >
+        {/* Back */}
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 text-sm transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
 
-        {/* Profile header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <div className="w-20 h-20 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-heading font-bold text-2xl mx-auto mb-4">
-            {student.avatar}
+        <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-4" />
+
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
+          <div className="w-20 h-20 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-heading font-bold text-2xl mx-auto mb-4 animate-pulse-glow">
+            {getInitials(mentor.fullName)}
           </div>
-          <h1 className="text-2xl font-heading font-bold mb-1">{student.name}</h1>
-          <p className="text-muted-foreground">{student.major} • {student.university}</p>
-        </motion.div>
-
-        {/* Bio */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-6"
-        >
-          <p className="text-muted-foreground">{student.bio}</p>
-        </motion.div>
-
-        {/* Skills */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="mb-6"
-        >
-          <h3 className="text-sm font-medium text-muted-foreground mb-3">Skills</h3>
-          <div className="flex flex-wrap gap-2">
-            {student.skills.map((skill) => (
-              <Badge key={skill} variant="secondary" className="px-3 py-1">
-                {skill}
-              </Badge>
-            ))}
+          <h1 className="text-2xl font-heading font-bold mb-1">{mentor.fullName}</h1>
+          {mentor.bio && <p className="text-muted-foreground text-sm max-w-md mx-auto">{mentor.bio}</p>}
+          {/* Stats row */}
+          <div className="flex items-center justify-center gap-4 mt-4">
+            <span className="flex items-center gap-1 text-sm text-yellow-400">
+              <Star className="w-3.5 h-3.5 fill-yellow-400" /> {mentor.ratingAvg?.toFixed(1)} rating
+            </span>
+            <span className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Coins className="w-3.5 h-3.5 text-yellow-400" /> {mentor.credits} credits
+            </span>
+            <span className="flex items-center gap-1 text-sm text-accent">
+              <ChevronRight className="w-3.5 h-3.5" /> Rep: {mentor.reputationScore}
+            </span>
           </div>
         </motion.div>
 
-        {/* Availability */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-6 p-5 rounded-2xl bg-card border border-border"
-        >
-          <h3 className="flex items-center gap-2 text-sm font-medium mb-4">
-            <Clock className="w-4 h-4 text-primary" /> Available Times
-          </h3>
-          <div className="space-y-2">
-            {student.timeSlots.map((slot, i) => (
-              <div key={i} className="flex items-center gap-3 text-sm">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                <span className="font-medium w-24">{slot.day}</span>
-                <span className="text-muted-foreground">
-                  {formatHour(slot.startHour)} — {formatHour(slot.endHour)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Location */}
-        {student.shareLocation && student.location && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-            className="mb-8 p-5 rounded-2xl bg-accent/5 border border-accent/20"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-accent" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Preferred meeting spot</p>
-                <p className="font-medium">{student.location}</p>
-              </div>
+        {/* Teaching Skills */}
+        {teachSkills.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6">
+            <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5" /> Teaching
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {teachSkills.map(us => (
+                <Badge key={us.id.skillId} className="px-3 py-1.5 bg-primary/10 text-primary border-primary/20">
+                  {us.skill.name}
+                </Badge>
+              ))}
             </div>
           </motion.div>
         )}
 
-        {/* Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="flex gap-3"
+        {/* Available Slots */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          className="mb-6 p-5 rounded-2xl bg-card border border-border"
         >
-          <Button className="flex-1 py-6 gap-2">
-            <MessageCircle className="w-4 h-4" /> Send Message
-          </Button>
-          <Button variant="outline" className="flex-1 py-6 gap-2">
-            <Calendar className="w-4 h-4" /> Schedule Meeting
-          </Button>
+          <h3 className="flex items-center gap-2 text-sm font-medium mb-4">
+            <Clock className="w-4 h-4 text-primary" /> Available Time Slots
+          </h3>
+          {slots.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">No available slots right now.</p>
+          ) : (
+            <div className="space-y-2">
+              {slots.map(slot => (
+                <div key={slot.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors">
+                  <div className="flex items-center gap-3 text-sm">
+                    <Calendar className="w-4 h-4 text-accent" />
+                    <span>{fmt(slot.startTime)}</span>
+                    <span className="text-muted-foreground">→ {fmt(slot.endTime)}</span>
+                  </div>
+                  {!isOwnProfile && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs border-primary/30 text-primary hover:bg-primary/10"
+                      onClick={() => { setSelectedSlot(slot); setBookingOpen(true); }}
+                    >
+                      Book
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </motion.div>
+
+        {/* Action buttons */}
+        {!isOwnProfile && slots.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Button className="w-full h-11 gap-2" onClick={() => setBookingOpen(true)}>
+              <Calendar className="w-4 h-4" /> Book a Session
+            </Button>
+          </motion.div>
+        )}
+
+        {/* Booking Dialog */}
+        <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
+          <DialogContent className="bg-card border-border max-w-md">
+            <DialogHeader>
+              <DialogTitle className="font-heading">Book a Session</DialogTitle>
+              <DialogDescription>Select the skill and a time slot to book with {mentor.fullName}.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 mt-2">
+              {/* Skill selection */}
+              <div>
+                <p className="text-sm font-medium mb-2">Choose a skill</p>
+                <div className="flex flex-wrap gap-2">
+                  {teachSkills.map(us => (
+                    <button
+                      key={us.id.skillId}
+                      onClick={() => setSelectedSkill(us)}
+                      className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${
+                        selectedSkill?.id.skillId === us.id.skillId
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-secondary border-border text-muted-foreground hover:border-primary/40"
+                      }`}
+                    >
+                      {us.skill.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Slot selection */}
+              <div>
+                <p className="text-sm font-medium mb-2">Choose a time slot</p>
+                <div className="space-y-2 max-h-52 overflow-y-auto">
+                  {slots.map(slot => (
+                    <button
+                      key={slot.id}
+                      onClick={() => setSelectedSlot(slot)}
+                      className={`w-full text-left p-3 rounded-xl text-sm border transition-all ${
+                        selectedSlot?.id === slot.id
+                          ? "bg-primary/15 border-primary/40 text-primary"
+                          : "bg-secondary border-border text-muted-foreground hover:border-primary/30"
+                      }`}
+                    >
+                      {fmt(slot.startTime)} → {fmt(slot.endTime)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Button
+                className="w-full h-11 gap-2"
+                disabled={!selectedSkill || !selectedSlot || booking}
+                onClick={handleBook}
+              >
+                {booking ? (
+                  <><span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" /> Booking…</>
+                ) : (
+                  "Confirm Booking"
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );
