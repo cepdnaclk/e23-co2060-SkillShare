@@ -2,40 +2,69 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "@/context/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
+
 import Landing from "./pages/Landing";
 import SignUp from "./pages/SignUp";
 import CreateProfile from "./pages/CreateProfile";
 import Dashboard from "./pages/Dashboard";
 import Search from "./pages/Search";
 import ViewProfile from "./pages/ViewProfile";
-import SetClass from "./pages/SetClass";
 import MySchedule from "./pages/MySchedule";
 import Notifications from "./pages/Notifications";
+import Sessions from "./pages/Sessions";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/create-profile" element={<CreateProfile />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/profile/:id" element={<ViewProfile />} />
-          <Route path="/set-class" element={<SetClass />} />
-          <Route path="/my-schedule" element={<MySchedule />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner richColors position="top-right" />
+        <BrowserRouter>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Landing />} />
+            <Route path="/signup" element={<SignUp />} />
+
+            {/* Protected routes */}
+            <Route path="/create-profile" element={
+              <ProtectedRoute><CreateProfile /></ProtectedRoute>
+            } />
+            <Route path="/dashboard" element={
+              <ProtectedRoute><Dashboard /></ProtectedRoute>
+            } />
+            <Route path="/search" element={
+              <ProtectedRoute><Search /></ProtectedRoute>
+            } />
+            <Route path="/profile/:id" element={
+              <ProtectedRoute><ViewProfile /></ProtectedRoute>
+            } />
+            <Route path="/profile/me" element={
+              <ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>
+            } />
+            <Route path="/my-schedule" element={
+              <ProtectedRoute><MySchedule /></ProtectedRoute>
+            } />
+            <Route path="/notifications" element={
+              <ProtectedRoute><Notifications /></ProtectedRoute>
+            } />
+            <Route path="/sessions" element={
+              <ProtectedRoute><Sessions /></ProtectedRoute>
+            } />
+
+            {/* Catch-all */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
