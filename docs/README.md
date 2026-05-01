@@ -54,7 +54,9 @@ The impact is a more connected university ecosystem where learning is accessible
 
 ## Solution Architecture
 
-High level diagram + description
+<img width="1050" height="809" alt="Screenshot 2026-05-02 000315" src="https://github.com/user-attachments/assets/c61676d3-8b57-4870-82f2-814d144d4b16" />
+
+The platform is engineered to solve a specific campus problem: the "hidden" skills of university students. The architecture transitions users from an inefficient "As-Is" state (relying on WhatsApp, paid materials, or unreliable AI) to a secure, centralized peer-to-peer network. At a high level, the system utilizes JWT authentication for secure access, connecting users through a live auto-suggest search engine (by user or skill) and managing interactions via an automated availability and notification system.
 
 ## Software Designs
 
