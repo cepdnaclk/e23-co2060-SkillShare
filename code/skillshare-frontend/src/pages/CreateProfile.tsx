@@ -1,314 +1,389 @@
-import { useState, KeyboardEvent } from "react";
+import { useState, useCallback, KeyboardEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowLeft, X, Plus, MapPin, Check } from "lucide-react";
+import { ArrowRight, ArrowLeft, X, Plus, Check, Search, BookOpen, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { useNavigate, Link } from "react-router-dom";
+import { publicSkillsApi, userSkillsApi, availabilityApi, type Skill, type ApiError } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import ErrorBanner from "@/components/ErrorBanner";
+import { toast } from "sonner";
 
-const SUGGESTED_SKILLS = [
-  "Python", "JavaScript", "React", "Java", "C++", "Machine Learning",
-  "Data Science", "UI/UX", "Figma", "Statistics", "TypeScript", "Node.js",
-  "Photography", "Writing", "Public Speaking", "Excel", "R", "SQL",
-];
+// ─── Types ───────────────────────────────────────────────────
+interface SkillEntry { name: string; type: "TEACH" | "LEARN"; }
 
-const CreateProfile = () => {
-  const navigate = useNavigate();
-  const [step, setStep] = useState(1);
-  const [skillInput, setSkillInput] = useState("");
-  const [profile, setProfile] = useState({
-    name: "",
-    university: "",
-    major: "",
-    bio: "",
-    skills: [] as string[],
-    shareLocation: false,
-    location: "",
-  });
+// ─── Skill Search with debounce ──────────────────────────────
+let searchTimer: ReturnType<typeof setTimeout>;
+function useSkillSearch() {
+  const [results, setResults] = useState<Skill[]>([]);
+  const [searching, setSearching] = useState(false);
 
-  const addSkill = (skill: string) => {
-    if (skill.trim() && !profile.skills.includes(skill.trim())) {
-      setProfile((prev) => ({ ...prev, skills: [...prev.skills, skill.trim()] }));
+  const search = useCallback((q: string) => {
+    clearTimeout(searchTimer);
+    if (!q.trim()) { setResults([]); return; }
+    searchTimer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await publicSkillsApi.search(q);
+        setResults(res);
+      } catch { setResults([]); }
+      finally { setSearching(false); }
+    }, 300);
+  }, []);
+
+  return { results, searching, search, clearResults: () => setResults([]) };
+}
+
+// ─── Step 1 ──────────────────────────────────────────────────
+const Step1 = ({ profile, setProfile, onNext }: {
+  profile: { university: string; major: string; bio: string };
+  setProfile: (p: typeof profile) => void;
+  onNext: () => void;
+}) => (
+    <motion.div key="step1" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-heading font-bold mb-2">Tell us about yourself</h1>
+        <p className="text-muted-foreground text-sm">This info appears on your public profile.</p>
+      </div>
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <Label>University / Institution</Label>
+          <Input
+              placeholder="e.g. University of Colombo"
+              value={profile.university}
+              onChange={(e) => setProfile({ ...profile, university: e.target.value })}
+              className="bg-secondary border-border h-11"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Faculty / Major</Label>
+          <Input
+              placeholder="e.g. Computer Science"
+              value={profile.major}
+              onChange={(e) => setProfile({ ...profile, major: e.target.value })}
+              className="bg-secondary border-border h-11"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Short Bio <span className="text-muted-foreground">(optional)</span></Label>
+          <Textarea
+              placeholder="Tell others what you're passionate about…"
+              value={profile.bio}
+              onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+              rows={3}
+              className="bg-secondary border-border resize-none"
+          />
+        </div>
+      </div>
+      <Button onClick={onNext} className="w-full h-11 gap-2" disabled={!profile.university}>
+        Continue <ArrowRight className="w-4 h-4" />
+      </Button>
+    </motion.div>
+);
+
+// ─── Step 2 ──────────────────────────────────────────────────
+const Step2 = ({ skills, setSkills, onNext, onBack, isSaving }: {
+  skills: SkillEntry[];
+  setSkills: React.Dispatch<React.SetStateAction<SkillEntry[]>>;
+  onNext: () => void;
+  onBack: () => void;
+  isSaving: boolean;
+}) => {
+  const [query, setQuery] = useState("");
+  const [activeType, setActiveType] = useState<"TEACH" | "LEARN">("TEACH");
+  const { results, searching, search, clearResults } = useSkillSearch();
+
+  const addSkill = (name: string) => {
+    const exists = skills.find(s => s.name.toLowerCase() === name.toLowerCase() && s.type === activeType);
+    if (!exists && name.trim()) {
+      setSkills(prev => [...prev, { name: name.trim(), type: activeType }]);
     }
+    setQuery(""); clearResults();
   };
 
-  const removeSkill = (skill: string) => {
-    setProfile((prev) => ({ ...prev, skills: prev.skills.filter((s) => s !== skill) }));
+  const removeSkill = (name: string, type: string) => {
+    setSkills(prev => prev.filter(s => !(s.name === name && s.type === type)));
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && skillInput.trim()) {
-      e.preventDefault();
-      addSkill(skillInput);
-      setSkillInput("");
-    }
-  };
-
-  const unusedSuggestions = SUGGESTED_SKILLS.filter((s) => !profile.skills.includes(s));
-
-  const handleComplete = () => {
-    // Save to localStorage for now
-    localStorage.setItem("userProfile", JSON.stringify(profile));
-    navigate("/dashboard");
+    if (e.key === "Enter" && query.trim()) { e.preventDefault(); addSkill(query); }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="font-heading font-bold text-xl">
-            Skill<span className="text-primary">Share</span>
-          </Link>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            Step {step} of 3
-          </div>
+      <motion.div key="step2" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-heading font-bold mb-2">Your Skills</h1>
+          <p className="text-muted-foreground text-sm">Add skills you can teach, and skills you want to learn.</p>
         </div>
-      </header>
 
-      {/* Progress */}
-      <div className="w-full h-1 bg-secondary">
-        <motion.div
-          className="h-full bg-primary"
-          initial={{ width: "0%" }}
-          animate={{ width: `${(step / 3) * 100}%` }}
-        />
-      </div>
-
-      <main className="container mx-auto px-6 py-12 max-w-xl">
-        <AnimatePresence mode="wait">
-          {step === 1 && (
-            <motion.div
-              key="step1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-8"
-            >
-              <div>
-                <h1 className="text-3xl font-heading font-bold mb-2">Let's get started</h1>
-                <p className="text-muted-foreground">Tell us about yourself</p>
-              </div>
-
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    placeholder="e.g. Alex Johnson"
-                    value={profile.name}
-                    onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="university">University</Label>
-                  <Input
-                    id="university"
-                    placeholder="e.g. MIT"
-                    value={profile.university}
-                    onChange={(e) => setProfile({ ...profile, university: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="major">Major / Field of Study</Label>
-                  <Input
-                    id="major"
-                    placeholder="e.g. Computer Science"
-                    value={profile.major}
-                    onChange={(e) => setProfile({ ...profile, major: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Short Bio</Label>
-                  <Textarea
-                    id="bio"
-                    placeholder="Tell others a bit about yourself..."
-                    value={profile.bio}
-                    onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                    rows={3}
-                  />
-                </div>
-              </div>
-
-              <Button
-                onClick={() => setStep(2)}
-                className="w-full py-6 gap-2"
-                disabled={!profile.name || !profile.university}
+        {/* Type toggle */}
+        <div className="flex p-1 rounded-xl bg-secondary gap-1">
+          {(["TEACH", "LEARN"] as const).map(t => (
+              <button
+                  key={t}
+                  onClick={() => setActiveType(t)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                      activeType === t ? "bg-card text-foreground shadow" : "text-muted-foreground"
+                  }`}
               >
-                Continue <ArrowRight className="w-4 h-4" />
-              </Button>
-            </motion.div>
-          )}
+                {t === "TEACH" ? "🎓 I can teach" : "📚 I want to learn"}
+              </button>
+          ))}
+        </div>
 
-          {step === 2 && (
-            <motion.div
-              key="step2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-8"
-            >
-              <div>
-                <h1 className="text-3xl font-heading font-bold mb-2">Your Skills</h1>
-                <p className="text-muted-foreground">What can you teach or help others with?</p>
-              </div>
+        {/* Search input */}
+        <div className="relative">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                  placeholder={`Search or type a skill to ${activeType.toLowerCase()}…`}
+                  value={query}
+                  onChange={(e) => { setQuery(e.target.value); search(e.target.value); }}
+                  onKeyDown={handleKeyDown}
+                  className="pl-10 bg-secondary border-border h-11"
+              />
+            </div>
+            <Button size="icon" variant="outline" onClick={() => addSkill(query)} disabled={!query.trim()} className="h-11 w-11">
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
 
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Type a skill and press Enter"
-                    value={skillInput}
-                    onChange={(e) => setSkillInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                  />
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={() => { addSkill(skillInput); setSkillInput(""); }}
-                    disabled={!skillInput.trim()}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                <div className="flex flex-wrap gap-2 min-h-[48px]">
-                  {profile.skills.map((skill) => (
-                    <motion.div
-                      key={skill}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                    >
-                      <Badge className="gap-1 px-3 py-1.5 text-sm cursor-pointer" onClick={() => removeSkill(skill)}>
-                        {skill}
-                        <X className="w-3 h-3" />
-                      </Badge>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {unusedSuggestions.length > 0 && (
-                  <div className="pt-4">
-                    <p className="text-xs text-muted-foreground mb-2">Popular skills:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {unusedSuggestions.slice(0, 12).map((skill) => (
-                        <button
-                          key={skill}
-                          onClick={() => addSkill(skill)}
-                          className="px-3 py-1 rounded-full border border-border text-xs text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-                        >
-                          + {skill}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setStep(1)} className="flex-1 py-6">
-                  <ArrowLeft className="w-4 h-4 mr-2" /> Back
-                </Button>
-                <Button
-                  onClick={() => setStep(3)}
-                  className="flex-1 py-6 gap-2"
-                  disabled={profile.skills.length === 0}
+          {/* Dropdown results */}
+          <AnimatePresence>
+            {(results.length > 0 || searching) && (
+                <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="absolute top-full mt-1 left-0 right-0 z-50 bg-card border border-border rounded-xl shadow-elevated overflow-hidden"
                 >
-                  Continue <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </motion.div>
-          )}
+                  {searching ? (
+                      <div className="px-4 py-3 text-sm text-muted-foreground">Searching…</div>
+                  ) : (
+                      results.slice(0, 6).map(skill => (
+                          <button
+                              key={skill.id}
+                              onClick={() => addSkill(skill.name)}
+                              className="w-full text-left px-4 py-2.5 text-sm hover:bg-secondary transition-colors flex items-center justify-between"
+                          >
+                            <span>{skill.name}</span>
+                            {skill.category && <span className="text-xs text-muted-foreground">{skill.category}</span>}
+                          </button>
+                      ))
+                  )}
+                </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
-          {step === 3 && (
-            <motion.div
-              key="step3"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-8"
-            >
-              <div>
-                <h1 className="text-3xl font-heading font-bold mb-2">Almost done!</h1>
-                <p className="text-muted-foreground">Choose your meeting preferences</p>
-              </div>
-
-              <div className="space-y-6">
-                <div className="flex items-center justify-between p-5 rounded-xl bg-secondary">
-                  <div className="flex items-center gap-3">
-                    <MapPin className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Share Location</p>
-                      <p className="text-xs text-muted-foreground">Let matches see where you'd like to meet</p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={profile.shareLocation}
-                    onCheckedChange={(checked) => setProfile({ ...profile, shareLocation: checked })}
-                  />
-                </div>
-
-                {profile.shareLocation && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
-                    <Label htmlFor="location">Preferred Meeting Spot</Label>
-                    <Input
-                      id="location"
-                      placeholder="e.g. Campus Library, Room 204"
-                      value={profile.location}
-                      onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                      className="mt-2"
-                    />
-                  </motion.div>
-                )}
-
-                {/* Summary */}
-                <div className="p-6 rounded-xl border border-border bg-card">
-                  <h3 className="font-heading font-semibold mb-4">Profile Summary</h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Name</span>
-                      <span className="font-medium">{profile.name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">University</span>
-                      <span className="font-medium">{profile.university}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Major</span>
-                      <span className="font-medium">{profile.major || "Not set"}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground block mb-2">Skills</span>
-                      <div className="flex flex-wrap gap-1">
-                        {profile.skills.map((skill) => (
-                          <Badge key={skill} variant="secondary" className="text-xs">
-                            {skill}
-                          </Badge>
+        {/* Added skills */}
+        {skills.length > 0 && (
+            <div className="space-y-2">
+              {(["TEACH", "LEARN"] as const).map(type => {
+                const group = skills.filter(s => s.type === type);
+                if (!group.length) return null;
+                return (
+                    <div key={type}>
+                      <p className="text-xs text-muted-foreground mb-1.5">{type === "TEACH" ? "Teaching" : "Learning"}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {group.map(s => (
+                            <Badge key={s.name + s.type} className={`gap-1 px-3 py-1 cursor-pointer ${type === "TEACH" ? "bg-primary/15 text-primary hover:bg-primary/25 border-primary/20" : "bg-accent/15 text-accent hover:bg-accent/25 border-accent/20"} border`}
+                                   onClick={() => removeSkill(s.name, s.type)}
+                            >
+                              {s.name} <X className="w-3 h-3" />
+                            </Badge>
                         ))}
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
+                );
+              })}
+            </div>
+        )}
 
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setStep(2)} className="flex-1 py-6">
-                  <ArrowLeft className="w-4 h-4 mr-2" /> Back
-                </Button>
-                <Button onClick={handleComplete} className="flex-1 py-6 gap-2">
-                  Complete Setup <Check className="w-4 h-4" />
-                </Button>
-              </div>
-            </motion.div>
+        {skills.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-30" />
+              Add at least one skill to continue
+            </div>
+        )}
+
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={onBack} className="flex-1 h-11">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back
+          </Button>
+          <Button onClick={onNext} className="flex-1 h-11 gap-2" disabled={skills.length === 0 || isSaving}>
+            {isSaving ? "Saving…" : <>Continue <ArrowRight className="w-4 h-4" /></>}
+          </Button>
+        </div>
+      </motion.div>
+  );
+};
+
+// ─── Step 3 ──────────────────────────────────────────────────
+const Step3 = ({ onBack, onComplete, isSaving }: {
+  onBack: () => void;
+  onComplete: (start: string, end: string) => void;
+  isSaving: boolean;
+}) => {
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+
+  const isValid = startTime && endTime && new Date(startTime) < new Date(endTime);
+
+  return (
+      <motion.div key="step3" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-heading font-bold mb-2">Set your availability</h1>
+          <p className="text-muted-foreground text-sm">Add a free time slot when you're available for skill-sharing sessions.</p>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-card border border-border space-y-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
+            <Clock className="w-4 h-4 text-primary" /> Add your first availability slot
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Start Time</Label>
+              <Input
+                  type="datetime-local"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="bg-secondary border-border h-11"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>End Time</Label>
+              <Input
+                  type="datetime-local"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="bg-secondary border-border h-11"
+              />
+            </div>
+          </div>
+          {startTime && endTime && !isValid && (
+              <p className="text-xs text-destructive">End time must be after start time.</p>
           )}
-        </AnimatePresence>
-      </main>
-    </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          You can skip this step and add more slots later from the Schedule page.
+        </p>
+
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={onBack} className="flex-1 h-11">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back
+          </Button>
+          <Button
+              onClick={() => isValid ? onComplete(startTime, endTime) : onComplete("", "")}
+              className="flex-1 h-11 gap-2"
+              disabled={isSaving}
+          >
+            {isSaving ? "Setting up…" : <><Check className="w-4 h-4" /> {isValid ? "Complete Setup" : "Skip for Now"}</>}
+          </Button>
+        </div>
+      </motion.div>
+  );
+};
+
+// ─── Main ─────────────────────────────────────────────────────
+const CreateProfile = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [step, setStep] = useState(1);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [profileInfo, setProfileInfo] = useState({ university: "", major: "", bio: "" });
+  const [skills, setSkills] = useState<SkillEntry[]>([]);
+
+  const handleSkillsNext = async () => {
+    setIsSaving(true);
+    setError(null);
+    try {
+      await Promise.all(
+          skills.map(s => userSkillsApi.add(s.name, s.type))
+      );
+      setStep(3);
+    } catch (err) {
+      const apiErr = err as ApiError;
+      setError(apiErr.message ?? "Failed to save skills. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleComplete = async (startTime: string, endTime: string) => {
+    setIsSaving(true);
+    try {
+      if (startTime && endTime) {
+        await availabilityApi.add(startTime, endTime);
+      }
+      if (profileInfo.bio && user) {
+        // Best-effort bio update
+        try { await import("@/lib/api").then(m => m.usersApi.updateMyBio(profileInfo.bio)); } catch {}
+      }
+      toast.success("Profile setup complete! Welcome to SkillShare 🎉");
+      navigate("/dashboard");
+    } catch (err) {
+      const apiErr = err as ApiError;
+      setError(apiErr.message ?? "Failed to complete setup.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-card/50 backdrop-blur-sm">
+          <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+            <Link to="/" className="font-heading font-bold text-xl">
+              Skill<span className="gradient-text">Share</span>
+            </Link>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">Step {step} of 3</span>
+              <div className="flex gap-1">
+                {[1, 2, 3].map(s => (
+                    <div key={s} className={`h-1.5 rounded-full transition-all duration-300 ${s <= step ? "bg-primary w-8" : "bg-border w-4"}`} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-6 py-12 max-w-lg">
+          <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-6" />
+          <AnimatePresence mode="wait">
+            {step === 1 && (
+                <Step1
+                    profile={profileInfo}
+                    setProfile={setProfileInfo}
+                    onNext={() => setStep(2)}
+                />
+            )}
+            {step === 2 && (
+                <Step2
+                    skills={skills}
+                    setSkills={setSkills}
+                    onNext={handleSkillsNext}
+                    onBack={() => setStep(1)}
+                    isSaving={isSaving}
+                />
+            )}
+            {step === 3 && (
+                <Step3
+                    onBack={() => setStep(2)}
+                    onComplete={handleComplete}
+                    isSaving={isSaving}
+                />
+            )}
+          </AnimatePresence>
+        </main>
+      </div>
   );
 };
 
