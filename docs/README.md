@@ -73,6 +73,9 @@ Two-Way Feedback: Completed sessions use a dual-feedback submission design to ca
 
 Testing focused heavily on our core custom logic and security. We executed comprehensive unit and integration tests to ensure that our JWT security filters, real-time Notification system, and complex Credit Score economy (ensuring credits are correctly deducted or awarded during bookings) functioned flawlessly under various edge cases.
 
+<img width="762" height="837" alt="Screenshot 2026-05-01 221729" src="https://github.com/user-attachments/assets/2f291361-5384-40e3-83cb-77671e641d42" /> 
+<img width="760" height="486" alt="Screenshot 2026-05-02 002009" src="https://github.com/user-attachments/assets/d2f676b9-d23f-4ddb-b578-1d6be3239b98" />
+
 ## Conclusion
 
 We successfully achieved our MVP goal: providing a functional, trustworthy platform to unlock hidden campus skills.
