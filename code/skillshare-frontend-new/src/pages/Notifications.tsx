@@ -7,6 +7,7 @@ import { notificationsApi, type Notification, type ApiError } from "@/lib/api";
 import { SkeletonList } from "@/components/SkeletonCard";
 import ErrorBanner from "@/components/ErrorBanner";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const typeConfig: Record<string, { bg: string; color: string }> = {
   SESSION_BOOKED:   { bg: "bg-primary/10",  color: "text-primary" },
@@ -30,6 +31,7 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const load = async () => {
     setLoading(true);
@@ -106,7 +108,32 @@ const Notifications = () => {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  onClick={() => !n.isRead && markAsRead(n.id)}
+                  onClick={async () => {
+                    if (!n.isRead) {
+                      await markAsRead(n.id);
+                    }
+                    console.log("notification type:", n.type, "message:", n.message);
+                    const message = n.message.toLowerCase();
+
+                    const isMentorNotification =
+                        message.includes("booked") ||
+                        message.includes("requested") ||
+                        message.includes("wants to learn") ||
+                        message.includes("learn from you") ||
+                        message.includes("your mentoring");
+
+                    const isLearnerNotification =
+                        message.includes("accepted") ||
+                        message.includes("rejected") ||
+                        message.includes("completed") ||
+                        message.includes("your session request");
+
+                    const tab = isMentorNotification ? "mentor" : "learner";
+
+
+
+                    navigate("/sessions", { state: { tab } });
+                  }}
                   className={`p-4 rounded-xl border cursor-pointer transition-all ${
                     n.isRead
                       ? "bg-card border-border"
