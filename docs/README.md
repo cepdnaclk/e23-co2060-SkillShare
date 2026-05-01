@@ -60,15 +60,26 @@ The platform is engineered to solve a specific campus problem: the "hidden" skil
 
 ## Software Designs
 
-Detailed designs with many sub-sections
+Our software design centers on empowering the user rather than forcing automated matches. We originally designed a "Skill-Cycle" algorithm, but identified critical edge cases: unacceptable wait times, infinite relationship loops, and the restriction that a user must both teach and learn.
+To resolve this, we pivoted to a decentralized Credit and Reputation Economy.
+
+Core Mechanics: Users manage their own availability and book individual sessions.
+
+The Economy: To learn a skill, users spend credits. To earn credits, they are incentivized to teach others. This gamifies the peer-to-peer process and completely eliminates the bottleneck of waiting for a perfect "match cycle."
+
+Two-Way Feedback: Completed sessions use a dual-feedback submission design to calculate a reliable user reputation score.
 
 ## Testing
 
-Testing done on software : detailed + summarized results
+Testing focused heavily on our core custom logic and security. We executed comprehensive unit and integration tests to ensure that our JWT security filters, real-time Notification system, and complex Credit Score economy (ensuring credits are correctly deducted or awarded during bookings) functioned flawlessly under various edge cases.
 
 ## Conclusion
 
-What was achieved, future developments, commercialization plans
+We successfully achieved our MVP goal: providing a functional, trustworthy platform to unlock hidden campus skills.
+
+Achieved: We delivered a fully functioning system complete with secure login/signup, user dashboards, live skill searching, individual session booking, credit/reputation scoring, and a two-way feedback system. We also successfully navigated our biggest technical hurdle by pivoting from a flawed matching algorithm to a robust credit economy.
+
+Future Developments (Semester 4 Plan): We plan to expand the platform's commercial and community value by introducing Group Sessions, a Course Pool, and a Real-time Chat system. We will also heavily gamify the experience (Experience badges, Newsfeed celebrations, Online store) and improve accessibility via Google integrations (Signup & Calendar), cross-platform web-app capabilities, and a dedicated Admin authorization tier.
 
 ## Links
 
