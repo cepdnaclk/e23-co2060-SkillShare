@@ -16,10 +16,14 @@ const SignUp = () => {
   const { login, register, isLoading, error, clearError } = useAuth();
   const [isLogin, setIsLogin] = useState(initialMode);
   const [showPassword, setShowPassword] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
+
+  const passwordMismatch = !isLogin && form.confirmPassword !== "" && form.password !== form.confirmPassword;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isLogin && form.password !== form.confirmPassword) return;
     clearError();
     try {
       if (isLogin) {
@@ -31,7 +35,8 @@ const SignUp = () => {
       }
     } catch (err) {
       console.error("SIGN IN / SIGN UP FAILED:", err);
-    }  };
+    }
+  };
 
   const features = [
     { icon: Zap, text: "Skill-based matching algorithm" },
@@ -156,10 +161,41 @@ const SignUp = () => {
                   </div>
                 </div>
 
+                {/* Confirm Password – sign-up only */}
+                {!isLogin && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="Re-enter your password"
+                        value={form.confirmPassword}
+                        onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                        className={`pl-10 pr-10 bg-secondary border-border h-11 ${
+                          passwordMismatch ? "border-destructive focus:border-destructive" : "focus:border-primary/50"
+                        }`}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {passwordMismatch && (
+                      <p className="text-xs text-destructive mt-1">Passwords do not match.</p>
+                    )}
+                  </div>
+                )}
+
                 <Button
                   type="submit"
                   className="w-full h-11 text-sm font-semibold gap-2 bg-primary hover:bg-primary/90 shadow-lg hover:shadow-primary/25 transition-all duration-200"
-                  disabled={isLoading}
+                  disabled={isLoading || passwordMismatch}
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-2">

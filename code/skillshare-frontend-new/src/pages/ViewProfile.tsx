@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Clock, Calendar, Star, BookOpen, Coins, ChevronRight } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Star, BookOpen, Coins, ChevronRight, Edit3, GraduationCap, Layers, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
@@ -36,6 +36,7 @@ const ViewProfile = () => {
   const [selectedSlot, setSelectedSlot] = useState<Availability | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<UserSkill | null>(null);
   const [booking, setBooking] = useState(false);
+  const [deletingSkill, setDeletingSkill] = useState<string | null>(null); // "skillId-skillType"
 
   useEffect(() => {
     if (!id || id === "undefined") {
@@ -48,7 +49,7 @@ const ViewProfile = () => {
 
     Promise.all([
       usersApi.getById(id),
-      userSkillsApi.getTeachingByUser(id).catch(() => [] as UserSkill[]),
+      userSkillsApi.getByUser(id).catch(() => [] as UserSkill[]),
       availabilityApi.getMentorSlots(id).catch(() => [] as Availability[]),
     ])
         .then(([u, sk, av]) => {
@@ -61,6 +62,23 @@ const ViewProfile = () => {
         })
         .finally(() => setLoading(false));
   }, [id]);
+
+  const handleDeleteSkill = async (us: UserSkill) => {
+    const key = `${us.id.skillId}-${us.id.skillType}`;
+    if (deletingSkill === key) return; // prevent double-click
+    setDeletingSkill(key);
+    try {
+      await userSkillsApi.remove(String(us.id.skillId), us.id.skillType);
+      // Optimistically remove from local state
+      setSkills(prev => prev.filter(s => !(s.id.skillId === us.id.skillId && s.id.skillType === us.id.skillType)));
+      toast.success(`"${us.skill.name}" removed.`);
+    } catch (err: unknown) {
+      const e = err as ApiError;
+      toast.error(e.message ?? "Failed to remove skill.");
+    } finally {
+      setDeletingSkill(null);
+    }
+  };
 
   const handleBook = async () => {
     if (!selectedSlot || !selectedSkill || !me?.id) return;
@@ -104,8 +122,174 @@ const ViewProfile = () => {
   }
 
   const teachSkills = skills.filter(s => s.id.skillType === "TEACH");
+  const learnSkills = skills.filter(s => s.id.skillType === "LEARN");
   const isOwnProfile = me?.id === mentor.id;
 
+  // ── Owner / Edit Mode ────────────────────────────────────────────────────
+  if (isOwnProfile) {
+    return (
+      <AppLayout>
+        <div className="p-6 md:p-8 max-w-2xl mx-auto pb-24 md:pb-8">
+          <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-4" />
+
+          {/* Profile header */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
+            <div className="relative inline-block">
+              <div className="w-24 h-24 rounded-3xl bg-primary/10 text-primary flex items-center justify-center font-heading font-bold text-3xl mx-auto mb-4 animate-pulse-glow">
+                {getInitials(mentor.fullName)}
+              </div>
+              <span className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-400 border-2 border-background" title="Online" />
+            </div>
+            <h1 className="text-2xl font-heading font-bold mb-1">{mentor.fullName}</h1>
+            <p className="text-muted-foreground text-sm">{mentor.email}</p>
+            {mentor.bio && <p className="text-muted-foreground text-sm max-w-md mx-auto mt-2">{mentor.bio}</p>}
+
+            <div className="flex items-center justify-center gap-4 mt-4">
+              <span className="flex items-center gap-1 text-sm text-yellow-400">
+                <Star className="w-3.5 h-3.5 fill-yellow-400" /> {mentor.ratingAvg?.toFixed(1) ?? "0.0"} rating
+              </span>
+              <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Coins className="w-3.5 h-3.5 text-yellow-400" /> {mentor.credits} credits
+              </span>
+              <span className="flex items-center gap-1 text-sm text-accent">
+                <Star className="w-3.5 h-3.5" /> Rep: {mentor.reputationScore}
+              </span>
+            </div>
+
+            <Button
+              className="mt-5 gap-2"
+              onClick={() => navigate("/create-profile", { state: { startStep: 1 } })}
+            >
+              <Edit3 className="w-4 h-4" /> Edit Profile
+            </Button>
+          </motion.div>
+
+          {/* Quick actions */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+            className="grid grid-cols-2 gap-3 mb-6"
+          >
+            <button
+              onClick={() => navigate("/my-schedule")}
+              className="p-4 rounded-2xl bg-card border border-border glow-border text-left hover:border-primary/40 transition-colors group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                <Calendar className="w-5 h-5 text-primary" />
+              </div>
+              <p className="font-semibold text-sm">My Schedule</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Manage availability</p>
+            </button>
+            <button
+              onClick={() => navigate("/sessions")}
+              className="p-4 rounded-2xl bg-card border border-border glow-border text-left hover:border-primary/40 transition-colors group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-yellow-400/10 flex items-center justify-center mb-3">
+                <Layers className="w-5 h-5 text-yellow-400" />
+              </div>
+              <p className="font-semibold text-sm">Sessions</p>
+              <p className="text-xs text-muted-foreground mt-0.5">View all sessions</p>
+            </button>
+          </motion.div>
+
+          {/* Teaching skills */}
+          {teachSkills.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+              className="mb-4 p-5 rounded-2xl bg-card border border-border"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium flex items-center gap-1.5">
+                  <GraduationCap className="w-4 h-4 text-primary" /> Skills I Teach
+                </h3>
+                <Button variant="ghost" size="sm"
+                  onClick={() => navigate("/create-profile", { state: { startStep: 2 } })}>
+                  + Add
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {teachSkills.map(us => (
+                  <Badge
+                    key={us.id.skillId}
+                    className="gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border-primary/20 pr-1.5"
+                  >
+                    {us.skill.name}
+                    <button
+                      onClick={() => handleDeleteSkill(us)}
+                      disabled={deletingSkill === `${us.id.skillId}-${us.id.skillType}`}
+                      className="ml-0.5 rounded-sm opacity-60 hover:opacity-100 hover:text-destructive transition-opacity disabled:opacity-30"
+                      title="Remove skill"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Learning skills */}
+          {learnSkills.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+              className="mb-4 p-5 rounded-2xl bg-card border border-border"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium flex items-center gap-1.5">
+                  <BookOpen className="w-4 h-4 text-accent" /> Skills I'm Learning
+                </h3>
+                <Button variant="ghost" size="sm"
+                  onClick={() => navigate("/create-profile", { state: { startStep: 2 } })}>
+                  + Add
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {learnSkills.map(us => (
+                  <Badge
+                    key={us.id.skillId}
+                    className="gap-1.5 px-3 py-1.5 bg-accent/10 text-accent border-accent/20 pr-1.5"
+                  >
+                    {us.skill.name}
+                    <button
+                      onClick={() => handleDeleteSkill(us)}
+                      disabled={deletingSkill === `${us.id.skillId}-${us.id.skillType}`}
+                      className="ml-0.5 rounded-sm opacity-60 hover:opacity-100 hover:text-destructive transition-opacity disabled:opacity-30"
+                      title="Remove skill"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Availability */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+            className="p-5 rounded-2xl bg-card border border-border"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" /> My Availability Slots
+              </h3>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/my-schedule")}>Manage</Button>
+            </div>
+            {slots.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No slots added yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {slots.slice(0, 5).map(slot => (
+                  <div key={slot.id} className="flex items-center gap-3 p-3 rounded-xl bg-secondary text-sm">
+                    <Calendar className="w-4 h-4 text-accent" />
+                    <span>{fmt(slot.startTime)}</span>
+                    <span className="text-muted-foreground">→ {fmt(slot.endTime)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // ── Public / Booking View ────────────────────────────────────────────────
   return (
     <AppLayout>
       <div className="p-6 md:p-8 max-w-2xl mx-auto pb-24 md:pb-8">
@@ -171,24 +355,22 @@ const ViewProfile = () => {
                     <span>{fmt(slot.startTime)}</span>
                     <span className="text-muted-foreground">→ {fmt(slot.endTime)}</span>
                   </div>
-                  {!isOwnProfile && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs border-primary/30 text-primary hover:bg-primary/10"
-                      onClick={() => { setSelectedSlot(slot); setBookingOpen(true); }}
-                    >
-                      Book
-                    </Button>
-                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs border-primary/30 text-primary hover:bg-primary/10"
+                    onClick={() => { setSelectedSlot(slot); setBookingOpen(true); }}
+                  >
+                    Book
+                  </Button>
                 </div>
               ))}
             </div>
           )}
         </motion.div>
 
-        {/* Action buttons */}
-        {!isOwnProfile && slots.length > 0 && (
+        {/* Book button */}
+        {slots.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             <Button className="w-full h-11 gap-2" onClick={() => setBookingOpen(true)}>
               <Calendar className="w-4 h-4" /> Book a Session
