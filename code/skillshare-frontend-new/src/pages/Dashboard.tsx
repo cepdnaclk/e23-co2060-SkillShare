@@ -59,10 +59,10 @@ const Dashboard = () => {
   const teachSkills = skills.filter(s => s.id?.skillType === "TEACH");
 
   const stats = [
-    { icon: BookOpen, label: "Booked Sessions", value: upcomingLearner.length, color: "text-primary", bg: "bg-primary/10" },
-    { icon: Zap, label: "Pending Requests", value: upcomingMentor.length, color: "text-yellow-400", bg: "bg-yellow-400/10" },
-    { icon: Sparkles, label: "Skills Added", value: teachSkills.length, color: "text-accent", bg: "bg-accent/10" },
-    { icon: Star, label: "Feedback Received", value: feedback.length, color: "text-emerald-400", bg: "bg-emerald-400/10" },
+    { icon: BookOpen, label: "Booked Sessions",   value: upcomingLearner.length, color: "text-primary",      bg: "bg-primary/10",      href: "/sessions" },
+    { icon: Zap,      label: "Pending Requests",  value: upcomingMentor.length,  color: "text-yellow-400",  bg: "bg-yellow-400/10",   href: "/sessions" },
+    { icon: Sparkles, label: "Skills Added",       value: teachSkills.length,     color: "text-accent",      bg: "bg-accent/10",       href: "/create-profile", hrefState: { startStep: 2 } },
+    { icon: Star,     label: "Feedback Received",  value: feedback.length,        color: "text-emerald-400", bg: "bg-emerald-400/10",  href: "/notifications" },
   ];
 
   const firstName = user?.fullName?.split(" ")[0] ?? "there";
@@ -103,7 +103,8 @@ const Dashboard = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.08 }}
-                  className="p-4 rounded-xl bg-card border border-border glow-border"
+                  onClick={() => navigate(stat.href, { state: stat.hrefState ?? {} })}
+                  className="p-4 rounded-xl bg-card border border-border glow-border cursor-pointer hover:border-primary/40 transition-colors"
                 >
                   <div className={`w-10 h-10 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
                     <stat.icon className={`w-5 h-5 ${stat.color}`} />

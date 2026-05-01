@@ -76,7 +76,12 @@ const Landing = () => {
               <Button size="lg" onClick={() => navigate("/signup")} className="text-base px-8 py-6 rounded-xl gap-2">
                 Get Started <ArrowRight className="w-4 h-4" />
               </Button>
-              <Button size="lg" variant="outline" className="text-base px-8 py-6 rounded-xl">
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-base px-8 py-6 rounded-xl"
+                onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
+              >
                 Learn More
               </Button>
             </motion.div>
@@ -88,7 +93,7 @@ const Landing = () => {
       </section>
 
       {/* Features */}
-      <section className="py-24 bg-secondary/30">
+      <section id="how-it-works" className="py-24 bg-secondary/30">
         <div className="container mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
