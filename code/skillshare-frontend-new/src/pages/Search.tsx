@@ -22,6 +22,7 @@ const Search = () => {
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
   const [mentors, setMentors] = useState<UserSkill[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [nameFilter, setNameFilter] = useState("");
   const [loadingSkills, setLoadingSkills] = useState(false);
   const [loadingMentors, setLoadingMentors] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +66,7 @@ const Search = () => {
   }, []);
 
   const clearSearch = () => {
-    setQuery(""); setMatchedSkills([]); setSelectedSkill(null); setMentors([]); setError(null);
+    setQuery(""); setMatchedSkills([]); setSelectedSkill(null); setMentors([]); setError(null); setNameFilter("");
   };
 
   const getInitials = (name: string) =>
@@ -168,6 +169,25 @@ const Search = () => {
           )}
         </AnimatePresence>
 
+        {/* Name filter – only visible when mentors are loaded */}
+        {selectedSkill && mentors.length > 0 && (
+          <div className="relative mb-4">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              id="name-filter-input"
+              placeholder="Filter results by mentor name…"
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+              className="pl-10 pr-10 bg-secondary border-border h-10 text-sm"
+            />
+            {nameFilter && (
+              <button onClick={() => setNameFilter("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        )}
+
         <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-4" />
 
         {/* Results */}
@@ -187,7 +207,9 @@ const Search = () => {
           </motion.div>
         ) : (
           <div className="space-y-3">
-            {mentors.map((us, i) => {
+            {mentors
+              .filter(us => !nameFilter || us.user.fullName.toLowerCase().includes(nameFilter.toLowerCase()))
+              .map((us, i) => {
               const u = us.user;
               const initials = getInitials(u.fullName);
               return (
