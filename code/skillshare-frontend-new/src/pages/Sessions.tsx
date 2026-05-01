@@ -17,6 +17,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useLocation } from "react-router-dom";
 
 const STATUS_CLASSES: Record<SessionStatus, string> = {
   PENDING:   "status-pending",
@@ -191,13 +192,17 @@ const SessionCard = ({ session: s, role, onAction, actionLoading }: SessionCardP
 // ─── Main ─────────────────────────────────────────────────────
 const Sessions = () => {
   const { user } = useAuth();
-  const [tab, setTab] = useState<"learner" | "mentor">("learner");
+  const location = useLocation();
+  const [tab, setTab] = useState<"learner" | "mentor">(
+      location.state?.tab === "mentor" ? "mentor" : "learner"
+  );
   const [learnerSessions, setLearnerSessions] = useState<Session[]>([]);
   const [mentorSessions, setMentorSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [feedbackSession, setFeedbackSession] = useState<Session | null>(null);
+
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -216,6 +221,12 @@ const Sessions = () => {
   }, [user?.id]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (location.state?.tab === "mentor" || location.state?.tab === "learner") {
+      setTab(location.state.tab);
+    }
+  }, [location.state]);
 
   const handleAction = async (session: Session, action: "accept" | "reject" | "complete" | "feedback") => {
     if (action === "feedback") { setFeedbackSession(session); return; }
@@ -240,9 +251,18 @@ const Sessions = () => {
   };
 
   const currentSessions = tab === "learner" ? learnerSessions : mentorSessions;
+  const learnerActionCount = learnerSessions.filter(
+      s =>
+          s.status === "ACCEPTED"
+  ).length;
+
+  const mentorActionCount = mentorSessions.filter(
+      s => s.status === "PENDING"
+  ).length;
+
   const tabs = [
-    { key: "learner" as const, label: "As Learner", count: learnerSessions.length },
-    { key: "mentor" as const, label: "As Mentor", count: mentorSessions.filter(s => s.status === "PENDING").length },
+    { key: "learner" as const, label: "As Learner", count: learnerActionCount },
+    { key: "mentor" as const, label: "As Mentor", count: mentorActionCount },
   ];
 
   return (
@@ -301,9 +321,9 @@ const Sessions = () => {
       </div>
 
       <FeedbackDialog
-        session={feedbackSession}
-        onClose={() => setFeedbackSession(null)}
-        onSubmitted={load}
+          session={feedbackSession}
+          onClose={() => setFeedbackSession(null)}
+          onSubmitted={load}
       />
     </AppLayout>
   );
