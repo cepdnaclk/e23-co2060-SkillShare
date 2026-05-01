@@ -33,10 +33,11 @@ const fmt = (iso: string) =>
 // ─── Feedback Dialog ─────────────────────────────────────────
 interface FeedbackDialogProps {
   session: Session | null;
+  rateName: string;          // name of the person being rated
   onClose: () => void;
   onSubmitted: () => void;
 }
-const FeedbackDialog = ({ session, onClose, onSubmitted }: FeedbackDialogProps) => {
+const FeedbackDialog = ({ session, rateName, onClose, onSubmitted }: FeedbackDialogProps) => {
   const [tags, setTags] = useState<FeedbackTagDto[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -71,7 +72,7 @@ const FeedbackDialog = ({ session, onClose, onSubmitted }: FeedbackDialogProps) 
             <Sparkles className="w-4 h-4 text-primary" /> Leave Feedback
           </DialogTitle>
           <DialogDescription>
-            Rate your session with {session?.mentor.fullName} on {session ? fmt(session.startTime) : ""}.
+            Rate your session with <strong>{rateName}</strong> on {session ? fmt(session.startTime) : ""}.
           </DialogDescription>
         </DialogHeader>
         <div className="mt-2 space-y-4">
@@ -177,12 +178,13 @@ const SessionCard = ({ session: s, role, onAction, actionLoading }: SessionCardP
           <Check className="w-3.5 h-3.5" /> Mark Complete
         </Button>
       )}
-      {role === "learner" && s.status === "COMPLETED" && (
+      {s.status === "COMPLETED" && (
         <Button
           size="sm" variant="outline" className="mt-4 w-full gap-1.5 h-8 border-primary/30 text-primary hover:bg-primary/10"
           onClick={() => onAction(s, "feedback")} disabled={isBusy}
         >
-          <MessageSquare className="w-3.5 h-3.5" /> Leave Feedback
+          <MessageSquare className="w-3.5 h-3.5" />
+          Rate {role === "learner" ? s.mentor.fullName : s.learner.fullName}
         </Button>
       )}
     </motion.div>
@@ -204,6 +206,7 @@ const Sessions = () => {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [feedbackSession, setFeedbackSession] = useState<Session | null>(null);
+  const [feedbackRateName, setFeedbackRateName] = useState("");
 
 
   const load = useCallback(async () => {
@@ -231,7 +234,13 @@ const Sessions = () => {
   }, [location.state]);
 
   const handleAction = async (session: Session, action: "accept" | "reject" | "complete" | "feedback") => {
-    if (action === "feedback") { setFeedbackSession(session); return; }
+    if (action === "feedback") {
+      // Determine who is being rated: if current user is learner → rate the mentor; if mentor → rate the learner
+      const rateName = user?.id === session.learner.id ? session.mentor.fullName : session.learner.fullName;
+      setFeedbackRateName(rateName);
+      setFeedbackSession(session);
+      return;
+    }
     if (!user?.id) return;
     setActionLoading(session.id);
     try {

@@ -210,6 +210,11 @@ public class SessionService {
         }
 
         User mentor = session.getMentor();
+        User learner = session.getLearner();
+
+        notificationService.sendNotification(mentor, "Your session with " + learner.getFullName()+ " is completed.", NotificationType.MESSAGE);
+        notificationService.sendNotification(learner, "Your session with " + mentor.getFullName() + " is completed.", NotificationType.MESSAGE);
+
         mentor.setCredits(mentor.getCredits() + 10);
         session.setStatus(SessionStatus.COMPLETED);
 

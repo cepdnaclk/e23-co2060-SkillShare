@@ -1,4 +1,4 @@
-import { useState, useCallback, KeyboardEvent } from "react";
+import { useState, useCallback, KeyboardEvent, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowLeft, X, Plus, Check, Search, BookOpen, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -96,6 +96,7 @@ const Step2 = ({ skills, setSkills, onNext, onBack, isSaving }: {
   const [query, setQuery] = useState("");
   const [activeType, setActiveType] = useState<"TEACH" | "LEARN">("TEACH");
   const { results, searching, search, clearResults } = useSkillSearch();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const addSkill = (name: string) => {
     const exists = skills.find(s => s.name.toLowerCase() === name.toLowerCase() && s.type === activeType);
@@ -125,7 +126,7 @@ const Step2 = ({ skills, setSkills, onNext, onBack, isSaving }: {
         {(["TEACH", "LEARN"] as const).map(t => (
           <button
             key={t}
-            onClick={() => setActiveType(t)}
+            onClick={() => { setActiveType(t); setTimeout(() => inputRef.current?.focus(), 50); }}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
               activeType === t ? "bg-card text-foreground shadow" : "text-muted-foreground"
             }`}
@@ -141,6 +142,7 @@ const Step2 = ({ skills, setSkills, onNext, onBack, isSaving }: {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
+              ref={inputRef}
               placeholder={`Search or type a skill to ${activeType.toLowerCase()}…`}
               value={query}
               onChange={(e) => { setQuery(e.target.value); search(e.target.value); }}
