@@ -133,7 +133,8 @@ export const userSkillsApi = {
 
   getLearningByUser: (userId: string) =>
       apiFetch<UserSkill[]>(`/api/user-skills/${userId}/learn`),
-
+    searchProfiles: (name: string):Promise<UserSearchResponse[]> =>
+        apiFetch<UserSearchResponse[]>(`/api/user-skills/search-profiles?name=${encodeURIComponent(name)}`),
   getMentorsBySkill: (skillId: string) =>
       apiFetch<UserSkill[]>(`/api/user-skills/mentors/${skillId}`),
 };
@@ -287,4 +288,12 @@ export interface Notification {
   type: string;
   isRead: boolean;
   createdAt: string;
+}
+
+export interface UserSearchResponse {
+    id: string;
+    fullName: string;
+    email: string;
+    ratingAvg?: number;
+    reputationScore?: number;
 }

@@ -4,14 +4,17 @@ import { ArrowRight, Mail, Lock, User, Eye, EyeOff, Sparkles, Zap, Users } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link, useNavigate } from "react-router-dom";
+//import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const initialMode = location.state?.tab === "signin";
   const { login, register, isLoading, error, clearError } = useAuth();
-  const [isLogin, setIsLogin] = useState(false);
+  const [isLogin, setIsLogin] = useState(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
 
