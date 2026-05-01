@@ -5,8 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import AppLayout from "@/components/AppLayout";
-import {availabilityApi, type Availability, type ApiError, myavailabilityApi} from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import {
+  availabilityApi,
+  sessionsApi,
+  type Availability,
+  type Session,
+  type ApiError
+} from "@/lib/api";
 import { SkeletonList } from "@/components/SkeletonCard";
 import ErrorBanner from "@/components/ErrorBanner";
 import { toast } from "sonner";
@@ -18,6 +24,7 @@ const fmt = (iso: string) =>
 const MySchedule = () => {
   const { user } = useAuth();
   const [slots, setSlots] = useState<Availability[]>([]);
+  const [bookedSessions, setBookedSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -31,9 +38,24 @@ const MySchedule = () => {
       return;
     }
 
-    availabilityApi.getMentorSlots(user.id)
-        .then(setSlots)
-        .catch((err: ApiError) => setError(err.message ?? "Failed to load availability."))
+    setLoading(true);
+
+    Promise.all([
+      availabilityApi.getMentorSlots(user.id),
+      sessionsApi.getMentorSessions(user.id),
+    ])
+        .then(([slotsData, sessionsData]) => {
+          setSlots(slotsData);
+
+          const activeBookedSessions = sessionsData.filter(
+              s => s.status === "PENDING" || s.status === "ACCEPTED"
+          );
+
+          setBookedSessions(activeBookedSessions);
+        })
+        .catch((err: ApiError) =>
+            setError(err.message ?? "Failed to load schedule.")
+        )
         .finally(() => setLoading(false));
   }, [user?.id]);
 
@@ -54,8 +76,8 @@ const MySchedule = () => {
     } finally { setSaving(false); }
   };
 
-  const freeSlots = slots.filter(s => !s.isBooked);
-  const bookedSlots = slots.filter(s => s.isBooked);
+  const freeSlots = slots;
+  const bookedSlots = bookedSessions;
 
   return (
     <AppLayout>
@@ -152,21 +174,30 @@ const MySchedule = () => {
 
             {/* Booked slots */}
             {bookedSlots.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Booked Slots ({bookedSlots.length})</p>
-                <div className="space-y-2">
-                  {bookedSlots.map(slot => (
-                    <div key={slot.id} className="flex items-center justify-between p-4 rounded-xl bg-secondary border border-border opacity-70">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-yellow-400" />
-                        <span className="text-sm font-medium">{fmt(slot.startTime)}</span>
-                        <span className="text-muted-foreground text-sm">→ {fmt(slot.endTime)}</span>
-                      </div>
-                      <Badge className="status-pending text-xs">Booked</Badge>
-                    </div>
-                  ))}
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+                    Booked Sessions ({bookedSlots.length})
+                  </p>
+
+                  <div className="space-y-2">
+                    {bookedSlots.map(session => (
+                        <div
+                            key={session.id}
+                            className="flex items-center justify-between p-4 rounded-xl bg-secondary border border-border opacity-80"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                            <span className="text-sm font-medium">{fmt(session.startTime)}</span>
+                            <span className="text-muted-foreground text-sm">→ {fmt(session.endTime)}</span>
+                          </div>
+
+                          <Badge className="status-pending text-xs">
+                            {session.status}
+                          </Badge>
+                        </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
             )}
 
             {slots.length === 0 && !showForm && (
@@ -192,7 +223,7 @@ const MySchedule = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                    <span className="text-muted-foreground">{bookedSlots.length} booked</span>
+                    <span className="text-muted-foreground">{bookedSessions.length} booked</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-border" />
