@@ -15,10 +15,10 @@ const Landing = () => {
             Skill<span className="text-primary">Share</span>
           </h1>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" onClick={() => navigate("/signup")}>
+            <Button variant="ghost" onClick={() => navigate("/signup",{state: {tab: "signin"}})}>
               Log In
             </Button>
-            <Button onClick={() => navigate("/signup")}>
+            <Button onClick={() => navigate("/signup",{state: {tab: "signup"}})}>
               Sign Up
             </Button>
           </div>

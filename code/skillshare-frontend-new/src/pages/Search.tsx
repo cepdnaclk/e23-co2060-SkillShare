@@ -6,17 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { publicSkillsApi, userSkillsApi, type Skill, type UserSkill } from "@/lib/api";
+import { publicSkillsApi, userSkillsApi, type Skill, type UserSkill ,type UserSearchResponse } from "@/lib/api";
 import { SkeletonList } from "@/components/SkeletonCard";
 import ErrorBanner from "@/components/ErrorBanner";
 
 // Debounce timer
 let searchTimer: ReturnType<typeof setTimeout>;
 
+
 const Search = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [matchedSkills, setMatchedSkills] = useState<Skill[]>([]);
+  const [matchedUsers, setMatchedUsers] = useState<UserSearchResponse[]>([]);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
   const [mentors, setMentors] = useState<UserSkill[]>([]);
   const [showFilters, setShowFilters] = useState(false);
@@ -28,14 +30,19 @@ const Search = () => {
   const handleQueryChange = useCallback((q: string) => {
     setQuery(q);
     clearTimeout(searchTimer);
-    if (!q.trim()) { setMatchedSkills([]); return; }
+    if (!q.trim()) { setMatchedSkills([]); setMatchedUsers([]); return; }
     searchTimer = setTimeout(async () => {
       setLoadingSkills(true);
       try {
-        const results = await publicSkillsApi.search(q);
-        setMatchedSkills(results);
+        const [skills,users]  = await Promise.all([
+          publicSkillsApi.search(q),
+          userSkillsApi.searchProfiles(q)
+        ]);
+        setMatchedSkills(skills);
+        setMatchedUsers(users);
       } catch {
         setMatchedSkills([]);
+        setMatchedUsers([]);
       } finally { setLoadingSkills(false); }
     }, 350);
   }, []);
@@ -102,6 +109,19 @@ const Search = () => {
 
           {/* Skill suggestion dropdown */}
           <AnimatePresence>
+            {matchedUsers.map(user => (
+                <button
+                    key={user.id}
+                    onClick={() => navigate(`/profile/${user.id}`)}
+                    className="w-full text-left px-4 py-3 text-sm hover:bg-secondary flex items-center justify-between"
+                >
+                  <div>
+                    <span className="font-medium">{user.fullName}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">User</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+            ))}
             {(matchedSkills.length > 0 || loadingSkills) && (
               <motion.div
                 initial={{ opacity: 0, y: -4 }}

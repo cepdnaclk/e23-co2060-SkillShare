@@ -61,7 +61,7 @@ const Dashboard = () => {
   const stats = [
     { icon: BookOpen, label: "Booked Sessions", value: upcomingLearner.length, color: "text-primary", bg: "bg-primary/10" },
     { icon: Zap, label: "Pending Requests", value: upcomingMentor.length, color: "text-yellow-400", bg: "bg-yellow-400/10" },
-    { icon: Sparkles, label: "Skills Added", value: skills.length, color: "text-accent", bg: "bg-accent/10" },
+    { icon: Sparkles, label: "Skills Added", value: teachSkills.length, color: "text-accent", bg: "bg-accent/10" },
     { icon: Star, label: "Feedback Received", value: feedback.length, color: "text-emerald-400", bg: "bg-emerald-400/10" },
   ];
 

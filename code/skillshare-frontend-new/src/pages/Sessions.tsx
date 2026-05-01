@@ -168,7 +168,7 @@ const SessionCard = ({ session: s, role, onAction, actionLoading }: SessionCardP
           </Button>
         </div>
       )}
-      {role === "mentor" && s.status === "ACCEPTED" && (
+      {role === "learner" && s.status === "ACCEPTED" && (
         <Button
           size="sm" className="mt-4 w-full gap-1.5 h-8"
           onClick={() => onAction(s, "complete")} disabled={isBusy}
