@@ -193,9 +193,11 @@ const SessionCard = ({ session: s, role, onAction, actionLoading }: SessionCardP
 const Sessions = () => {
   const { user } = useAuth();
   const location = useLocation();
-  const [tab, setTab] = useState<"learner" | "mentor">(
-      location.state?.tab === "mentor" ? "mentor" : "learner"
-  );
+  const [tab, setTab] = useState<"learner" | "mentor">(() => {
+    if (location.state?.tab === "mentor") return "mentor";
+    if (location.state?.tab === "learner") return "learner";
+    return "learner"; // default only when opening Sessions normally
+  });
   const [learnerSessions, setLearnerSessions] = useState<Session[]>([]);
   const [mentorSessions, setMentorSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);

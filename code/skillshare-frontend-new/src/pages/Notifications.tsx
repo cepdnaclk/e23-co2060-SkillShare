@@ -128,11 +128,17 @@ const Notifications = () => {
                         message.includes("completed") ||
                         message.includes("your session request");
 
-                    const tab = isMentorNotification ? "mentor" : "learner";
+                    const tab = isMentorNotification
+                        ? "mentor"
+                        : isLearnerNotification
+                            ? "learner"
+                            : null;
 
-
-
-                    navigate("/sessions", { state: { tab } });
+                    if (tab) {
+                      navigate("/sessions", { state: { tab } });
+                    } else {
+                      return; // do not navigate
+                    }
                   }}
                   className={`p-4 rounded-xl border cursor-pointer transition-all ${
                     n.isRead
