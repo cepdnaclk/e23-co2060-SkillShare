@@ -274,4 +274,33 @@ public class SessionService {
 
         return expiredPending.size() + forgottenAccepted.size();
     }
+
+    @Transactional
+    public Session addMeetingLink(UUID sessionId, String meetingLink) {
+        User currentUser = getAuthenticatedUser(); // Grabs the logged-in user from JWT
+
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Session not found!"));
+
+        // 1. Security Check: Only the assigned Mentor can add the link
+        if (!session.getMentor().getId().equals(currentUser.getId())) {
+            throw new IllegalStateException("Access Denied: Only the assigned mentor can add a meeting link.");
+        }
+
+        // 2. State Check: Don't let them add links to Cancel or Completed sessions
+        if (session.getStatus().name().equals("CANCELLED") || session.getStatus().name().equals("COMPLETED")) {
+            throw new IllegalStateException("Cannot add a meeting link to a closed session.");
+        }
+
+        // 3. Update the link
+        session.setMeetingLink(meetingLink);
+        sessionRepository.save(session);
+
+        // 4. Fire the Notification to the Learner!
+        String message = "Your mentor, " + currentUser.getFullName() + ", has posted the meeting link for your upcoming session!";
+        // Assuming your NotificationService has a method like createNotification(User recipient, String message)
+        notificationService.sendNotification(session.getLearner(), message, NotificationType.SESSION_UPDATE);
+
+        return session;
+    }
 }
