@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Clock, Calendar, Star, BookOpen, Coins, ChevronRight, Edit3, GraduationCap, Layers, X } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Star, BookOpen, Coins, ChevronRight, Edit3, GraduationCap, Layers, X, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
@@ -371,9 +371,12 @@ const ViewProfile = () => {
 
         {/* Book button */}
         {slots.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <Button className="w-full h-11 gap-2" onClick={() => setBookingOpen(true)}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex gap-3">
+            <Button className="flex-1 h-11 gap-2" onClick={() => setBookingOpen(true)}>
               <Calendar className="w-4 h-4" /> Book a Session
+            </Button>
+            <Button variant="outline" className="flex-1 h-11 gap-2">
+              <MessageSquare className="w-4 h-4" /> Chat
             </Button>
           </motion.div>
         )}
