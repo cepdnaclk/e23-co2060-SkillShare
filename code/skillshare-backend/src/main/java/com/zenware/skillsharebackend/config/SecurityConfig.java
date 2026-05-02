@@ -21,67 +21,68 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthFilter;
-    private final AuthenticationProvider authenticationProvider;
+        private final JwtAuthenticationFilter jwtAuthFilter;
+        private final AuthenticationProvider authenticationProvider;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                // 1. TURN ON CORS HERE!
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                                // 1. TURN ON CORS HERE!
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                // 2. Disable CSRF (Cross-Site Request Forgery) because we are using stateless JWTs
-                .csrf(AbstractHttpConfigurer::disable)
+                                // 2. Disable CSRF (Cross-Site Request Forgery) because we are using stateless
+                                // JWTs
+                                .csrf(AbstractHttpConfigurer::disable)
 
-                // 3. Configure which endpoints are public and which are private
-                .authorizeHttpRequests(auth -> auth
-                        // WHITELIST: Anyone can access the login, register, and public skills endpoints
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/skills/**").permitAll()
+                                // 3. Configure which endpoints are public and which are private
+                                .authorizeHttpRequests(auth -> auth
+                                                // WHITELIST: Anyone can access the login, register, and public skills
+                                                // endpoints
+                                                .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers("/api/skills/**").permitAll()
 
-                        // BLACKLIST: Every other single endpoint requires a valid JWT Token!
-                        .anyRequest().authenticated()
-                )
+                                                // BLACKLIST: Every other single endpoint requires a valid JWT Token!
+                                                .anyRequest().authenticated())
 
-                // 4. Set Session Management to STATELESS (No cookies! Every request must have a JWT)
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                                // 4. Set Session Management to STATELESS (No cookies! Every request must have a
+                                // JWT)
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // 5. Tell Spring to use our database Auth Provider
-                .authenticationProvider(authenticationProvider)
+                                // 5. Tell Spring to use our database Auth Provider
+                                .authenticationProvider(authenticationProvider)
 
-                // 6. Insert our Custom JWT Bouncer BEFORE the standard password filter
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                                // 6. Insert our Custom JWT Bouncer BEFORE the standard password filter
+                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+                return http.build();
+        }
 
-    // --- NEW: DEFINE THE CORS RULES! ---
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
+        // --- NEW: DEFINE THE CORS RULES! ---
+        @Bean
+        public CorsConfigurationSource corsConfigurationSource() {
+                CorsConfiguration configuration = new CorsConfiguration();
 
-        // Let React (3000) or Vite/Vue/Angular (5173, 4200) talk to the backend
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "http://localhost:4200",
-                "http://10.30.6.151:5173"
-        ));
+                // Let React (3000) or Vite/Vue/Angular (5173, 4200) talk to the backend
+                configuration.setAllowedOrigins(List.of(
+                                "http://localhost:3000",
+                                "http://localhost:5173",
+                                "http://localhost:4200",
+                                "https://skillshare-topaz-delta.vercel.app/",
+                                "http://10.30.6.151:5173"));
 
-        // Allow all standard HTTP methods
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+                // Allow all standard HTTP methods
+                configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
-        // Allow the frontend to send the 'Authorization' header (which holds our JWT!)
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+                // Allow the frontend to send the 'Authorization' header (which holds our JWT!)
+                configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 
-        // Allow credentials (important if you ever add cookies later)
-        configuration.setAllowCredentials(true);
+                // Allow credentials (important if you ever add cookies later)
+                configuration.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Apply to ALL endpoints
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/**", configuration); // Apply to ALL endpoints
 
-        return source;
-    }
+                return source;
+        }
 }
