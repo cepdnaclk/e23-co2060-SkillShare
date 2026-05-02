@@ -12,8 +12,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
@@ -23,40 +21,8 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    // --- MVP SECURITY PATCH: Block fake/disposable emails ---
-    private static final String STRICT_EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$";
-
-    private static final List<String> DISPOSABLE_DOMAINS = List.of(
-            "mailinator.com", "10minutemail.com", "tempmail.com",
-            "guerrillamail.com", "yopmail.com", "dropmail.me"
-    );
-
-    private void validateEmailSecurity(String email) {
-        // 1. Check if it's completely empty
-        if (email == null || email.trim().isEmpty()) {
-            throw new IllegalArgumentException("Email cannot be empty.");
-        }
-
-        // 2. Check if it actually looks like a real email using Regex
-        if (!email.matches(STRICT_EMAIL_REGEX)) {
-            throw new IllegalArgumentException("Invalid email format. Please provide a real email address.");
-        }
-
-        // 3. Extract the domain (e.g., "gmail.com" from "test@gmail.com")
-        String domain = email.substring(email.indexOf("@") + 1).toLowerCase();
-
-        // 4. Block known fake/spam domains
-        if (DISPOSABLE_DOMAINS.contains(domain)) {
-            throw new IllegalArgumentException("Disposable or temporary email addresses are strictly prohibited.");
-        }
-    }
-    // --------------------------------------------------------
-
     // 1. REGISTER NEW USER
     public AuthenticationResponse register(RegisterRequest request) {
-
-        // SECURITY CHECK: Validate email format and block disposable domains FIRST!
-        validateEmailSecurity(request.getEmail());
 
         // Ensure email isn't already taken
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
