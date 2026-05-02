@@ -264,7 +264,7 @@ export interface Availability {
     isBooked: boolean;
 }
 
-export type SessionStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "COMPLETED" | "EXPIRED";
+export type SessionStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "COMPLETED" | "EXPIRED" | "CLOSED";
 
 export interface Session {
     id: string;
