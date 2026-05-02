@@ -123,14 +123,26 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             </div>
             Skill<span className="gradient-text">Share</span>
           </Link>
-          <Link to="/notifications" className="relative p-2">
-            <Bell className="w-5 h-5" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 bg-accent text-accent-foreground text-[9px] rounded-full flex items-center justify-center font-bold">
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
+          <div className="flex items-center gap-3">
+            {user && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary border border-border">
+                <Coins className="w-3.5 h-3.5 text-yellow-400" />
+                <span className="font-heading font-semibold text-sm">{user.credits ?? 0}</span>
+              </div>
             )}
-          </Link>
+            <Link to={user?.id ? `/profile/${user.id}` : "/dashboard"} className="relative">
+              <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold border border-primary/20">
+                {getInitials(user?.fullName ?? "")}
+              </div>
+            </Link>
+            <button 
+              onClick={handleLogout}
+              className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
         </header>
 
         {/* Page content */}
