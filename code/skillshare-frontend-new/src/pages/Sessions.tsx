@@ -152,8 +152,7 @@ const SessionCard = ({ session: s, role, onAction, actionLoading, ratedSessionId
         </div>
       </div>
 
-      {role === "learner" && s.meetingLink && (
-          <div className="mt-3 p-3 rounded-xl bg-secondary text-xs">
+      {role === "learner" && s.meetingLink && s.status === "ACCEPTED" && (          <div className="mt-3 p-3 rounded-xl bg-secondary text-xs">
             <p className="text-muted-foreground mb-1">Meeting Link</p>
 
             <div className="flex items-center justify-between gap-2">
@@ -203,8 +202,7 @@ const SessionCard = ({ session: s, role, onAction, actionLoading, ratedSessionId
             {s.meetingLink ? "Update Meeting Link" : "Add Meeting Link"}
           </Button>
       )}
-      {role === "learner" && s.status === "ACCEPTED" && (
-          <Button
+      {role === "learner" && s.status === "ACCEPTED" && (          <Button
               size="sm"
               className="mt-4 w-full gap-1.5 h-8"
               onClick={() => onAction(s, "complete")}
@@ -298,8 +296,26 @@ const Sessions = () => {
         await sessionsApi.updateStatus(session.id, user.id, "REJECTED");
         toast.info("Session rejected.");
       } else if (action === "complete") {
-        await sessionsApi.complete(session.id);
+        const updatedSession = await sessionsApi.complete(session.id);
+
+        setLearnerSessions(prev =>
+            prev.map(s =>
+                s.id === session.id
+                    ? { ...s, status: "COMPLETED", meetingLink: null }
+                    : s
+            )
+        );
+
+        setMentorSessions(prev =>
+            prev.map(s =>
+                s.id === session.id
+                    ? { ...s, status: "COMPLETED", meetingLink: null }
+                    : s
+            )
+        );
+
         toast.success("Session marked as complete! 10 credits earned.");
+
         if (refreshUser) refreshUser(user.id);
       }
       await load();
