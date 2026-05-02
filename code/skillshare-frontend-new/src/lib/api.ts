@@ -177,6 +177,12 @@ export const sessionsApi = {
 
   getMentorSessions: (userId: string) =>
       apiFetch<Session[]>(`/api/sessions/mentor/${userId}`),
+
+    addMeetingLink: (sessionId: string, meetingLink: string) =>
+        apiFetch<Session[]>(`/api/sessions/${sessionId}/meeting-link`, {
+            method: "PATCH",
+            body: JSON.stringify({ meetingLink }),
+        }),
 };
 
 export const feedbackApi = {
@@ -262,6 +268,7 @@ export interface Session {
   skill: Skill;
   startTime: string;
   endTime: string;
+  meetingLink?: string | null;
   status: SessionStatus;
   createdAt: string;
 }

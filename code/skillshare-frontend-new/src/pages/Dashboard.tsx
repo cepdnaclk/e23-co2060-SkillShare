@@ -226,15 +226,12 @@ const Dashboard = () => {
             <h3 className="font-heading font-bold flex items-center gap-2 mb-4">
               <TrendingUp className="w-4 h-4 text-accent" /> Your Reputation
             </h3>
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-2 gap-4 text-center">
               <div className="p-3 rounded-xl bg-secondary">
                 <p className="text-xl font-heading font-bold gradient-text">{user.reputationScore}</p>
                 <p className="text-xs text-muted-foreground mt-1">Rep Score</p>
               </div>
-              <div className="p-3 rounded-xl bg-secondary">
-                <p className="text-xl font-heading font-bold gradient-text-teal">{user.ratingAvg?.toFixed(1) ?? "0.0"}</p>
-                <p className="text-xs text-muted-foreground mt-1">Avg Rating</p>
-              </div>
+
               <div className="p-3 rounded-xl bg-secondary">
                 <p className="text-xl font-heading font-bold text-yellow-400">{user.credits}</p>
                 <p className="text-xs text-muted-foreground mt-1">Credits</p>
