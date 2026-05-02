@@ -203,6 +203,16 @@ const SessionCard = ({ session: s, role, onAction, actionLoading, ratedSessionId
             {s.meetingLink ? "Update Meeting Link" : "Add Meeting Link"}
           </Button>
       )}
+      {role === "learner" && s.status === "ACCEPTED" && (
+          <Button
+              size="sm"
+              className="mt-4 w-full gap-1.5 h-8"
+              onClick={() => onAction(s, "complete")}
+              disabled={isBusy}
+          >
+            <Check className="w-3.5 h-3.5" /> Mark Complete
+          </Button>
+      )}
       {s.status === "COMPLETED" && !ratedSessionIds.includes(s.id) && (        <Button
           size="sm" variant="outline" className="mt-4 w-full gap-1.5 h-8 border-primary/30 text-primary hover:bg-primary/10"
           onClick={() => onAction(s, "feedback")} disabled={isBusy}
