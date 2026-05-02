@@ -162,9 +162,7 @@ const ViewProfile = () => {
             {mentor.bio && <p className="text-muted-foreground text-sm max-w-md mx-auto mt-2">{mentor.bio}</p>}
 
             <div className="flex items-center justify-center gap-4 mt-4">
-              <span className="flex items-center gap-1 text-sm text-yellow-400">
-                <Star className="w-3.5 h-3.5 fill-yellow-400" /> {mentor.ratingAvg?.toFixed(1) ?? "0.0"} rating
-              </span>
+
               <span className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Coins className="w-3.5 h-3.5 text-yellow-400" /> {mentor.credits} credits
               </span>
@@ -326,9 +324,7 @@ const ViewProfile = () => {
           {mentor.bio && <p className="text-muted-foreground text-sm max-w-md mx-auto">{mentor.bio}</p>}
           {/* Stats row */}
           <div className="flex items-center justify-center gap-4 mt-4">
-            <span className="flex items-center gap-1 text-sm text-yellow-400">
-              <Star className="w-3.5 h-3.5 fill-yellow-400" /> {mentor.ratingAvg?.toFixed(1)} rating
-            </span>
+
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
               <Coins className="w-3.5 h-3.5 text-yellow-400" /> {mentor.credits} credits
             </span>
