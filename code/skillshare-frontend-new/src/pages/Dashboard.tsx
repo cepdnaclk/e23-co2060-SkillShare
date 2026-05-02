@@ -18,7 +18,7 @@ const formatDate = (iso: string) =>
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   const [learnerSessions, setLearnerSessions] = useState<Session[]>([]);
   const [mentorSessions, setMentorSessions] = useState<Session[]>([]);
@@ -38,6 +38,7 @@ const Dashboard = () => {
     }
 
     const uid = user.id;
+    if (refreshUser) refreshUser(uid);
     setLoading(true);
     Promise.all([
       sessionsApi.getLearnerSessions(uid).catch(() => [] as Session[]),
