@@ -35,7 +35,7 @@ interface FeedbackDialogProps {
   session: Session | null;
   rateName: string;          // name of the person being rated
   onClose: () => void;
-  onSubmitted: () => void;
+  onSubmitted: (sessionId: string) => void;
 }
 const FeedbackDialog = ({ session, rateName, onClose, onSubmitted }: FeedbackDialogProps) => {
   const [tags, setTags] = useState<FeedbackTagDto[]>([]);
@@ -56,7 +56,7 @@ const FeedbackDialog = ({ session, rateName, onClose, onSubmitted }: FeedbackDia
     try {
       await feedbackApi.leave(session.id, selected);
       toast.success("Feedback submitted! 🎉");
-      onSubmitted();
+      onSubmitted(session.id);
       onClose();
     } catch (err: unknown) {
       const e = err as ApiError;
@@ -122,8 +122,8 @@ interface SessionCardProps {
   role: "learner" | "mentor";
   onAction: (session: Session, action: "accept" | "reject" | "complete" | "feedback") => void;
   actionLoading: string | null;
-}
-const SessionCard = ({ session: s, role, onAction, actionLoading }: SessionCardProps) => {
+  ratedSessionIds: string[];}
+const SessionCard = ({ session: s, role, onAction, actionLoading, ratedSessionIds }: SessionCardProps) => {
   const isBusy = actionLoading === s.id;
   const counterpart = role === "learner" ? s.mentor : s.learner;
   const initials = counterpart.fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
@@ -178,8 +178,7 @@ const SessionCard = ({ session: s, role, onAction, actionLoading }: SessionCardP
           <Check className="w-3.5 h-3.5" /> Mark Complete
         </Button>
       )}
-      {s.status === "COMPLETED" && (
-        <Button
+      {s.status === "COMPLETED" && !ratedSessionIds.includes(s.id) && (        <Button
           size="sm" variant="outline" className="mt-4 w-full gap-1.5 h-8 border-primary/30 text-primary hover:bg-primary/10"
           onClick={() => onAction(s, "feedback")} disabled={isBusy}
         >
@@ -207,6 +206,10 @@ const Sessions = () => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [feedbackSession, setFeedbackSession] = useState<Session | null>(null);
   const [feedbackRateName, setFeedbackRateName] = useState("");
+  const [ratedSessionIds, setRatedSessionIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem(`ratedSessionIds_${user?.id}`);
+    return saved ? JSON.parse(saved) : [];
+  });
 
 
   const load = useCallback(async () => {
@@ -319,13 +322,14 @@ const Sessions = () => {
         ) : (
           <div className="space-y-3">
             {currentSessions.map(s => (
-              <SessionCard
-                key={s.id}
-                session={s}
-                role={tab}
-                onAction={handleAction}
-                actionLoading={actionLoading}
-              />
+                <SessionCard
+                    key={s.id}
+                    session={s}
+                    role={tab}
+                    onAction={handleAction}
+                    actionLoading={actionLoading}
+                    ratedSessionIds={ratedSessionIds}
+                />
             ))}
           </div>
         )}
@@ -333,8 +337,24 @@ const Sessions = () => {
 
       <FeedbackDialog
           session={feedbackSession}
+          rateName={feedbackRateName}
           onClose={() => setFeedbackSession(null)}
-          onSubmitted={load}
+          onSubmitted={(sessionId) => {
+            setRatedSessionIds(prev => {
+              const updated = prev.includes(sessionId) ? prev : [...prev, sessionId];
+
+              if (user?.id) {
+                localStorage.setItem(
+                    `ratedSessionIds_${user.id}`,
+                    JSON.stringify(updated)
+                );
+              }
+
+              return updated;
+            });
+
+            setFeedbackSession(null);
+          }}
       />
     </AppLayout>
   );
