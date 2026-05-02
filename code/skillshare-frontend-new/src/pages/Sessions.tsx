@@ -120,8 +120,7 @@ const FeedbackDialog = ({ session, rateName, onClose, onSubmitted }: FeedbackDia
 interface SessionCardProps {
   session: Session;
   role: "learner" | "mentor";
-  onAction: (session: Session, action: "accept" | "reject" | "complete" | "feedback") => void;
-  actionLoading: string | null;
+  onAction: (session: Session, action: "accept" | "reject" | "complete" | "feedback" | "link") => void;  actionLoading: string | null;
   ratedSessionIds: string[];}
 const SessionCard = ({ session: s, role, onAction, actionLoading, ratedSessionIds }: SessionCardProps) => {
   const isBusy = actionLoading === s.id;
@@ -153,6 +152,28 @@ const SessionCard = ({ session: s, role, onAction, actionLoading, ratedSessionId
         </div>
       </div>
 
+      {role === "learner" && s.meetingLink && (
+          <div className="mt-3 p-3 rounded-xl bg-secondary text-xs">
+            <p className="text-muted-foreground mb-1">Meeting Link</p>
+
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate text-primary">{s.meetingLink}</span>
+
+              <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => {
+                    navigator.clipboard.writeText(s.meetingLink!);
+                    toast.success("Meeting link copied!");
+                  }}
+              >
+                Copy
+              </Button>
+            </div>
+          </div>
+      )}
+
       {/* Action buttons */}
       {role === "mentor" && s.status === "PENDING" && (
         <div className="flex gap-2 mt-4">
@@ -170,13 +191,17 @@ const SessionCard = ({ session: s, role, onAction, actionLoading, ratedSessionId
           </Button>
         </div>
       )}
-      {role === "learner" && s.status === "ACCEPTED" && (
-        <Button
-          size="sm" className="mt-4 w-full gap-1.5 h-8"
-          onClick={() => onAction(s, "complete")} disabled={isBusy}
-        >
-          <Check className="w-3.5 h-3.5" /> Mark Complete
-        </Button>
+      {role === "mentor" && s.status === "ACCEPTED" && (
+          <Button
+              size="sm"
+              variant="outline"
+              className="mt-4 w-full gap-1.5 h-8 border-primary/30 text-primary hover:bg-primary/10"
+              onClick={() => onAction(s, "link")}
+              disabled={isBusy}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            {s.meetingLink ? "Update Meeting Link" : "Add Meeting Link"}
+          </Button>
       )}
       {s.status === "COMPLETED" && !ratedSessionIds.includes(s.id) && (        <Button
           size="sm" variant="outline" className="mt-4 w-full gap-1.5 h-8 border-primary/30 text-primary hover:bg-primary/10"
@@ -206,9 +231,13 @@ const Sessions = () => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [feedbackSession, setFeedbackSession] = useState<Session | null>(null);
   const [feedbackRateName, setFeedbackRateName] = useState("");
+  const [linkSession, setLinkSession] = useState<Session | null>(null);
+  const [meetingLink, setMeetingLink] = useState("");
+  const [savingLink, setSavingLink] = useState(false);
   const [ratedSessionIds, setRatedSessionIds] = useState<string[]>(() => {
     const saved = localStorage.getItem(`ratedSessionIds_${user?.id}`);
     return saved ? JSON.parse(saved) : [];
+
   });
 
 
@@ -236,12 +265,17 @@ const Sessions = () => {
     }
   }, [location.state]);
 
-  const handleAction = async (session: Session, action: "accept" | "reject" | "complete" | "feedback") => {
+  const handleAction = async (session: Session, action: "accept" | "reject" | "complete" | "feedback"|"link") => {
     if (action === "feedback") {
       // Determine who is being rated: if current user is learner → rate the mentor; if mentor → rate the learner
       const rateName = user?.id === session.learner.id ? session.mentor.fullName : session.learner.fullName;
       setFeedbackRateName(rateName);
       setFeedbackSession(session);
+      return;
+    }
+    if (action === "link") {
+      setLinkSession(session);
+      setMeetingLink(session.meetingLink ?? "");
       return;
     }
     if (!user?.id) return;
@@ -278,6 +312,25 @@ const Sessions = () => {
     { key: "learner" as const, label: "As Learner", count: learnerActionCount },
     { key: "mentor" as const, label: "As Mentor", count: mentorActionCount },
   ];
+
+  const saveMeetingLink = async () => {
+    if (!linkSession || !meetingLink.trim()) return;
+
+    setSavingLink(true);
+
+    try {
+      await sessionsApi.addMeetingLink(linkSession.id, meetingLink.trim());
+      toast.success("Meeting link sent to learner!");
+      setLinkSession(null);
+      setMeetingLink("");
+      await load();
+    } catch (err: unknown) {
+      const e = err as ApiError;
+      toast.error(e.message ?? "Failed to save meeting link.");
+    } finally {
+      setSavingLink(false);
+    }
+  };
 
   return (
     <AppLayout>
@@ -356,6 +409,33 @@ const Sessions = () => {
             setFeedbackSession(null);
           }}
       />
+      <Dialog open={!!linkSession} onOpenChange={() => setLinkSession(null)}>
+        <DialogContent className="bg-card border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Add Meeting Link</DialogTitle>
+            <DialogDescription>
+              Send the meeting link to the learner for this accepted session.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-2">
+            <input
+                value={meetingLink}
+                onChange={(e) => setMeetingLink(e.target.value)}
+                placeholder="Paste Zoom / Google Meet link here"
+                className="w-full h-10 rounded-lg bg-secondary border border-border px-3 text-sm outline-none focus:border-primary"
+            />
+
+            <Button
+                className="w-full h-11"
+                disabled={!meetingLink.trim() || savingLink}
+                onClick={saveMeetingLink}
+            >
+              {savingLink ? "Sending..." : "Send Link"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };
