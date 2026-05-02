@@ -386,14 +386,7 @@ const ViewProfile = () => {
           )}
         </motion.div>
 
-        {/* Book button */}
-        {slots.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <Button className="w-full h-11 gap-2" onClick={() => setBookingOpen(true)}>
-              <Calendar className="w-4 h-4" /> Book a Session
-            </Button>
-          </motion.div>
-        )}
+
 
         {/* Booking Dialog */}
         <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
