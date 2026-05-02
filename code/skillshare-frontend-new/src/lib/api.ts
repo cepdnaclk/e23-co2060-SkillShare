@@ -268,6 +268,7 @@ export interface Session {
   skill: Skill;
   startTime: string;
   endTime: string;
+  meetingLink?: string | null;
   status: SessionStatus;
   createdAt: string;
 }
