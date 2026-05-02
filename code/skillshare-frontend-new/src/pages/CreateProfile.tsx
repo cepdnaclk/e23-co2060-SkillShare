@@ -79,9 +79,14 @@ const Step1 = ({ profile, setProfile, onNext }: {
         />
       </div>
     </div>
-    <Button onClick={onNext} className="w-full h-11 gap-2" disabled={!profile.university}>
-      Continue <ArrowRight className="w-4 h-4" />
-    </Button>
+    <div className="flex gap-3">
+      <Button variant="outline" onClick={onNext} className="flex-1 h-11">
+        Skip
+      </Button>
+      <Button onClick={onNext} className="flex-1 h-11 gap-2" disabled={!profile.university}>
+        Continue <ArrowRight className="w-4 h-4" />
+      </Button>
+    </div>
   </motion.div>
 );
 
@@ -181,6 +186,23 @@ const Step2 = ({ skills, setSkills, onNext, onBack, isSaving }: {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* Popular Skills */}
+      <div className="pt-2">
+        <p className="text-xs text-muted-foreground mb-2">Popular Skills:</p>
+        <div className="flex flex-wrap gap-1.5">
+          {["React", "JavaScript", "Python", "Java", "UI/UX Design", "Machine Learning", "Marketing", "SEO"].map(skill => (
+            <Badge 
+              key={skill} 
+              variant="outline" 
+              className="cursor-pointer hover:bg-secondary border-border/60 text-muted-foreground hover:text-foreground transition-colors font-normal px-2.5"
+              onClick={() => addSkill(skill)}
+            >
+              {skill}
+            </Badge>
+          ))}
+        </div>
       </div>
 
       {/* Added skills */}
