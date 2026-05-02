@@ -24,6 +24,7 @@ const STATUS_CLASSES: Record<SessionStatus, string> = {
   REJECTED:  "status-rejected",
   COMPLETED: "status-completed",
   EXPIRED:   "status-expired",
+  CLOSED:    "status-closed",
 };
 
 const fmt = (iso: string) =>
@@ -54,7 +55,7 @@ const FeedbackDialog = ({ session, onClose, onSubmitted }: FeedbackDialogProps) 
     try {
       await feedbackApi.leave(session.id, selected);
       toast.success("Feedback submitted! 🎉");
-      onSubmitted();
+      await onSubmitted();
       onClose();
     } catch (err: unknown) {
       const e = err as ApiError;
