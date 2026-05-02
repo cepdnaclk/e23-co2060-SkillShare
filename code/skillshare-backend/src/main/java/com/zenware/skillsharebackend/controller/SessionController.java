@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -61,5 +62,20 @@ public class SessionController {
     public ResponseEntity<String> triggerExpirationEngine() {
         int expiredCount = sessionService.expireOverdueSessions();
         return ResponseEntity.ok("Expiration Engine Run Complete! Automatically refunded and expired " + expiredCount + " sessions.");
+    }
+
+    // PATCH: /api/sessions/{sessionId}/meeting-link
+    @PatchMapping("/{sessionId}/meeting-link")
+    public ResponseEntity<Session> addMeetingLink(
+            @PathVariable UUID sessionId,
+            @RequestBody Map<String, String> payload) {
+
+        String link = payload.get("meetingLink");
+
+        if (link == null || link.trim().isEmpty()) {
+            throw new IllegalArgumentException("Meeting link cannot be empty!");
+        }
+
+        return ResponseEntity.ok(sessionService.addMeetingLink(sessionId, link));
     }
 }
