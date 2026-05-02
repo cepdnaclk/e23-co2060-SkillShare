@@ -2,7 +2,7 @@
 // Central API Client — auto-injects JWT, parses errors uniformly
 // ============================================================
 
-const BASE_URL = "http://localhost:8080";
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 // Shape of the backend's GlobalExceptionHandler error response
 export interface ApiError {
