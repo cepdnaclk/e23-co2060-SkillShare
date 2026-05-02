@@ -193,7 +193,7 @@ const SessionCard = ({ session: s, role, onAction, actionLoading }: SessionCardP
 
 // ─── Main ─────────────────────────────────────────────────────
 const Sessions = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const location = useLocation();
   const [tab, setTab] = useState<"learner" | "mentor">(() => {
     if (location.state?.tab === "mentor") return "mentor";
@@ -253,6 +253,7 @@ const Sessions = () => {
       } else if (action === "complete") {
         await sessionsApi.complete(session.id);
         toast.success("Session marked as complete! 10 credits earned.");
+        if (refreshUser) refreshUser(user.id);
       }
       await load();
     } catch (err: unknown) {
