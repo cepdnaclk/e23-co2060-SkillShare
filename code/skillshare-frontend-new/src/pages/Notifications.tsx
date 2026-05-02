@@ -126,6 +126,7 @@ const Notifications = () => {
                         message.includes("accepted") ||
                         message.includes("rejected") ||
                         message.includes("completed") ||
+                        message.includes("link") ||
                         message.includes("your session request");
 
                     const tab = isMentorNotification
