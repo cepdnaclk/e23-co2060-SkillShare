@@ -9,6 +9,35 @@ import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
+const STRICT_EMAIL_REGEX = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}$/;
+
+const DISPOSABLE_DOMAINS = [
+  "mailinator.com",
+  "10minutemail.com",
+  "tempmail.com",
+  "guerrillamail.com",
+  "yopmail.com",
+  "dropmail.me",
+];
+
+const validateEmail = (email: string): string | null => {
+  if (!email.trim()) {
+    return "Email cannot be empty.";
+  }
+
+  if (!STRICT_EMAIL_REGEX.test(email)) {
+    return "Invalid email format. Please enter a real email address.";
+  }
+
+  const domain = email.split("@")[1]?.toLowerCase();
+
+  if (DISPOSABLE_DOMAINS.includes(domain)) {
+    return "Temporary email addresses are not allowed.";
+  }
+
+  return null;
+};
+
 const SignUp = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -18,11 +47,20 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   const passwordMismatch = !isLogin && form.confirmPassword !== "" && form.password !== form.confirmPassword;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isLogin) {
+      const validationMessage = validateEmail(form.email);
+
+      if (validationMessage) {
+        setEmailError(validationMessage);
+        return;
+      }
+    }
     if (!isLogin && form.password !== form.confirmPassword) return;
     clearError();
     try {
@@ -131,12 +169,27 @@ const SignUp = () => {
                       type="email"
                       placeholder="you@university.edu"
                       value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      className="pl-10 bg-secondary border-border focus:border-primary/50 h-11"
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setForm({ ...form, email: value });
+
+                        if (!isLogin) {
+                          setEmailError(validateEmail(value));
+                        } else {
+                          setEmailError(null);
+                        }
+                      }}
+                      className={`pl-10 bg-secondary border-border h-11 ${
+                          emailError ? "border-destructive focus:border-destructive" : "focus:border-primary/50"
+                      }`}
                       required
                     />
                   </div>
                 </div>
+
+                {emailError && !isLogin && (
+                    <p className="text-xs text-destructive mt-1">{emailError}</p>
+                )}
 
                 <div className="space-y-1.5">
                   <Label htmlFor="password">Password</Label>
@@ -195,7 +248,7 @@ const SignUp = () => {
                 <Button
                   type="submit"
                   className="w-full h-11 text-sm font-semibold gap-2 bg-primary hover:bg-primary/90 shadow-lg hover:shadow-primary/25 transition-all duration-200"
-                  disabled={isLoading || passwordMismatch}
+                  disabled={isLoading || passwordMismatch || (!isLogin && !!emailError)}
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-2">
