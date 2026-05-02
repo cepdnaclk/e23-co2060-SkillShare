@@ -16,6 +16,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useLocation } from "react-router-dom";
+
 
 const fmt = (iso: string) =>
   new Date(iso).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -24,6 +26,8 @@ const ViewProfile = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user: me } = useAuth();
+  const location = useLocation();
+  const preselectedSkillId = location.state?.skillId;
 
   const [mentor, setMentor] = useState<User | null>(null);
   const [skills, setSkills] = useState<UserSkill[]>([]);
@@ -62,6 +66,19 @@ const ViewProfile = () => {
         })
         .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (preselectedSkillId && skills.length > 0) {
+      const matched = skills.find(
+          s => s.id.skillId === preselectedSkillId && s.id.skillType === "TEACH"
+      );
+
+      if (matched) {
+        setSelectedSkill(matched);
+      }
+    }
+  }, [preselectedSkillId, skills]);
+
 
   const handleDeleteSkill = async (us: UserSkill) => {
     const key = `${us.id.skillId}-${us.id.skillType}`;
@@ -386,26 +403,34 @@ const ViewProfile = () => {
               <DialogDescription>Select the skill and a time slot to book with {mentor.fullName}.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 mt-2">
-              {/* Skill selection */}
+              {/* Skill section */}
               <div>
-                <p className="text-sm font-medium mb-2">Choose a skill</p>
-                <div className="flex flex-wrap gap-2">
-                  {teachSkills.map(us => (
-                    <button
-                      key={us.id.skillId}
-                      onClick={() => setSelectedSkill(us)}
-                      className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${
-                        selectedSkill?.id.skillId === us.id.skillId
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-secondary border-border text-muted-foreground hover:border-primary/40"
-                      }`}
-                    >
-                      {us.skill.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                <p className="text-sm font-medium mb-2">Skill</p>
 
+                {preselectedSkillId ? (
+                    // ✅ AUTO-SELECTED VIEW (from search)
+                    <div className="px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 text-primary text-sm">
+                      {selectedSkill?.skill.name ?? "Selected from search"}
+                    </div>
+                ) : (
+                    // ✅ NORMAL FLOW (manual selection)
+                    <div className="flex flex-wrap gap-2">
+                      {teachSkills.map(us => (
+                          <button
+                              key={us.id.skillId}
+                              onClick={() => setSelectedSkill(us)}
+                              className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${
+                                  selectedSkill?.id.skillId === us.id.skillId
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "bg-secondary border-border text-muted-foreground hover:border-primary/40"
+                              }`}
+                          >
+                            {us.skill.name}
+                          </button>
+                      ))}
+                    </div>
+                )}
+              </div>
               {/* Slot selection */}
               <div>
                 <p className="text-sm font-medium mb-2">Choose a time slot</p>

@@ -218,8 +218,7 @@ const Search = () => {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  onClick={() => navigate(`/profile/${u.id}`)}
-                  className="p-5 rounded-2xl bg-card border border-border glow-border cursor-pointer flex items-start gap-4"
+                  onClick={() => navigate(`/profile/${u.id}`, { state: { skillId: selectedSkill?.id } })}                  className="p-5 rounded-2xl bg-card border border-border glow-border cursor-pointer flex items-start gap-4"
                 >
                   {/* Avatar */}
                   <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-heading font-bold text-sm flex-shrink-0">
