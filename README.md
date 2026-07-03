@@ -1,4 +1,4 @@
-# Skill-Share by ZenWare
+# Skill-Share by ZenWare 
 
 **An Algorithmic Peer-to-Peer Knowledge & Resource Sharing Platform**
 
