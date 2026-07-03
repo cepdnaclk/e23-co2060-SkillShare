@@ -31,8 +31,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        // If the user is trying to log in or register, completely skip the JWT check!
-        if (request.getServletPath().contains("/api/auth")) {
+        // LOGIC: Skip the JWT check for standard auth AND our new GitHub OAuth2 endpoints!
+        String path = request.getServletPath();
+        if (path.contains("/api/auth") || path.contains("/oauth2") || path.contains("/login/oauth2")) {
             filterChain.doFilter(request, response);
             return;
         }
