@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value; // IMPORT THIS
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -16,10 +17,10 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    // LOGIC: This is the secret encryption key.
-    // In production, this should NEVER be hardcoded. It should be in your application.properties!
-    // This is a 256-bit secure Base64 key generated specifically for your app.
-    private static final String SECRET_KEY = "M2I0ZTU2Yjc4OWFiY2RlZjAxMjM0NTY3ODkwYWJjZGVmMDEyMzQ1Njc4OTBhYmNkZWYwMTIzNDU2Nzg5MGFiY2RlZg==";
+    // LOGIC: Spring Boot automatically grabs the value from application.properties
+    // and injects it into this variable when the server starts.
+    @Value("${jwt.secret}")
+    private String secretKey;
 
     // 1. GENERATE TOKEN (For when a user logs in)
     public String generateToken(UserDetails userDetails) {
@@ -31,8 +32,9 @@ public class JwtService {
                 .claims(extraClaims)
                 .subject(userDetails.getUsername())
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 30)) // Token valid for 24 hours
-                .signWith(getSignInKey()) // Uses the modern 0.12.x signature method
+                // Note: Your math here (1000 * 60 * 60 * 24 * 30) actually equals 30 days!
+                .expiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 30))
+                .signWith(getSignInKey())
                 .compact();
     }
 
@@ -72,8 +74,8 @@ public class JwtService {
     }
 
     private SecretKey getSignInKey() {
-        // FIX: JJWT uses BASE64 decoders, not HEX.
-        byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
+        // Using the dynamically injected secretKey variable
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }
