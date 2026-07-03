@@ -31,8 +31,15 @@ public class User implements UserDetails {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(name = "password", nullable = false)
+    // --- UPDATED: Password can now be null because OAuth users won't have one! ---
+    @Column(name = "password")
     private String password;
+
+    // --- NEW: OAUTH PROVIDER TRACKING ---
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider", nullable = false)
+    @Builder.Default
+    private AuthProvider authProvider = AuthProvider.LOCAL;
 
     // --- SECURITY & GAMIFICATION DATA ---
 
