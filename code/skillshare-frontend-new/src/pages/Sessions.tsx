@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Check, X, Sparkles, Clock, Calendar, MessageSquare, ChevronRight
+  Check, X, Sparkles, Clock, Calendar, MessageSquare, ChevronRight, BookOpen,GraduationCap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,9 +27,18 @@ const STATUS_CLASSES: Record<SessionStatus, string> = {
   EXPIRED:   "status-expired",
 };
 
-const fmt = (iso: string) =>
-  new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
 
+const formatTime = (date: string) =>
+    new Date(date).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 // ─── Feedback Dialog ─────────────────────────────────────────
 interface FeedbackDialogProps {
   session: Session | null;
@@ -72,7 +81,7 @@ const FeedbackDialog = ({ session, rateName, onClose, onSubmitted }: FeedbackDia
             <Sparkles className="w-4 h-4 text-primary" /> Leave Feedback
           </DialogTitle>
           <DialogDescription>
-            Rate your session with <strong>{rateName}</strong> on {session ? fmt(session.startTime) : ""}.
+            Rate your session with <strong>{rateName}</strong> on {session ? formatTime(session.startTime) : ""}.
           </DialogDescription>
         </DialogHeader>
         <div className="mt-2 space-y-4">
@@ -134,20 +143,39 @@ const SessionCard = ({ session: s, role, onAction, actionLoading, ratedSessionId
       className="p-5 rounded-2xl bg-card border border-border glow-border"
     >
       <div className="flex items-start gap-4">
-        <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-heading font-bold text-sm flex-shrink-0">
+        <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-heading font-bold text-base flex-shrink-0">
           {initials}
         </div>
+
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="font-heading font-semibold text-sm">{counterpart.fullName}</h3>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_CLASSES[s.status]}`}>
-              {s.status}
-            </span>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-heading font-semibold text-base">
+              {counterpart.fullName}
+            </h3>
+
+            <span
+                className={`text-sm px-2.5 py-1 rounded-full font-medium ${STATUS_CLASSES[s.status]}`}
+            >
+        {s.status}
+      </span>
           </div>
-          <p className="text-xs text-muted-foreground mb-1">Skill: <span className="text-foreground">{s.skill.name}</span></p>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {fmt(s.startTime)}</span>
-            <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> → {fmt(s.endTime)}</span>
+
+          <p className="text-sm text-muted-foreground mb-3">
+            <span className="text-foreground">{s.skill.name}</span>
+          </p>
+
+          {/* Date */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+            <Calendar className="w-5 h-5" />
+            <span>{formatDate(s.startTime)}</span>
+          </div>
+
+          {/* Time */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock className="w-5 h-5" />
+            <span>
+        {formatTime(s.startTime)} - {formatTime(s.endTime)}
+      </span>
           </div>
         </div>
       </div>
@@ -336,8 +364,18 @@ const Sessions = () => {
   ).length;
 
   const tabs = [
-    { key: "learner" as const, label: "As Learner", count: learnerActionCount },
-    { key: "mentor" as const, label: "As Mentor", count: mentorActionCount },
+    {
+      key: "learner" as const,
+      label: <BookOpen className="w-5 h-5" />,
+      title: "As Learner",
+      count: learnerActionCount,
+    },
+    {
+      key: "mentor" as const,
+      label: <GraduationCap className="w-5 h-5" />,
+      title: "As Mentor",
+      count: mentorActionCount,
+    },
   ];
 
   const saveMeetingLink = async () => {
@@ -372,6 +410,7 @@ const Sessions = () => {
           {tabs.map(t => (
             <button
               key={t.key}
+              title={t.title}
               onClick={() => setTab(t.key)}
               className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                 tab === t.key ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground"
@@ -379,9 +418,9 @@ const Sessions = () => {
             >
               {t.label}
               {t.count > 0 && (
-                <span className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center ${
-                  tab === t.key ? "bg-primary text-primary-foreground" : "bg-border text-muted-foreground"
-                }`}>{t.count}</span>
+                  <span className="w-5 h-5 rounded-full text-[10px] flex items-center justify-center bg-primary text-white transition-all duration-200">
+              {t.count}
+                  </span>
               )}
             </button>
           ))}
