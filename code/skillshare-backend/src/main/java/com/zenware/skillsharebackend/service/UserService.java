@@ -14,6 +14,7 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final GamificationService gamificationService;
 
     // --- THE SECURITY ENGINE ---
     // LOGIC: Extracts the exact user making the request from the JWT Token!
@@ -34,6 +35,7 @@ public class UserService {
     public User updateMyBio(String bio) {
         User me = getAuthenticatedUser();
         me.setBio(bio);
+        gamificationService.awardProfileCompletionXp(me);
         return userRepository.save(me);
     }
 }

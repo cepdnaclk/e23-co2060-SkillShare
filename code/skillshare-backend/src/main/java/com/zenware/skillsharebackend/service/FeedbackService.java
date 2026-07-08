@@ -25,6 +25,9 @@ public class FeedbackService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
 
+    // --- NEW: INJECT THE GAMIFICATION ENGINE ---
+    private final GamificationService gamificationService;
+
     // --- THE SECURITY ENGINE ---
     // LOGIC: Extracts the exact user making the request from the JWT Token.
     private User getAuthenticatedUser() {
@@ -78,6 +81,12 @@ public class FeedbackService {
         // 6. Update the Receiver's Score
         receiver.setReputationScore(receiver.getReputationScore() + totalReputationChange);
         userRepository.save(receiver);
+
+        // --- NEW: GAMIFICATION TRIGGER ---
+        // LOGIC: If the overall feedback is positive, treat it as our "5-Star Rating" equivalent
+        if (totalReputationChange > 0) {
+            gamificationService.awardFiveStarRatingXp(receiver);
+        }
 
         // 7. Save the Feedback Entity (Using the new Builder pattern)
         Feedback feedback = Feedback.builder()
