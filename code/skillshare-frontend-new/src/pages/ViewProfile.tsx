@@ -4,7 +4,7 @@ import {
   ArrowLeft,
   Clock,
   Calendar,
-  Star,
+  Zap,
   BookOpen,
   Coins,
   ChevronRight,
@@ -13,6 +13,9 @@ import {
   Layers,
   X,
   MessageSquare,
+  UserPlus,
+  UserCheck,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +26,7 @@ import {
   userSkillsApi,
   availabilityApi,
   sessionsApi,
+  connectionsApi,
   type User,
   type UserSkill,
   type Availability,
@@ -68,7 +72,11 @@ const ViewProfile = () => {
   const [selectedSlot, setSelectedSlot] = useState<Availability | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<UserSkill | null>(null);
   const [booking, setBooking] = useState(false);
-  const [deletingSkill, setDeletingSkill] = useState<string | null>(null); // "skillId-skillType"
+  const [deletingSkill, setDeletingSkill] = useState<string | null>(null);
+
+  // Add Friend
+  const [friendStatus, setFriendStatus] = useState<"idle" | "pending" | "added">("idle");
+  const [friendLoading, setFriendLoading] = useState(false);
 
   useEffect(() => {
     if (!id || id === "undefined") {
@@ -110,11 +118,10 @@ const ViewProfile = () => {
 
   const handleDeleteSkill = async (us: UserSkill) => {
     const key = `${us.id.skillId}-${us.id.skillType}`;
-    if (deletingSkill === key) return; // prevent double-click
+    if (deletingSkill === key) return;
     setDeletingSkill(key);
     try {
       await userSkillsApi.remove(String(us.id.skillId), us.id.skillType);
-      // Optimistically remove from local state
       setSkills((prev) =>
         prev.filter(
           (s) =>
@@ -130,6 +137,27 @@ const ViewProfile = () => {
       toast.error(e.message ?? "Failed to remove skill.");
     } finally {
       setDeletingSkill(null);
+    }
+  };
+
+  const handleAddFriend = async () => {
+    if (!id || friendLoading) return;
+    setFriendLoading(true);
+    try {
+      await connectionsApi.request(id);
+      setFriendStatus("pending");
+      toast.success("Friend request sent!");
+    } catch (err: unknown) {
+      const e = err as ApiError;
+      // If already sent or already friends, reflect that
+      if (e.status === 409 || e.message?.toLowerCase().includes("already")) {
+        setFriendStatus("added");
+        toast.info("Already connected or request pending.");
+      } else {
+        toast.error(e.message ?? "Could not send request.");
+      }
+    } finally {
+      setFriendLoading(false);
     }
   };
 
@@ -231,8 +259,16 @@ const ViewProfile = () => {
                 <Coins className="w-3.5 h-3.5 text-yellow-400" />{" "}
                 {mentor.credits} credits
               </span>
-              <span className="flex items-center gap-1 text-sm text-accent">
-                <Star className="w-3.5 h-3.5" /> Rep: {mentor.reputationScore}
+              {/* XP Level — replaces old ratingAvg star display */}
+              <span className="flex items-center gap-1.5 text-sm">
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold">
+                  <Zap className="w-3 h-3 fill-amber-400/60" />
+                  XP Lv.{mentor.xpLevel ?? Math.floor((mentor.reputationScore ?? 0) / 10)}
+                </span>
+              </span>
+              <span className="flex items-center gap-1 text-sm">
+                <TrendingUp className="w-3.5 h-3.5 text-violet-400" />
+                <span className="text-white/60">Rep: {mentor.reputationScore}</span>
               </span>
             </div>
 
@@ -457,9 +493,10 @@ const ViewProfile = () => {
               <Coins className="w-3.5 h-3.5 text-yellow-400" /> {mentor.credits}{" "}
               credits
             </span>
-            <span className="flex items-center gap-1 text-sm text-accent">
-              <ChevronRight className="w-3.5 h-3.5" /> Rep:{" "}
-              {mentor.reputationScore}
+            {/* XP Level badge — replaces old ratingAvg star */}
+            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold">
+              <Zap className="w-3.5 h-3.5 fill-amber-400/60" />
+              XP Lv.{mentor.xpLevel ?? Math.floor((mentor.reputationScore ?? 0) / 10)}
             </span>
           </div>
         </motion.div>
@@ -533,7 +570,7 @@ const ViewProfile = () => {
           )}
         </motion.div>
 
-        {/* Book button */}
+        {/* Book + Add Friend buttons */}
         {slots.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -547,8 +584,56 @@ const ViewProfile = () => {
             >
               <Calendar className="w-4 h-4" /> Book a Session
             </Button>
-            <Button variant="outline" className="flex-1 h-11 gap-2">
-              <MessageSquare className="w-4 h-4" /> Chat
+            {/* Add Friend / pending state */}
+            <Button
+              variant="outline"
+              className={`flex-1 h-11 gap-2 transition-all ${
+                friendStatus === "added"
+                  ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/5"
+                  : friendStatus === "pending"
+                  ? "border-violet-500/30 text-violet-400 bg-violet-500/5"
+                  : "hover:border-violet-500/40 hover:text-violet-400"
+              }`}
+              onClick={handleAddFriend}
+              disabled={friendStatus !== "idle" || friendLoading}
+            >
+              {friendStatus === "added" ? (
+                <><UserCheck className="w-4 h-4" /> Friends</>
+              ) : friendStatus === "pending" ? (
+                <><UserPlus className="w-4 h-4" /> Request Sent</>
+              ) : (
+                <><UserPlus className="w-4 h-4" /> Add Friend</>
+              )}
+            </Button>
+          </motion.div>
+        )}
+
+        {/* Also show Add Friend even if no slots */}
+        {slots.length === 0 && !isOwnProfile && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Button
+              variant="outline"
+              className={`w-full h-11 gap-2 transition-all ${
+                friendStatus === "added"
+                  ? "border-emerald-500/30 text-emerald-400"
+                  : friendStatus === "pending"
+                  ? "border-violet-500/30 text-violet-400"
+                  : ""
+              }`}
+              onClick={handleAddFriend}
+              disabled={friendStatus !== "idle" || friendLoading}
+            >
+              {friendStatus === "added" ? (
+                <><UserCheck className="w-4 h-4" /> Friends</>
+              ) : friendStatus === "pending" ? (
+                <><UserPlus className="w-4 h-4" /> Request Sent</>
+              ) : (
+                <><UserPlus className="w-4 h-4" /> Add Friend</>
+              )}
             </Button>
           </motion.div>
         )}

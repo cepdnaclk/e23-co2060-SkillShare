@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search as SearchIcon, Filter, X, ChevronRight, BookOpen,
-  Star, User, Sparkles, GraduationCap
+  Zap, User, Sparkles, GraduationCap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -292,14 +292,18 @@ const Search = () => {
                           <p className="text-sm text-white/40 truncate">{u.email}</p>
                         </div>
                         <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-400 px-2 py-1 rounded-lg border border-amber-500/20">
-                          <Star className="w-3.5 h-3.5 fill-amber-400" />
-                          <span className="text-xs font-bold">{u.ratingAvg?.toFixed(1) ?? "New"}</span>
+                          <Zap className="w-3.5 h-3.5 fill-amber-400/40" />
+                          <span className="text-xs font-bold">
+                            Lv.{u.xpLevel ?? Math.floor((u.reputationScore ?? 0) / 10)}
+                          </span>
                         </div>
                       </div>
                       {u.bio && <p className="text-sm text-white/40 line-clamp-2 mb-3 mt-2">{u.bio}</p>}
                       <div className="flex flex-wrap items-center gap-2 mt-2">
-                        <Badge className="bg-orange-400/10 text-orange-400 border-orange-400/20 text-xs font-medium gap-1 px-2.5 py-0.5">
-                          <Star className="w-3 h-3" /> Rep: {u.reputationScore}
+                        {/* XP Level badge — replaces the old ratingAvg star badge */}
+                        <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20 text-xs font-medium gap-1 px-2.5 py-0.5">
+                          <Zap className="w-3 h-3 fill-amber-400" />
+                          XP Lv.{u.xpLevel ?? Math.floor((u.reputationScore ?? 0) / 10)}
                         </Badge>
                         <Badge className="bg-violet-500/10 text-violet-400 border-violet-500/20 text-xs font-medium gap-1 px-2.5 py-0.5">
                           <GraduationCap className="w-3 h-3" /> Teaches {selectedSkill?.name}
