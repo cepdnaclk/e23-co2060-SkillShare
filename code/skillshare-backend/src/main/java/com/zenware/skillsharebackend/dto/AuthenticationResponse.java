@@ -19,4 +19,9 @@ public class AuthenticationResponse {
     private String fullName;
     private String email;
     private String role;
+
+    private Integer xp;
+    private Integer level;
+    private Integer credits;
+    private Integer reputationScore;
 }
