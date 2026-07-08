@@ -61,6 +61,7 @@ public class ChatService {
         chatMessageRepository.saveAll(unreadMessages);
     }
 
+    @Transactional(readOnly = true)
     public List<RecentChatDto> getRecentConversations() {
         User currentUser = getAuthenticatedUser();
 

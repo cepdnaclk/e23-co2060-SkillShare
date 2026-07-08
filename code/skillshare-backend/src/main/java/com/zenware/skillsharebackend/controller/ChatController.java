@@ -12,6 +12,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.time.LocalDateTime;
+import org.springframework.transaction.annotation.Transactional;
 
 @Controller // Notice this is @Controller, not @RestController!
 @RequiredArgsConstructor
@@ -22,6 +23,7 @@ public class ChatController {
     private final UserRepository userRepository;
 
     @MessageMapping("/chat")
+    @Transactional
     public void processMessage(@Payload ChatMessageDto chatMessageDto) {
         // 1. Find the sender and receiver in the database
         User sender = userRepository.findById(chatMessageDto.getSenderId())
