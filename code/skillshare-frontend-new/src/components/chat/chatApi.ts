@@ -16,11 +16,11 @@ function authHeaders() {
 export const chatApi = {
   /** Fetch total unread message count for the FAB badge */
   getUnreadCount: async (): Promise<number> => {
-    const { data } = await axios.get<{ count: number }>(
+    const { data } = await axios.get<{ unreadCount: number }>(
       `${BASE_URL}/api/chat/unread-count`,
       { headers: authHeaders() }
     );
-    return data.count ?? 0;
+    return data.unreadCount ?? 0;
   },
 
   /** Fetch list of recent conversations for the Inbox view */

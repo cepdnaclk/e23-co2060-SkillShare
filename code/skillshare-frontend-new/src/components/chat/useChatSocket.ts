@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { Client, type IMessage, type StompSubscription } from "@stomp/stompjs";
-import SockJS from "sockjs-client";
+import SockJS from "sockjs-client/dist/sockjs";
 import { getToken } from "@/lib/auth";
 import type { ChatMessage, SendMessagePayload } from "./types";
 
@@ -60,7 +60,7 @@ export function useChatSocket({
 
         // Subscribe to the user's personal queue
         subscriptionRef.current = client.subscribe(
-          `/user/${currentUserId}/queue/messages`,
+          `/topic/messages/${currentUserId}`,
           (frame: IMessage) => {
             try {
               const msg: ChatMessage = JSON.parse(frame.body);
