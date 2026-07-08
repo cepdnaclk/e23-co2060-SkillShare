@@ -120,6 +120,17 @@ export const FloatingChatWidget: React.FC = () => {
     setUnreadCount((prev) => Math.max(0, prev - (contact.unreadCount ?? 0)));
   }, []);
 
+  // ── Listen for external open events (e.g. from Profile page) ──
+  useEffect(() => {
+    const handleOpenChatEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<ChatContact>;
+      setIsOpen(true);
+      openChat(customEvent.detail);
+    };
+    window.addEventListener("open-chat-widget", handleOpenChatEvent);
+    return () => window.removeEventListener("open-chat-widget", handleOpenChatEvent);
+  }, [openChat]);
+
   // ── Toggle widget ──
   const toggleWidget = useCallback(() => {
     setIsOpen((prev) => {

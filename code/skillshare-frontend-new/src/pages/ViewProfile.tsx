@@ -181,6 +181,18 @@ const ViewProfile = () => {
     }
   };
 
+  const handleMessage = () => {
+    if (!mentor) return;
+    const contact = {
+      id: mentor.id,
+      name: mentor.fullName,
+      lastMessage: "",
+      lastMessageTime: new Date().toISOString(),
+      unreadCount: 0,
+    };
+    window.dispatchEvent(new CustomEvent("open-chat-widget", { detail: contact }));
+  };
+
   const getInitials = (name: string) =>
     name
       .split(" ")
@@ -570,7 +582,7 @@ const ViewProfile = () => {
           )}
         </motion.div>
 
-        {/* Book + Add Friend buttons */}
+        {/* Book + Message + Add Friend buttons */}
         {slots.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -582,7 +594,14 @@ const ViewProfile = () => {
               className="flex-1 h-11 gap-2"
               onClick={() => setBookingOpen(true)}
             >
-              <Calendar className="w-4 h-4" /> Book a Session
+              <Calendar className="w-4 h-4" /> Book
+            </Button>
+            <Button
+              variant="secondary"
+              className="flex-1 h-11 gap-2"
+              onClick={handleMessage}
+            >
+              <MessageSquare className="w-4 h-4" /> Message
             </Button>
             {/* Add Friend / pending state */}
             <Button
@@ -608,16 +627,24 @@ const ViewProfile = () => {
           </motion.div>
         )}
 
-        {/* Also show Add Friend even if no slots */}
+        {/* Also show Message & Add Friend even if no slots */}
         {slots.length === 0 && !isOwnProfile && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
+            className="flex gap-3"
           >
             <Button
+              variant="secondary"
+              className="flex-1 h-11 gap-2"
+              onClick={handleMessage}
+            >
+              <MessageSquare className="w-4 h-4" /> Message
+            </Button>
+            <Button
               variant="outline"
-              className={`w-full h-11 gap-2 transition-all ${
+              className={`flex-1 h-11 gap-2 transition-all ${
                 friendStatus === "added"
                   ? "border-emerald-500/30 text-emerald-400"
                   : friendStatus === "pending"

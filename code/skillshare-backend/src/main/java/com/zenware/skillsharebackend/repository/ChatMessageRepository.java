@@ -44,4 +44,14 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> 
      */
     @Query("SELECT COUNT(m) FROM ChatMessage m WHERE m.sender.id = :senderId AND m.receiver.id = :receiverId AND m.isRead = false")
     long countUnreadMessagesFromContact(@Param("senderId") UUID senderId, @Param("receiverId") UUID receiverId);
+
+    /**
+     * Finds all distinct users that have exchanged messages with the specified user.
+     */
+    @Query("SELECT DISTINCT u FROM User u WHERE u.id IN (" +
+           "SELECT m.sender.id FROM ChatMessage m WHERE m.receiver.id = :userId" +
+           ") OR u.id IN (" +
+           "SELECT m.receiver.id FROM ChatMessage m WHERE m.sender.id = :userId" +
+           ")")
+    List<com.zenware.skillsharebackend.entity.User> findUsersWithConversation(@Param("userId") UUID userId);
 }
