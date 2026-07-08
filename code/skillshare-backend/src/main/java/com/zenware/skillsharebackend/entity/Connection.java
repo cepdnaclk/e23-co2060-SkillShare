@@ -9,7 +9,10 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "connections")
+@Table(name = "connections", uniqueConstraints = {
+        // This strictly prevents User A from sending multiple requests to User B
+        @UniqueConstraint(columnNames = {"sender_id", "receiver_id"})
+})
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
