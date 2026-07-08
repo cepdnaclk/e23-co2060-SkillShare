@@ -45,17 +45,13 @@ public class ChatService {
     }
 
     // Mark all messages from a specific user as "Read" when opening the chat
+    // Mark all messages from a specific user as "Read" when opening the chat
     @Transactional
     public void markMessagesAsRead(UUID senderId) {
         User currentUser = getAuthenticatedUser();
 
-        // Find all messages sent BY the contact, TO the current user, where isRead is false
-        // (For a production app, you might want a custom query for this to be faster,
-        // but fetching the history and updating the flags works perfectly for the MVP)
-        List<ChatMessage> unreadMessages = chatMessageRepository.findConversationHistory(currentUser.getId(), senderId)
-                .stream()
-                .filter(msg -> msg.getReceiver().getId().equals(currentUser.getId()) && !msg.isRead())
-                .toList();
+        // Use our new, highly optimized query instead of fetching the entire history
+        List<ChatMessage> unreadMessages = chatMessageRepository.findUnreadMessages(senderId, currentUser.getId());
 
         for (ChatMessage msg : unreadMessages) {
             msg.setRead(true);
