@@ -51,6 +51,10 @@ public class User implements UserDetails {
     @Column(name = "bio", columnDefinition = "TEXT")
     private String bio;
 
+    // --- PROFILE CUSTOMIZATION ---
+    @Column(name = "profile_picture_url")
+    private String profilePictureUrl;
+
     @Column(name = "credits")
     @Builder.Default
     private Integer credits = 100;
