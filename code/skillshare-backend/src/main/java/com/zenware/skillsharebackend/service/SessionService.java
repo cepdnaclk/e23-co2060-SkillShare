@@ -22,6 +22,7 @@ public class SessionService {
     private final SkillRepository skillRepository;
     private final AvailabilityRepository availabilityRepository;
     private final NotificationService notificationService;
+    private final GamificationService gamificationService;
 
     // --- THE SECURITY ENGINE ---
     // LOGIC: This helper method grabs the exact user currently making the API request
@@ -214,6 +215,9 @@ public class SessionService {
 
         notificationService.sendNotification(mentor, "Your session with " + learner.getFullName()+ " is completed.", NotificationType.MESSAGE);
         notificationService.sendNotification(learner, "Your session with " + mentor.getFullName() + " is completed.", NotificationType.MESSAGE);
+
+        gamificationService.awardSessionCompletionXp(session.getMentor());
+        gamificationService.awardSessionCompletionXp(session.getLearner());
 
         mentor.setCredits(mentor.getCredits() + 10);
         session.setStatus(SessionStatus.COMPLETED);

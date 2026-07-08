@@ -59,9 +59,15 @@ public class User implements UserDetails {
     @Builder.Default
     private Integer reputationScore = 0;
 
-    @Column(name = "rating_avg")
+    // --- UPDATED: XP AND LEVEL SYSTEM ---
+
+    @Column(name = "xp")
     @Builder.Default
-    private Double ratingAvg = 0.0;
+    private Integer xp = 0;
+
+    @Column(name = "level")
+    @Builder.Default
+    private Integer level = 1;
 
     @Column(name = "is_active")
     @Builder.Default
