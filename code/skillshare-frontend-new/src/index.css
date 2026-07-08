@@ -237,3 +237,26 @@ html { color-scheme: dark; }
   50%  { transform: translate(20px, -15px); }
   100% { transform: translate(-10px, 10px); }
 }
+
+/* ── Chat Widget – Custom Scrollbar ──────────────────────── */
+.custom-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.35) transparent;
+}
+
+.custom-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #7c3aed55, #f9731655);
+  border-radius: 9999px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #7c3aed99, #f9731699);
+}
