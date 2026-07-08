@@ -65,6 +65,28 @@ export const FloatingChatWidget: React.FC = () => {
   // ── Ref to hold the unread count fetch interval ──
   const unreadIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // ── Bug Fix: Contact cache for InboxView ──────────────────
+  // We keep a live list of contacts the user has interacted with in this
+  // session.  When the user goes back from an active chat, we immediately
+  // inject that contact into the inbox so it never shows "No conversations
+  // yet" just because the backend /recent endpoint hasn't caught up yet.
+  const [cachedContacts, setCachedContacts] = useState<ChatContact[]>([]);
+
+  // Ref so openInbox() can read the latest activeContact without needing it
+  // as a dependency (which would recreate the callback).
+  const activeContactRef = useRef<ChatContact | null>(null);
+  useEffect(() => {
+    activeContactRef.current = activeContact;
+  }, [activeContact]);
+
+  // ── Bug Fix #7: Track isOpen via ref ─────────────────────
+  // Prevents handleIncomingMessage from being re-created on every toggle,
+  // which used to cause useChatSocket to reconnect on every open/close.
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
   // ── Fetch initial unread count ──
   useEffect(() => {
     if (!token || !user) return;
@@ -89,15 +111,17 @@ export const FloatingChatWidget: React.FC = () => {
   }, [token, user]);
 
   // ── Handle incoming WebSocket message ──
+  // Bug Fix #7: No dependency on `isOpen` – read via ref so this callback
+  // is stable and never triggers a WebSocket reconnect.
   const handleIncomingMessage = useCallback((msg: ChatMessage) => {
     setLatestIncoming(msg);
 
     // Bump unread count only if the widget is closed or we're in inbox
     setUnreadCount((prev) => {
-      if (!isOpen) return prev + 1;
-      return prev; // If we're in active view, mark-read fires separately
+      if (!isOpenRef.current) return prev + 1;
+      return prev;
     });
-  }, [isOpen]);
+  }, []); // intentionally empty – isOpen read via ref
 
   // ── WebSocket hook ──
   const { sendMessage } = useChatSocket({
@@ -105,19 +129,39 @@ export const FloatingChatWidget: React.FC = () => {
     onMessageReceived: handleIncomingMessage,
   });
 
-  // ── Navigation handlers ──
+  // ── Navigation: back to inbox ─────────────────────────────
   const openInbox = useCallback(() => {
+    // Before clearing the active contact, cache it so InboxView can show
+    // it immediately even if /api/chat/recent hasn't caught up yet.
+    const current = activeContactRef.current;
+    if (current) {
+      setCachedContacts((prev) => {
+        const exists = prev.some((c) => c.id === current.id);
+        // Always move the most-recently-chatted contact to the top
+        const filtered = prev.filter((c) => c.id !== current.id);
+        return [{ ...current, lastMessageTime: new Date().toISOString() }, ...filtered];
+      });
+    }
+
     setSlideDirection(-1);
     setView("inbox");
     setActiveContact(null);
   }, []);
 
+  // ── Navigation: open a specific chat ─────────────────────
   const openChat = useCallback((contact: ChatContact) => {
     setActiveContact(contact);
     setSlideDirection(1);
     setView("active");
-    // When entering chat, clear unread for that contact
+    // When entering chat, subtract that contact's unread from the global badge
     setUnreadCount((prev) => Math.max(0, prev - (contact.unreadCount ?? 0)));
+  }, []);
+
+  // ── Callback for InboxView to bubble up the server-fetched list ──
+  // This keeps cachedContacts in sync with whatever the server returns,
+  // so future back-navigations always show an up-to-date list.
+  const handleContactsLoaded = useCallback((fresh: ChatContact[]) => {
+    setCachedContacts(fresh);
   }, []);
 
   // ── Listen for external open events (e.g. from Profile page) ──
@@ -131,19 +175,19 @@ export const FloatingChatWidget: React.FC = () => {
     return () => window.removeEventListener("open-chat-widget", handleOpenChatEvent);
   }, [openChat]);
 
-  // ── Toggle widget ──
+  // ── Toggle widget ─────────────────────────────────────────
+  // Bug Fix: Previously, pressing the FAB to OPEN always called
+  // setView("inbox") and setActiveContact(null), which meant:
+  //   • Closing a chat and reopening it → always dumped the user at an
+  //     empty inbox, losing their current conversation.
+  //   • The messages state inside ActiveChatView was destroyed.
+  //
+  // Fix: Just flip isOpen.  We preserve `view` and `activeContact` so that
+  // if the user was mid-chat, they land straight back in that chat when they
+  // reopen the widget (ActiveChatView will re-fetch the history on mount,
+  // which is fast and shows the conversation correctly).
   const toggleWidget = useCallback(() => {
-    setIsOpen((prev) => {
-      if (!prev) {
-        // When opening, reset to inbox
-        setView("inbox");
-        setActiveContact(null);
-      } else {
-        // When closing, reset unread (user presumably saw the widget)
-        // Optionally reset unread here or leave it to next poll
-      }
-      return !prev;
-    });
+    setIsOpen((prev) => !prev);
   }, []);
 
   // ── Send message handler (WebSocket publish) ──
@@ -186,7 +230,11 @@ export const FloatingChatWidget: React.FC = () => {
                     exit="exit"
                     className="absolute inset-0"
                   >
-                    <InboxView onSelectContact={openChat} />
+                    <InboxView
+                      onSelectContact={openChat}
+                      initialContacts={cachedContacts}
+                      onContactsLoaded={handleContactsLoaded}
+                    />
                   </motion.div>
                 ) : (
                   <motion.div
