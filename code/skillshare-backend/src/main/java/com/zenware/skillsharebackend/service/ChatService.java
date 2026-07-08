@@ -12,8 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.Set;
-import java.util.HashSet;
 
 @Service
 @RequiredArgsConstructor
@@ -61,33 +59,9 @@ public class ChatService {
         chatMessageRepository.saveAll(unreadMessages);
     }
 
-    @Transactional(readOnly = true)
     public List<RecentChatDto> getRecentConversations() {
         User currentUser = getAuthenticatedUser();
 
-<<<<<<< HEAD
-        Set<User> contacts = new HashSet<>();
-
-        // 1. Get all accepted friends from the network
-        connectionService.getMyFriends().forEach(connection -> {
-            User contact = connection.getSender().getId().equals(currentUser.getId())
-                    ? connection.getReceiver()
-                    : connection.getSender();
-            contacts.add(contact);
-        });
-
-        // 2. Get all users who we have a message history with
-        contacts.addAll(chatMessageRepository.findUsersWithConversation(currentUser.getId()));
-
-        return contacts.stream().map(contact -> {
-                    // Fetch the last message snippet
-                    ChatMessage lastMsg = chatMessageRepository.findLastMessageBetweenUsers(currentUser.getId(), contact.getId());
-
-                    // Fetch the unread count for this specific chat
-                    long unreadCount = chatMessageRepository.countUnreadMessagesFromContact(contact.getId(), currentUser.getId());
-
-                    // Build the UI row
-=======
         // 1. Get all accepted friends and map them directly to 'User' objects
         java.util.Set<User> contactList = connectionService.getMyFriends().stream()
                 .map(connection -> connection.getSender().getId().equals(currentUser.getId())
@@ -105,7 +79,6 @@ public class ChatService {
                     ChatMessage lastMsg = chatMessageRepository.findLastMessageBetweenUsers(currentUser.getId(), contact.getId());
                     long unreadCount = chatMessageRepository.countUnreadMessagesFromContact(contact.getId(), currentUser.getId());
 
->>>>>>> main
                     return RecentChatDto.builder()
                             .contactId(contact.getId())
                             .contactName(contact.getFullName())
@@ -116,11 +89,7 @@ public class ChatService {
                             .build();
 
                 })
-<<<<<<< HEAD
-                // Sort the whole list so the most recent conversations jump to the top
-=======
                 // 4. Sort the whole list so the most recent conversations jump to the top
->>>>>>> main
                 .sorted((c1, c2) -> {
                     if (c1.getLastMessageTime() == null && c2.getLastMessageTime() == null) return 0;
                     if (c1.getLastMessageTime() == null) return 1;
