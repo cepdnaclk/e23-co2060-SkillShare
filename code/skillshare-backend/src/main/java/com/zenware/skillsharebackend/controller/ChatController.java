@@ -10,6 +10,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+import com.zenware.skillsharebackend.dto.TypingStatusDto;
 
 import java.time.LocalDateTime;
 
@@ -45,5 +46,13 @@ public class ChatController {
         // to bypass the missing Principal issue when using JWTs over WebSockets.
         String destination = "/user/" + chatMessageDto.getReceiverId() + "/queue/messages";
         messagingTemplate.convertAndSend(destination, chatMessageDto);
+    }
+
+    @MessageMapping("/chat/typing")
+    public void processTyping(@Payload TypingStatusDto typingStatus) {
+        // We do not save this to the database!
+        // We just instantly route it to the receiver's dedicated typing queue.
+        String destination = "/user/" + typingStatus.getReceiverId() + "/queue/typing";
+        messagingTemplate.convertAndSend(destination, typingStatus);
     }
 }
