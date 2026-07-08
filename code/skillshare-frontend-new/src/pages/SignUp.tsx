@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Mail, Lock, User, Eye, EyeOff, Sparkles, Zap, Users } from "lucide-react";
+import { ArrowRight, Mail, Lock, User, Eye, EyeOff, Sparkles, Zap, Users, Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -263,7 +263,26 @@ const SignUp = () => {
                 </Button>
               </form>
 
-              <p className="mt-6 text-center text-sm text-muted-foreground">
+              {/* Divider */}
+              <div className="relative my-5">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-background px-3 text-muted-foreground">or continue with</span>
+                </div>
+              </div>
+
+              {/* GitHub OAuth Button */}
+              <a
+                href="http://localhost:8080/oauth2/authorization/github"
+                className="flex items-center justify-center gap-3 w-full h-11 rounded-lg border-2 border-border bg-[#161b22] hover:bg-[#21262d] text-white text-sm font-semibold transition-all duration-200 hover:border-border/80 hover:shadow-lg"
+              >
+                <Github className="w-4 h-4" />
+                Continue with GitHub
+              </a>
+
+              <p className="mt-5 text-center text-sm text-muted-foreground">
                 {isLogin ? "Don't have an account? " : "Already have an account? "}
                 <button
                   onClick={() => { setIsLogin(!isLogin); clearError(); }}
