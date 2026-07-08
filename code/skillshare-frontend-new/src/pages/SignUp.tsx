@@ -276,9 +276,12 @@ const SignUp = () => {
                 </div>
               </div>
 
-              {/* GitHub OAuth Button */}
-              <motion.a
-                href="http://localhost:8080/oauth2/authorization/github"
+              {/* GitHub OAuth Button — uses window.location.href for a full-page
+                  browser redirect, which Spring Security OAuth2 requires.
+                  Do NOT use <a href>, <Link>, or fetch — they won't work. */}
+              <motion.button
+                type="button"
+                onClick={() => { window.location.href = "http://localhost:8080/oauth2/authorization/github"; }}
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.97 }}
                 transition={spring}
@@ -290,7 +293,7 @@ const SignUp = () => {
               >
                 <Github className="w-4 h-4" />
                 Continue with GitHub
-              </motion.a>
+              </motion.button>
 
               <p className="mt-5 text-center text-sm text-white/40">
                 {isLogin ? "Don't have an account? " : "Already have an account? "}

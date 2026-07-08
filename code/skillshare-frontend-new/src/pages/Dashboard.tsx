@@ -2,16 +2,21 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Clock, Sparkles, ArrowRight, Calendar, TrendingUp,
-  BookOpen, Coins, Star, Zap, ChevronLeft, ChevronRight, MessageCircle
+  BookOpen, Coins, Star, Zap, ChevronLeft, ChevronRight,
+  UserPlus, Users, CheckCircle, XCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { sessionsApi, feedbackApi, userSkillsApi, type Session, type Feedback, type UserSkill, type ApiError } from "@/lib/api";
+import {
+  sessionsApi, feedbackApi, userSkillsApi, connectionsApi,
+  type Session, type Feedback, type UserSkill, type Connection, type ApiError
+} from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { SkeletonStats } from "@/components/SkeletonCard";
 import ErrorBanner from "@/components/ErrorBanner";
+import { toast } from "sonner";
 
 /* ─── Spring transition preset ───────────────────────────── */
 const spring = { type: "spring" as const, stiffness: 300, damping: 30, mass: 1 };
@@ -109,50 +114,177 @@ const MiniCalendar = () => {
   );
 };
 
-/* ─── Friends / Connections ──────────────────────────────── */
-interface Friend {
-  id: number; name: string; initials: string; role: string;
-  avatarBg: string; avatarText: string;
-}
-
-const MOCK_FRIENDS: Friend[] = [
-  { id: 1, name: "Arjun Perera",      initials: "AP", role: "React Mentor",   avatarBg: "bg-orange-500/15",  avatarText: "text-orange-400" },
-  { id: 2, name: "Sasha Nilmini",     initials: "SN", role: "UI/UX Learner",  avatarBg: "bg-fuchsia-500/15", avatarText: "text-fuchsia-400" },
-  { id: 3, name: "Dev Krishnamurthy", initials: "DK", role: "ML Engineer",    avatarBg: "bg-violet-500/15",  avatarText: "text-violet-400" },
-  { id: 4, name: "Nadia Farooq",      initials: "NF", role: "Python Mentor",  avatarBg: "bg-orange-500/15",  avatarText: "text-orange-400" },
-  { id: 5, name: "Taro Yamamoto",     initials: "TY", role: "Node.js Dev",    avatarBg: "bg-fuchsia-500/15", avatarText: "text-fuchsia-400" },
+/* ─── Live Connections Panel ─────────────────────────────── */
+const AVATAR_PALETTE = [
+  { bg: "bg-orange-500/15",  text: "text-orange-400"  },
+  { bg: "bg-fuchsia-500/15", text: "text-fuchsia-400" },
+  { bg: "bg-violet-500/15",  text: "text-violet-400"  },
+  { bg: "bg-emerald-500/15", text: "text-emerald-400" },
+  { bg: "bg-amber-500/15",   text: "text-amber-400"   },
 ];
 
-const FriendsList = () => (
-  <div className="p-5 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl shadow-black/20">
-    <h3 className="font-heading font-bold text-sm text-white/90 mb-4">Connections</h3>
-    <div className="space-y-3">
-      {MOCK_FRIENDS.map((friend, i) => (
-        <motion.div
-          key={friend.id}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ ...spring, delay: 0.05 * i }}
-          className="flex items-center gap-3"
-        >
-          <div className={`w-9 h-9 rounded-full ${friend.avatarBg} border border-white/10 flex items-center justify-center flex-shrink-0`}>
-            <span className={`text-xs font-bold ${friend.avatarText}`}>{friend.initials}</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white/90 truncate leading-tight">{friend.name}</p>
-            <p className="text-[11px] text-white/40 truncate">{friend.role}</p>
-          </div>
+const ConnectionsList = () => {
+  const [friends, setFriends] = useState<Connection[]>([]);
+  const [pending, setPending] = useState<Connection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showPending, setShowPending] = useState(false);
+  const [actionId, setActionId] = useState<string | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    const [f, p] = await Promise.all([
+      connectionsApi.getFriends().catch(() => [] as Connection[]),
+      connectionsApi.getPending().catch(() => [] as Connection[]),
+    ]);
+    setFriends(f);
+    setPending(p);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleAccept = async (conn: Connection) => {
+    setActionId(conn.id);
+    try {
+      await connectionsApi.accept(conn.id);
+      toast.success(`Connected with ${conn.requester.fullName}!`);
+      await load();
+    } catch { toast.error("Could not accept request."); }
+    finally { setActionId(null); }
+  };
+
+  const handleReject = async (conn: Connection) => {
+    setActionId(conn.id);
+    try {
+      await connectionsApi.reject(conn.id);
+      toast.info("Request declined.");
+      await load();
+    } catch { toast.error("Could not decline request."); }
+    finally { setActionId(null); }
+  };
+
+  const getInitials = (name: string) =>
+    name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+
+  return (
+    <div className="p-5 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl shadow-black/20">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-heading font-bold text-sm text-white/90 flex items-center gap-2">
+          <Users className="w-4 h-4 text-violet-400" /> Connections
+        </h3>
+        {pending.length > 0 && (
           <button
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-white/30 transition-all hover:text-violet-400 hover:bg-white/8 flex-shrink-0"
-            aria-label={`Message ${friend.name}`}
+            onClick={() => setShowPending(s => !s)}
+            className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-medium hover:bg-violet-500/20 transition-colors"
           >
-            <MessageCircle className="w-4 h-4" />
+            <UserPlus className="w-3.5 h-3.5" />
+            {pending.length} pending
+            {/* Pinging dot */}
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500">
+              <span className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-75" />
+            </span>
           </button>
-        </motion.div>
-      ))}
+        )}
+      </div>
+
+      {/* Pending requests accordion */}
+      {showPending && pending.length > 0 && (
+        <div className="mb-4 space-y-2">
+          <p className="text-[10px] uppercase tracking-widest text-white/30 font-semibold mb-2">Friend Requests</p>
+          {pending.map(conn => (
+            <div key={conn.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.04] border border-white/8">
+              <div className="w-8 h-8 rounded-full bg-violet-500/15 border border-white/10 flex items-center justify-center flex-shrink-0">
+                <span className="text-xs font-bold text-violet-400">{getInitials(conn.requester.fullName)}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <Link
+                  to={`/profile/${conn.requester.id}`}
+                  className="text-sm font-medium text-white/85 hover:text-white truncate block leading-tight transition-colors"
+                >
+                  {conn.requester.fullName}
+                </Link>
+              </div>
+              <div className="flex gap-1.5 flex-shrink-0">
+                <button
+                  onClick={() => handleAccept(conn)}
+                  disabled={actionId === conn.id}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-40"
+                  title="Accept"
+                >
+                  <CheckCircle className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => handleReject(conn)}
+                  disabled={actionId === conn.id}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-40"
+                  title="Decline"
+                >
+                  <XCircle className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+          <div className="border-t border-white/8 mt-3 mb-1" />
+        </div>
+      )}
+
+      {/* Friends list */}
+      {loading ? (
+        <div className="space-y-3">
+          {[1,2,3].map(i => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full skeleton-shimmer flex-shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3 w-28 skeleton-shimmer rounded" />
+                <div className="h-2.5 w-20 skeleton-shimmer rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : friends.length === 0 ? (
+        <div className="text-center py-4">
+          <p className="text-sm text-white/40">No connections yet.</p>
+          <p className="text-xs text-white/25 mt-1">Visit a profile to add friends.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {friends.map((conn, i) => {
+            const friend = conn.requester.id === conn.receiver.id
+              ? conn.receiver
+              : (conn.requester.id === friends[0]?.requester.id ? conn.receiver : conn.requester);
+            // Determine which side is "the friend" (not the current user)
+            const pal = AVATAR_PALETTE[i % AVATAR_PALETTE.length];
+            const initials = getInitials(friend.fullName);
+            return (
+              <motion.div
+                key={conn.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ ...spring, delay: 0.05 * i }}
+                className="flex items-center gap-3"
+              >
+                <div className={`w-9 h-9 rounded-full ${pal.bg} border border-white/10 flex items-center justify-center flex-shrink-0`}>
+                  <span className={`text-xs font-bold ${pal.text}`}>{initials}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  {/* Clickable name routes to friend's profile */}
+                  <Link
+                    to={`/profile/${friend.id}`}
+                    className="text-sm font-medium text-white/90 hover:text-white truncate block leading-tight transition-colors"
+                  >
+                    {friend.fullName}
+                  </Link>
+                  <p className="text-[11px] text-white/40 truncate">{friend.email}</p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 /* ─── Dashboard ──────────────────────────────────────────── */
 const Dashboard = () => {
@@ -205,8 +337,7 @@ const Dashboard = () => {
     <AppLayout>
       <div className="p-6 md:p-8 max-w-7xl mx-auto pb-24 md:pb-8">
 
-        {/* Welcome */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="mb-8">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="mb-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl md:text-3xl font-heading font-bold text-white mb-1">
@@ -230,32 +361,42 @@ const Dashboard = () => {
           {/* ── Main Content (2/3) ──────────────────── */}
           <div className="flex-1 lg:w-0 min-w-0 space-y-5">
 
-            {/* Stats */}
             {loading ? (
               <SkeletonStats />
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              // ── Compact horizontal metric strip (Task 5) ──────────
+              <motion.div
+                className="flex flex-wrap gap-2"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={spring}
+              >
                 {stats.map((stat, i) => (
-                  <motion.div
+                  <motion.button
                     key={stat.label}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ ...spring, delay: i * 0.06 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ ...spring, delay: i * 0.05 }}
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.96 }}
                     onClick={() => navigate(stat.href, { state: stat.hrefState ?? {} })}
-                    className="p-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10
-                      hover:bg-white/8 hover:border-white/20 shadow-xl shadow-black/20
-                      cursor-pointer transition-colors"
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl
+                      bg-white/5 backdrop-blur-sm border border-white/10
+                      hover:bg-white/10 hover:border-white/20
+                      cursor-pointer transition-colors shadow-sm"
                   >
-                    <div className={`w-10 h-10 rounded-xl ${stat.bg} border border-white/8 flex items-center justify-center mb-3`}>
-                      <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                    {/* Tiny icon */}
+                    <div className={`w-7 h-7 rounded-lg ${stat.bg} flex items-center justify-center flex-shrink-0`}>
+                      <stat.icon className={`w-3.5 h-3.5 ${stat.color}`} />
                     </div>
-                    <p className="text-2xl font-heading font-bold text-white">{stat.value}</p>
-                    <p className="text-xs text-white/50 mt-0.5">{stat.label}</p>
-                  </motion.div>
+                    {/* Value + label stacked */}
+                    <div className="text-left">
+                      <p className={`text-base font-heading font-bold leading-none ${stat.color}`}>{stat.value}</p>
+                      <p className="text-[10px] text-white/40 mt-0.5 leading-none whitespace-nowrap">{stat.label}</p>
+                    </div>
+                  </motion.button>
                 ))}
-              </div>
+              </motion.div>
             )}
 
             {/* Action Cards */}
@@ -400,7 +541,7 @@ const Dashboard = () => {
               <MiniCalendar />
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ...spring, delay: 0.3 }}>
-              <FriendsList />
+              <ConnectionsList />
             </motion.div>
           </div>
         </div>

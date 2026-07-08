@@ -220,7 +220,9 @@ export interface User {
   bio?: string;
   credits?: number;
   reputationScore?: number;
+  /** @deprecated use xpLevel instead — backend removed ratingAvg */
   ratingAvg?: number;
+  xpLevel?: number;
   role: string;
   isActive?: boolean;
   createdAt?: string;
@@ -301,6 +303,41 @@ export interface UserSearchResponse {
     id: string;
     fullName: string;
     email: string;
+    /** @deprecated use xpLevel instead */
     ratingAvg?: number;
+    xpLevel?: number;
     reputationScore?: number;
 }
+
+// ─── Connections ─────────────────────────────────────────────
+export type ConnectionStatus = "PENDING" | "ACCEPTED" | "REJECTED";
+
+export interface Connection {
+  id: string;
+  requester: User;
+  receiver: User;
+  status: ConnectionStatus;
+  createdAt: string;
+}
+
+export const connectionsApi = {
+  /** Send a friend request to another user */
+  request: (receiverId: string) =>
+      apiFetch<Connection>(`/api/connections/request/${receiverId}`, { method: "POST" }),
+
+  /** Get all pending incoming connection requests for the logged-in user */
+  getPending: () =>
+      apiFetch<Connection[]>("/api/connections/pending"),
+
+  /** Accept a pending request by its connection ID */
+  accept: (connectionId: string) =>
+      apiFetch<Connection>(`/api/connections/accept/${connectionId}`, { method: "PUT" }),
+
+  /** Reject/delete a pending or existing connection */
+  reject: (connectionId: string) =>
+      apiFetch<void>(`/api/connections/reject/${connectionId}`, { method: "DELETE" }),
+
+  /** Get the logged-in user's accepted friends list */
+  getFriends: () =>
+      apiFetch<Connection[]>("/api/connections/friends"),
+};
