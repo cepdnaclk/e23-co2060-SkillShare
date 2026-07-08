@@ -6,61 +6,67 @@
 
 @layer base {
   :root {
-    /* ─── Deep Dark Mode (Default) ─────────────────────── */
-    --background:       222 47% 5%;      /* near-black navy */
-    --foreground:       210 20% 93%;     /* off-white       */
+    /* ─── Liquid Glass Dark Canvas ──────────────────────── */
+    --background:       0 0% 4%;         /* #0A0A0A near-pure black */
+    --foreground:       0 0% 96%;        /* near-white              */
 
-    --card:             222 40% 8%;      /* elevated card   */
-    --card-foreground:  210 20% 93%;
+    --card:             0 0% 6%;
+    --card-foreground:  0 0% 96%;
 
-    --popover:          222 40% 9%;
-    --popover-foreground: 210 20% 93%;
+    --popover:          0 0% 7%;
+    --popover-foreground: 0 0% 96%;
 
     /* Electric indigo-violet — the signature accent */
     --primary:          245 88% 66%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary:        222 30% 13%;
-    --secondary-foreground: 210 15% 75%;
+    --secondary:        0 0% 10%;
+    --secondary-foreground: 0 0% 70%;
 
-    --muted:            222 30% 11%;
-    --muted-foreground: 215 15% 50%;
+    --muted:            0 0% 8%;
+    --muted-foreground: 0 0% 45%;
 
-    /* Electric teal — secondary accent for warmth */
+    /* Teal accent */
     --accent:           174 75% 48%;
     --accent-foreground: 0 0% 5%;
 
     --destructive:      0 70% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border:           222 25% 16%;
-    --input:            222 25% 14%;
+    --border:           0 0% 14%;
+    --input:            0 0% 10%;
     --ring:             245 88% 66%;
 
     --radius: 0.75rem;
 
     /* ─── Custom Design Tokens ─────────────────────────── */
-    --gradient-hero:     linear-gradient(135deg, hsl(245 88% 66%), hsl(280 85% 60%));
+    --gradient-hero:     linear-gradient(135deg, hsl(245 88% 66%), hsl(310 85% 60%));
     --gradient-teal:     linear-gradient(135deg, hsl(174 75% 48%), hsl(195 80% 50%));
-    --gradient-card:     linear-gradient(145deg, hsl(222 40% 10%), hsl(222 35% 8%));
-    --gradient-glow:     radial-gradient(ellipse at top, hsl(245 88% 66% / 0.12), transparent 65%);
+    --gradient-card:     linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    --gradient-glow:     radial-gradient(ellipse at top, hsl(245 88% 66% / 0.08), transparent 65%);
 
-    --shadow-card:       0 4px 32px -4px hsl(222 60% 3% / 0.7);
-    --shadow-elevated:   0 16px 48px -8px hsl(222 60% 3% / 0.9);
-    --shadow-glow-primary: 0 0 40px -8px hsl(245 88% 66% / 0.4);
+    /* Glass recipe */
+    --glass-bg:          rgba(255, 255, 255, 0.05);
+    --glass-border:      rgba(255, 255, 255, 0.10);
+    --glass-border-hover: rgba(255, 255, 255, 0.20);
+    --glass-shadow:      0 16px 48px -8px rgba(0, 0, 0, 0.50);
+
+    --shadow-card:       0 4px 32px -4px rgba(0, 0, 0, 0.6);
+    --shadow-elevated:   0 16px 48px -8px rgba(0, 0, 0, 0.8);
+    --shadow-glow-primary: 0 0 40px -8px hsl(245 88% 66% / 0.45);
     --shadow-glow-accent:  0 0 40px -8px hsl(174 75% 48% / 0.35);
 
     --font-heading: 'Space Grotesk', sans-serif;
     --font-body:    'Inter', sans-serif;
 
     /* Sidebar */
-    --sidebar-background: 222 44% 6%;
-    --sidebar-foreground: 210 20% 70%;
+    --sidebar-background: 0 0% 4%;
+    --sidebar-foreground: 0 0% 65%;
     --sidebar-primary: 245 88% 66%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 30% 13%;
-    --sidebar-accent-foreground: 210 20% 93%;
-    --sidebar-border: 222 25% 14%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 0 0% 12%;
     --sidebar-ring: 245 88% 66%;
   }
 
@@ -74,10 +80,9 @@ html { color-scheme: dark; }
   * { @apply border-border; }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    background-color: #0A0A0C;
+    @apply text-foreground antialiased;
     font-family: var(--font-body);
-    background-image: var(--gradient-glow);
-    background-attachment: fixed;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -85,36 +90,67 @@ html { color-scheme: dark; }
   }
 
   /* Custom scrollbar */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: hsl(var(--muted)); }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
+    background: rgba(255, 255, 255, 0.10);
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--primary) / 0.6);
+    background: rgba(255, 255, 255, 0.20);
   }
 }
 
 @layer utilities {
-  /* Glassmorphism card */
+  /* ── True Liquid Glass card ─────────────────────────── */
   .glass-card {
-    background: hsl(var(--card) / 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid hsl(var(--border) / 0.8);
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
   }
 
-  /* Glow border on hover */
+  .glass-card-hover {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .glass-card-hover:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--glass-border-hover);
+    box-shadow: 0 20px 60px -12px rgba(0, 0, 0, 0.60);
+  }
+
+  /* ── Liquid primary button ──────────────────────────── */
+  .liquid-btn {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    color: white;
+    font-weight: 600;
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .liquid-btn:hover {
+    background: rgba(255, 255, 255, 0.20);
+    border-color: rgba(255, 255, 255, 0.30);
+    box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.40);
+  }
+
+  /* ── Glow border on hover ───────────────────────────── */
   .glow-border {
     transition: box-shadow 0.3s ease, border-color 0.3s ease;
   }
   .glow-border:hover {
     box-shadow: var(--shadow-glow-primary);
-    border-color: hsl(var(--primary) / 0.4);
+    border-color: rgba(255, 255, 255, 0.20);
   }
 
-  /* Gradient text */
+  /* ── Gradient text ──────────────────────────────────── */
   .gradient-text {
     background: var(--gradient-hero);
     -webkit-background-clip: text;
@@ -122,7 +158,6 @@ html { color-scheme: dark; }
     background-clip: text;
   }
 
-  /* Gradient teal text */
   .gradient-text-teal {
     background: var(--gradient-teal);
     -webkit-background-clip: text;
@@ -130,32 +165,44 @@ html { color-scheme: dark; }
     background-clip: text;
   }
 
-  /* Subtle grid dot pattern for hero sections */
+  /* ── Dot grid for hero sections ─────────────────────── */
   .dot-grid {
-    background-image: radial-gradient(circle at 1px 1px, hsl(var(--foreground) / 0.04) 1px, transparent 0);
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0);
     background-size: 32px 32px;
   }
 
-  /* Status badge colors */
+  /* ── Status badge colors ────────────────────────────── */
   .status-pending   { @apply bg-yellow-500/15 text-yellow-400 border border-yellow-500/30; }
   .status-accepted  { @apply bg-emerald-500/15 text-emerald-400 border border-emerald-500/30; }
   .status-rejected  { @apply bg-red-500/15 text-red-400 border border-red-500/30; }
-  .status-completed { @apply bg-primary/15 text-primary border border-primary/30; }
-  .status-expired   { @apply bg-gray-500/15 text-gray-400 border border-gray-500/30; }
+  .status-completed { @apply bg-violet-500/15 text-violet-400 border border-violet-500/30; }
+  .status-expired   { @apply bg-white/5 text-white/40 border border-white/10; }
 
-  /* Skeleton shimmer animation */
+  /* ── Skeleton shimmer ───────────────────────────────── */
   .skeleton-shimmer {
     background: linear-gradient(
       90deg,
-      hsl(var(--muted)) 0%,
-      hsl(var(--secondary)) 50%,
-      hsl(var(--muted)) 100%
+      rgba(255,255,255,0.04) 0%,
+      rgba(255,255,255,0.08) 50%,
+      rgba(255,255,255,0.04) 100%
     );
     background-size: 200% 100%;
     animation: shimmer 1.6s ease-in-out infinite;
   }
+
+  /* ── Orb drift animations ───────────────────────────── */
+  .animate-drift-slow   { animation: drift-slow  18s ease-in-out infinite alternate; }
+  .animate-drift-medium { animation: drift-medium 12s ease-in-out infinite alternate; }
+  .animate-drift-fast   { animation: drift-fast   8s ease-in-out infinite alternate; }
+
+  /* ── Float (used in SignUp panel) ───────────────────── */
+  .animate-float { animation: float 3s ease-in-out infinite; }
+
+  /* ── Pulse glow ─────────────────────────────────────── */
+  .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
 }
 
+/* ── Keyframes ─────────────────────────────────────────────── */
 @keyframes shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
@@ -171,5 +218,22 @@ html { color-scheme: dark; }
   50%       { box-shadow: 0 0 40px -4px hsl(var(--primary) / 0.6); }
 }
 
-.animate-float     { animation: float 3s ease-in-out infinite; }
-.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+@keyframes drift-slow {
+  0%   { transform: translate(0px, 0px) scale(1); }
+  33%  { transform: translate(40px, -30px) scale(1.05); }
+  66%  { transform: translate(-20px, 20px) scale(0.97); }
+  100% { transform: translate(30px, -15px) scale(1.03); }
+}
+
+@keyframes drift-medium {
+  0%   { transform: translate(0px, 0px) scale(1); }
+  40%  { transform: translate(-35px, 25px) scale(1.04); }
+  80%  { transform: translate(25px, -20px) scale(0.98); }
+  100% { transform: translate(-15px, 10px) scale(1.02); }
+}
+
+@keyframes drift-fast {
+  0%   { transform: translate(0px, 0px); }
+  50%  { transform: translate(20px, -15px); }
+  100% { transform: translate(-10px, 10px); }
+}
