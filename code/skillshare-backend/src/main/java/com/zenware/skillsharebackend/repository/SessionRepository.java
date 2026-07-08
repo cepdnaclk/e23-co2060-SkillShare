@@ -1,8 +1,11 @@
 package com.zenware.skillsharebackend.repository;
 
+import com.zenware.skillsharebackend.dto.TrendingSkillDto;
 import com.zenware.skillsharebackend.entity.Session;
 import com.zenware.skillsharebackend.entity.SessionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -30,4 +33,11 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
 
     // for the Demo Bot
     List<Session> findByMentorEmailAndStatus(String email, SessionStatus status);
+
+    // Fetch the most popular skills based on completed sessions
+    @Query("SELECT s.skill.name AS skillName, COUNT(s.id) AS totalSessions " +
+            "FROM Session s WHERE s.status = 'COMPLETED' " +
+            "GROUP BY s.skill.name " +
+            "ORDER BY totalSessions DESC LIMIT :limit")
+    List<TrendingSkillDto> findTopTrendingSkills(@Param("limit") int limit);
 }
