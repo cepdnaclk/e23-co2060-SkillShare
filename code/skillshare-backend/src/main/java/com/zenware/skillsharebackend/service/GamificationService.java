@@ -4,6 +4,9 @@ import com.zenware.skillsharebackend.entity.User;
 import com.zenware.skillsharebackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -19,36 +22,55 @@ public class GamificationService {
     /**
      * Call this when a user finishes filling out their bio and skills
      */
+    @Transactional
     public void awardProfileCompletionXp(User user) {
-        addXpAndSave(user, XP_PROFILE_COMPLETION);
+        awardXp(user.getId(), XP_PROFILE_COMPLETION);
     }
 
     /**
      * Call this when a mentor or learner successfully finishes a scheduled session
      */
+    @Transactional
     public void awardSessionCompletionXp(User user) {
-        addXpAndSave(user, XP_SESSION_COMPLETED);
+        awardXp(user.getId(), XP_SESSION_COMPLETED);
     }
 
     /**
      * Call this when a mentor receives a 5-star review
      */
+    @Transactional
     public void awardFiveStarRatingXp(User user) {
-        addXpAndSave(user, XP_FIVE_STAR_RATING);
+        awardXp(user.getId(), XP_FIVE_STAR_RATING);
     }
 
+    // --- THE ATOMIC GAMIFICATION ENGINE ---
+
     /**
-     * Core logic to add XP and calculate if the user leveled up
+     * Core atomic logic to add XP and calculate if the user leveled up
+     * safely bypassing any concurrency race conditions.
      */
-    private void addXpAndSave(User user, int xpToAdd) {
+    @Transactional
+    public void awardXp(UUID userId, int xpToAdd) {
+        // 1. Force PostgreSQL to safely and atomically add the XP.
+        userRepository.addXpAtomically(userId, xpToAdd);
+
+        // 2. Fetch the newly updated user record with the fresh XP.
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        // 3. Check for a Level Up!
         int currentXp = user.getXp() != null ? user.getXp() : 0;
-        int newXp = currentXp + xpToAdd;
+        int expectedLevel = calculateLevel(currentXp);
 
-        user.setXp(newXp);
-        user.setLevel(calculateLevel(newXp));
+        int currentLevel = user.getLevel() != null ? user.getLevel() : 1;
 
-        // Save the updated user back to the database
-        userRepository.save(user);
+        if (currentLevel < expectedLevel) {
+            user.setLevel(expectedLevel);
+            userRepository.save(user); // Safe to save here, the XP is already secured natively
+
+            // Placeholder: Wire this to your WebSocket tunnel later for live Level-Up animations!
+            System.out.println("🎉 User " + user.getFullName() + " leveled up to Level " + expectedLevel + "!");
+        }
     }
 
     /**
