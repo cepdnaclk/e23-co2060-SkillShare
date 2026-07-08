@@ -10,6 +10,9 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+import com.zenware.skillsharebackend.dto.TypingStatusDto;
+
+import java.time.LocalDateTime;
 
 @Controller // Notice this is @Controller, not @RestController!
 @RequiredArgsConstructor
@@ -35,24 +38,21 @@ public class ChatController {
                 .isRead(false)
                 .build());
 
-        // 3. Update the DTO with the server-generated id and timestamp before broadcasting.
-        //    The frontend uses the id for deduplication — without it every real-time message
-        //    appears as a duplicate alongside the optimistic one.
-        chatMessageDto.setId(savedMsg.getId());
+        // 3. Update the DTO with the exact server timestamp before sending it to the receiver
         chatMessageDto.setTimestamp(savedMsg.getTimestamp());
-        chatMessageDto.setRead(false);
 
-        // 4. Push to the RECEIVER's personal queue.
-        //    We use a manual destination string because convertAndSendToUser() requires
-        //    a populated Principal on the WebSocket session, which we don't have when
-        //    using JWT-based authentication without a custom HandshakeInterceptor.
+        // 4. Instantly push the message to the receiver's active WebSocket connection
+        // FIX: We use convertAndSend with the exact destination string instead of convertAndSendToUser
+        // to bypass the missing Principal issue when using JWTs over WebSockets.
         String destination = "/user/" + chatMessageDto.getReceiverId() + "/queue/messages";
         messagingTemplate.convertAndSend(destination, chatMessageDto);
+    }
 
-        // 5. Also echo back to the SENDER's queue so their own tab updates if they have
-        //    the chat open in multiple tabs, and so the sender receives the server-confirmed
-        //    id (replacing the optimistic "optimistic-{timestamp}" id in the frontend).
-        String senderDestination = "/user/" + chatMessageDto.getSenderId() + "/queue/messages";
-        messagingTemplate.convertAndSend(senderDestination, chatMessageDto);
+    @MessageMapping("/chat/typing")
+    public void processTyping(@Payload TypingStatusDto typingStatus) {
+        // We do not save this to the database!
+        // We just instantly route it to the receiver's dedicated typing queue.
+        String destination = "/user/" + typingStatus.getReceiverId() + "/queue/typing";
+        messagingTemplate.convertAndSend(destination, typingStatus);
     }
 }
