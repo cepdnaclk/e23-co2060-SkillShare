@@ -1,5 +1,6 @@
 package com.zenware.skillsharebackend.controller;
 
+import com.zenware.skillsharebackend.dto.UserPublicDto;
 import com.zenware.skillsharebackend.entity.User;
 import com.zenware.skillsharebackend.service.FileUploadService;
 import com.zenware.skillsharebackend.service.UserService;
@@ -23,18 +24,21 @@ public class UserController {
     // GET: /api/users/{id}
     // LOGIC: Publicly visible endpoint so learners can view a mentor's profile
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserProfile(@PathVariable UUID id) {
-        return ResponseEntity.ok(userService.getUserById(id));
+    public ResponseEntity<UserPublicDto> getUserProfile(@PathVariable UUID id) {
+        User user = userService.getUserById(id);
+        return ResponseEntity.ok(mapToPublicDto(user));
     }
 
     // PATCH: /api/users/my-bio
-    // SECURITY: Notice the `{id}` is gone! It is impossible for hackers to
-    // pass another user's ID to change their bio.
+    // SECURITY: The `{id}` is gone preventing IDor attacks.
     @PatchMapping("/my-bio")
-    public ResponseEntity<User> updateMyBio(@RequestBody String bio) {
-        return ResponseEntity.ok(userService.updateMyBio(bio));
+    public ResponseEntity<UserPublicDto> updateMyBio(@RequestBody String bio) {
+        User updatedUser = userService.updateMyBio(bio);
+        return ResponseEntity.ok(mapToPublicDto(updatedUser));
     }
 
+    // POST: /api/users/profile-picture
+    // SECURITY: MIME-Type validation to prevent malicious script uploads
     @PostMapping("/profile-picture")
     public ResponseEntity<?> uploadProfilePicture(@RequestParam("file") MultipartFile file) {
         try {
@@ -62,5 +66,19 @@ public class UserController {
         } catch (IOException e) {
             return ResponseEntity.internalServerError().body("Failed to upload image. Please try again.");
         }
+    }
+
+    // --- HELPER MAPPING ---
+    // Acts as a security firewall, ensuring sensitive data (passwords, emails) never reaches the frontend.
+    private UserPublicDto mapToPublicDto(User user) {
+        return UserPublicDto.builder()
+                .id(user.getId())
+                .fullName(user.getFullName())
+                .bio(user.getBio())
+                .profilePictureUrl(user.getProfilePictureUrl())
+                .xp(user.getXp() != null ? user.getXp() : 0)
+                .level(user.getLevel() != null ? user.getLevel() : 1)
+                .reputationScore(user.getReputationScore() != null ? user.getReputationScore() : 0)
+                .build();
     }
 }
