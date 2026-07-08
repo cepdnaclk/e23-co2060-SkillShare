@@ -65,6 +65,7 @@ public class ChatService {
     public List<RecentChatDto> getRecentConversations() {
         User currentUser = getAuthenticatedUser();
 
+<<<<<<< HEAD
         Set<User> contacts = new HashSet<>();
 
         // 1. Get all accepted friends from the network
@@ -86,6 +87,25 @@ public class ChatService {
                     long unreadCount = chatMessageRepository.countUnreadMessagesFromContact(contact.getId(), currentUser.getId());
 
                     // Build the UI row
+=======
+        // 1. Get all accepted friends and map them directly to 'User' objects
+        java.util.Set<User> contactList = connectionService.getMyFriends().stream()
+                .map(connection -> connection.getSender().getId().equals(currentUser.getId())
+                        ? connection.getReceiver()
+                        : connection.getSender())
+                .collect(java.util.stream.Collectors.toSet());
+
+        // 2. Fetch anyone we have chatted with, regardless of friend status, and add them to the Set
+        List<User> chatPartners = chatMessageRepository.findUsersWithConversation(currentUser.getId());
+        contactList.addAll(chatPartners); // A Set automatically ignores duplicates!
+
+        // 3. Build the UI row for every unique contact
+        return contactList.stream().map(contact -> {
+
+                    ChatMessage lastMsg = chatMessageRepository.findLastMessageBetweenUsers(currentUser.getId(), contact.getId());
+                    long unreadCount = chatMessageRepository.countUnreadMessagesFromContact(contact.getId(), currentUser.getId());
+
+>>>>>>> main
                     return RecentChatDto.builder()
                             .contactId(contact.getId())
                             .contactName(contact.getFullName())
@@ -96,7 +116,11 @@ public class ChatService {
                             .build();
 
                 })
+<<<<<<< HEAD
                 // Sort the whole list so the most recent conversations jump to the top
+=======
+                // 4. Sort the whole list so the most recent conversations jump to the top
+>>>>>>> main
                 .sorted((c1, c2) -> {
                     if (c1.getLastMessageTime() == null && c2.getLastMessageTime() == null) return 0;
                     if (c1.getLastMessageTime() == null) return 1;
