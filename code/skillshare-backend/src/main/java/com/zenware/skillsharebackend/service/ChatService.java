@@ -1,5 +1,6 @@
 package com.zenware.skillsharebackend.service;
 
+import com.zenware.skillsharebackend.dto.ChatMessageDto;
 import com.zenware.skillsharebackend.dto.RecentChatDto;
 import com.zenware.skillsharebackend.entity.ChatMessage;
 import com.zenware.skillsharebackend.entity.User;
@@ -27,10 +28,22 @@ public class ChatService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found!"));
     }
 
-    // Fetch the chat history between the logged-in user and a target user
-    public List<ChatMessage> getConversationHistory(UUID contactId) {
+    // Fetch the chat history between the logged-in user and a target user.
+    // Returns ChatMessageDto (flat) instead of the raw entity so the frontend
+    // receives clean senderId / receiverId UUID strings, not nested User objects.
+    public List<ChatMessageDto> getConversationHistory(UUID contactId) {
         User currentUser = getAuthenticatedUser();
-        return chatMessageRepository.findConversationHistory(currentUser.getId(), contactId);
+        return chatMessageRepository.findConversationHistory(currentUser.getId(), contactId)
+                .stream()
+                .map(msg -> ChatMessageDto.builder()
+                        .id(msg.getId())
+                        .senderId(msg.getSender().getId())
+                        .receiverId(msg.getReceiver().getId())
+                        .content(msg.getContent())
+                        .timestamp(msg.getTimestamp())
+                        .isRead(msg.isRead())
+                        .build())
+                .toList();
     }
 
     // Fetch the total unread message count for the notification bell

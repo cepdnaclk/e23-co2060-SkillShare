@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { ArrowLeft, Send, Loader2 } from "lucide-react";
 import type { ChatContact, ChatMessage, SendMessagePayload } from "./types";
 import { chatApi } from "./chatApi";
+import { parseTimestamp } from "./chatApi";
 import { ChatAvatar } from "./ChatAvatar";
 
 interface ActiveChatViewProps {
@@ -18,9 +19,12 @@ interface ActiveChatViewProps {
   onSend: (payload: SendMessagePayload) => void;
 }
 
-function formatMessageTime(iso: string): string {
+function formatMessageTime(ts: string | number[]): string {
   try {
+    // Bug Fix #3: Normalise timestamp before constructing a Date
+    const iso = parseTimestamp(ts as string | number[]);
     const date = new Date(iso);
+    if (isNaN(date.getTime())) return "";
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   } catch {
     return "";
@@ -41,14 +45,22 @@ export const ActiveChatView: React.FC<ActiveChatViewProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // ── Scroll to bottom whenever messages update ──
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // Bug Fix #8: Track whether we are doing the initial history load.
+  // On initial load we want an instant jump to the bottom (no animation,
+  // because the list renders all at once from zero).
+  // On subsequent new messages we want a smooth scroll so the user can
+  // perceive the new bubble arriving.
+  const isInitialLoadRef = useRef(true);
+
+  // ── Scroll to bottom – behaviour depends on context ──
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
   }, []);
 
   // ── Fetch history & mark as read on mount / contact change ──
   useEffect(() => {
     let cancelled = false;
+    isInitialLoadRef.current = true; // reset on contact change
 
     const init = async () => {
       setLoading(true);
@@ -60,7 +72,16 @@ export const ActiveChatView: React.FC<ActiveChatViewProps> = ({
       } catch (err) {
         console.error("[ActiveChatView] Failed to fetch history:", err);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          // Defer scroll until after the paint so the DOM is fully rendered
+          requestAnimationFrame(() => {
+            // Bug Fix #8: Use "instant" on the initial load so we don't see
+            // an animated scroll from the top of potentially many messages.
+            scrollToBottom("instant");
+            isInitialLoadRef.current = false;
+          });
+        }
       }
 
       // Fire-and-forget mark as read
@@ -71,7 +92,7 @@ export const ActiveChatView: React.FC<ActiveChatViewProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [contact.id]);
+  }, [contact.id, scrollToBottom]);
 
   // ── Focus input on open ──
   useEffect(() => {
@@ -80,25 +101,50 @@ export const ActiveChatView: React.FC<ActiveChatViewProps> = ({
     }
   }, [loading]);
 
-  // ── Scroll when messages update ──
+  // ── Scroll when new messages arrive (not the initial batch) ──
   useEffect(() => {
-    scrollToBottom();
+    if (isInitialLoadRef.current) return; // handled in the init effect above
+    scrollToBottom("smooth");
   }, [messages, scrollToBottom]);
 
-  // ── Receive incoming WebSocket messages ──
+  // ── Receive incoming WebSocket messages (and server-echo of sent messages) ──
   useEffect(() => {
-    if (
-      incomingMessage &&
-      (incomingMessage.senderId === contact.id ||
-        incomingMessage.receiverId === contact.id)
-    ) {
-      setMessages((prev) => {
-        // Deduplicate by id
-        if (prev.some((m) => m.id === incomingMessage.id)) return prev;
-        return [...prev, incomingMessage];
-      });
-    }
-  }, [incomingMessage, contact.id]);
+    if (!incomingMessage) return;
+
+    const isRelevant =
+      incomingMessage.senderId === contact.id ||
+      incomingMessage.receiverId === contact.id ||
+      // Echo from the server for OUR OWN sent message (senderId === currentUserId)
+      incomingMessage.senderId === currentUserId;
+
+    if (!isRelevant) return;
+
+    setMessages((prev) => {
+      // 1. If this exact id already exists, skip (true duplicate)
+      if (prev.some((m) => m.id === incomingMessage.id)) return prev;
+
+      // 2. The backend echoes the confirmed message back to the sender with the
+      //    real UUID id. Replace the optimistic placeholder (id starts with
+      //    "optimistic-") that has matching content + sender + receiver.
+      const optimisticIndex = prev.findIndex(
+        (m) =>
+          m.id.startsWith("optimistic-") &&
+          m.senderId === incomingMessage.senderId &&
+          m.receiverId === incomingMessage.receiverId &&
+          m.content === incomingMessage.content
+      );
+
+      if (optimisticIndex !== -1) {
+        // Swap the optimistic bubble with the server-confirmed one
+        const updated = [...prev];
+        updated[optimisticIndex] = incomingMessage;
+        return updated;
+      }
+
+      // 3. Brand-new incoming message from the other person
+      return [...prev, incomingMessage];
+    });
+  }, [incomingMessage, contact.id, currentUserId]);
 
   // ── Handle send ──
   const handleSend = async () => {
@@ -215,7 +261,7 @@ export const ActiveChatView: React.FC<ActiveChatViewProps> = ({
                   >
                     {msg.content}
                   </div>
-                  {/* Timestamp */}
+                  {/* Timestamp – Bug Fix #3: use formatMessageTime which handles arrays */}
                   <span className="text-[10px] text-gray-600 px-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     {formatMessageTime(msg.timestamp)}
                   </span>

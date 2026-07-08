@@ -2,7 +2,7 @@
 // InboxView – Level 1: Scrollable list of recent conversations
 // ============================================================
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { MessageSquare, RefreshCw } from "lucide-react";
 import type { ChatContact } from "./types";
 import { chatApi } from "./chatApi";
@@ -10,6 +10,18 @@ import { ChatAvatar } from "./ChatAvatar";
 
 interface InboxViewProps {
   onSelectContact: (contact: ChatContact) => void;
+  /**
+   * Contacts the parent already knows about (e.g. recently sent a message to).
+   * Displayed instantly so the inbox never shows "No conversations yet" while
+   * the server fetch is in flight.  The fetch result is merged on top and
+   * deduplicates by contact id.
+   */
+  initialContacts?: ChatContact[];
+  /**
+   * Fired after every successful server fetch so the parent can keep its
+   * cache in sync with the latest server data.
+   */
+  onContactsLoaded?: (contacts: ChatContact[]) => void;
 }
 
 function formatTime(isoOrFormatted: string): string {
@@ -30,28 +42,70 @@ function formatTime(isoOrFormatted: string): string {
   }
 }
 
-export const InboxView: React.FC<InboxViewProps> = ({ onSelectContact }) => {
-  const [contacts, setContacts] = useState<ChatContact[]>([]);
-  const [loading, setLoading] = useState(true);
+export const InboxView: React.FC<InboxViewProps> = ({
+  onSelectContact,
+  initialContacts,
+  onContactsLoaded,
+}) => {
+  // Seed with whatever the parent already knows; avoids a blank flash.
+  const [contacts, setContacts] = useState<ChatContact[]>(initialContacts ?? []);
+
+  // Only show the skeleton when we have nothing at all to display yet.
+  // If initialContacts was provided we show them immediately and
+  // silently refresh in the background.
+  const [loading, setLoading] = useState<boolean>(
+    !initialContacts || initialContacts.length === 0
+  );
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRecent = async () => {
-    setLoading(true);
+  // Keep a ref to onContactsLoaded so the fetch can call the latest version
+  // without needing it as a dependency of fetchRecent.
+  const onContactsLoadedRef = useRef(onContactsLoaded);
+  useEffect(() => {
+    onContactsLoadedRef.current = onContactsLoaded;
+  }, [onContactsLoaded]);
+
+  const fetchRecent = useCallback(async (showSkeleton = false) => {
+    if (showSkeleton) setLoading(true);
     setError(null);
     try {
-      const data = await chatApi.getRecentConversations();
-      setContacts(data);
+      const fresh = await chatApi.getRecentConversations();
+
+      // Merge: server data wins for contacts it returns; any cached contacts
+      // NOT in the server response are appended at the end so the user can
+      // still see and click them (the server might be slow to flush).
+      setContacts((prev) => {
+        const serverIds = new Set(fresh.map((c) => c.id));
+        const localOnly = prev.filter((c) => c.id !== "" && !serverIds.has(c.id));
+        const merged = [...fresh, ...localOnly];
+        // Bubble up the fully merged list to the parent cache
+        onContactsLoadedRef.current?.(merged);
+        return merged;
+      });
     } catch (err) {
       console.error("[InboxView] Failed to fetch recent conversations:", err);
-      setError("Failed to load conversations.");
+      // Only show the error banner if we have nothing else to display
+      setContacts((prev) => {
+        if (prev.length === 0) setError("Failed to load conversations.");
+        return prev;
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
+  // Always fetch on mount; the skeleton only shows when there's nothing cached.
   useEffect(() => {
     fetchRecent();
-  }, []);
+  }, [fetchRecent]);
+
+  // Clicking the refresh button always shows the skeleton so the user gets
+  // clear feedback that something is happening.
+  const handleManualRefresh = useCallback(() => {
+    setContacts([]);
+    setError(null);
+    fetchRecent(true);
+  }, [fetchRecent]);
 
   return (
     <div className="flex flex-col h-full bg-gray-900">
@@ -65,7 +119,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ onSelectContact }) => {
         </div>
         <button
           id="chat-inbox-refresh"
-          onClick={fetchRecent}
+          onClick={handleManualRefresh}
           disabled={loading}
           className="p-1.5 rounded-full text-gray-400 hover:text-white hover:bg-gray-700 transition-all duration-200 disabled:opacity-40"
           title="Refresh conversations"
@@ -76,8 +130,8 @@ export const InboxView: React.FC<InboxViewProps> = ({ onSelectContact }) => {
 
       {/* ── Body ── */}
       <div className="flex-1 overflow-y-auto custom-scroll">
-        {/* Loading skeleton */}
-        {loading && (
+        {/* Loading skeleton – only shown when there's nothing cached yet */}
+        {loading && contacts.length === 0 && (
           <div className="space-y-1 p-2">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="flex items-center gap-3 px-3 py-3 rounded-xl">
@@ -91,12 +145,12 @@ export const InboxView: React.FC<InboxViewProps> = ({ onSelectContact }) => {
           </div>
         )}
 
-        {/* Error state */}
-        {!loading && error && (
+        {/* Error state – only shown when we have nothing else to display */}
+        {!loading && error && contacts.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 px-4 text-center">
             <p className="text-gray-400 text-sm">{error}</p>
             <button
-              onClick={fetchRecent}
+              onClick={handleManualRefresh}
               className="text-violet-400 text-xs underline hover:text-violet-300 transition-colors"
             >
               Try again
@@ -104,7 +158,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ onSelectContact }) => {
           </div>
         )}
 
-        {/* Empty state */}
+        {/* Empty state – only shown when loading finished AND nothing cached */}
         {!loading && !error && contacts.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 px-4 text-center">
             <div className="w-14 h-14 rounded-2xl bg-gray-800 flex items-center justify-center">
@@ -118,7 +172,7 @@ export const InboxView: React.FC<InboxViewProps> = ({ onSelectContact }) => {
         )}
 
         {/* Conversation list */}
-        {!loading && !error && contacts.length > 0 && (
+        {contacts.length > 0 && (
           <ul className="p-2 space-y-0.5">
             {contacts.map((contact) => (
               <li key={contact.id}>

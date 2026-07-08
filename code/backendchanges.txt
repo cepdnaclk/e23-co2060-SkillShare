@@ -1,0 +1,220 @@
+================================================================================
+  BACKEND CHANGES REQUIRED – SkillShare Chat Feature
+  Generated: 2026-07-09
+  Author: Antigravity (Frontend Audit)
+================================================================================
+
+These changes are MANDATORY for the chat feature to work correctly.
+The frontend has been patched with defensive workarounds where possible,
+but the workarounds are fragile. The following backend fixes should be applied
+to make the system robust.
+
+--------------------------------------------------------------------------------
+CHANGE 1 (CRITICAL) – Configure Jackson to serialize LocalDateTime as ISO-8601
+--------------------------------------------------------------------------------
+
+FILE: skillshare-backend/src/main/resources/application.properties
+      (or application.yml)
+
+PROBLEM:
+  ChatMessageDto.timestamp is java.time.LocalDateTime.
+  Without configuration, Jackson serializes LocalDateTime as a JSON *array*:
+    [2024, 1, 15, 10, 30, 5]
+  The frontend's Date parser expects an ISO-8601 string:
+    "2024-01-15T10:30:05"
+  This causes all timestamps to be silently wrong / "Invalid Date" in the UI.
+
+  The same problem affects RecentChatDto.lastMessageTime.
+
+FIX – Option A (Recommended): Add to application.properties
+  ─────────────────────────────────────────────────────────
+  spring.jackson.serialization.write-dates-as-timestamps=false
+  spring.jackson.time-zone=UTC
+
+FIX – Option B: Add @JsonFormat to both DTO fields
+  ──────────────────────────────────────────────────
+  In ChatMessageDto.java:
+
+    import com.fasterxml.jackson.annotation.JsonFormat;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime timestamp;
+
+  In RecentChatDto.java:
+
+    import com.fasterxml.jackson.annotation.JsonFormat;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime lastMessageTime;
+
+  NOTE: You also need the JavaTimeModule registered. Add to pom.xml if not
+  already present:
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+
+  Spring Boot auto-registers this module if it is on the classpath and
+  spring.jackson.serialization.write-dates-as-timestamps=false is set.
+
+--------------------------------------------------------------------------------
+CHANGE 2 (CRITICAL) – ChatRestController.getHistory() must return a flat DTO
+--------------------------------------------------------------------------------
+
+FILE: skillshare-backend/src/main/java/.../controller/ChatRestController.java
+      skillshare-backend/src/main/java/.../service/ChatService.java
+
+PROBLEM:
+  GET /api/chat/history/{contactId} currently returns List<ChatMessage>,
+  which is the raw JPA entity. This entity has nested objects:
+
+    {
+      "id": "...",
+      "sender":   { "id": "...", "fullName": "...", "email": "...", ... },
+      "receiver": { "id": "...", "fullName": "...", "email": "...", ... },
+      "content":  "...",
+      "timestamp": [2024, 1, 15, 10, 30, 5],
+      "read": false
+    }
+
+  The frontend expects a FLAT structure:
+
+    {
+      "id": "...",
+      "senderId":   "uuid-string",
+      "receiverId": "uuid-string",
+      "content":    "...",
+      "timestamp":  "2024-01-15T10:30:05",
+      "isRead":     false
+    }
+
+  Without this fix, the isOwn check in the UI ( msg.senderId === currentUserId )
+  always fails, so ALL history messages appear on the WRONG (left) side of the
+  chat window regardless of who sent them.
+
+  The frontend has a normalizeChatMessage() workaround, but it is fragile –
+  adding any lazy-loaded relationship to the ChatMessage entity (e.g. @OneToMany
+  skills) will cause a LazyInitializationException during serialization.
+
+FIX:
+  Step 1 – Update ChatRestController.java
+  ─────────────────────────────────────────
+  Change the return type of getHistory() from List<ChatMessage>
+  to List<ChatMessageDto>:
+
+    // BEFORE:
+    @GetMapping("/history/{contactId}")
+    public ResponseEntity<List<ChatMessage>> getHistory(@PathVariable UUID contactId) {
+        return ResponseEntity.ok(chatService.getConversationHistory(contactId));
+    }
+
+    // AFTER:
+    @GetMapping("/history/{contactId}")
+    public ResponseEntity<List<ChatMessageDto>> getHistory(@PathVariable UUID contactId) {
+        return ResponseEntity.ok(chatService.getConversationHistory(contactId));
+    }
+
+  Step 2 – Update ChatService.java
+  ──────────────────────────────────
+  Change getConversationHistory() to map entities → DTOs:
+
+    // BEFORE:
+    public List<ChatMessage> getConversationHistory(UUID contactId) {
+        User currentUser = getAuthenticatedUser();
+        return chatMessageRepository.findConversationHistory(currentUser.getId(), contactId);
+    }
+
+    // AFTER:
+    public List<ChatMessageDto> getConversationHistory(UUID contactId) {
+        User currentUser = getAuthenticatedUser();
+        return chatMessageRepository
+            .findConversationHistory(currentUser.getId(), contactId)
+            .stream()
+            .map(msg -> ChatMessageDto.builder()
+                .id(msg.getId())          // Add id field to ChatMessageDto (see below)
+                .senderId(msg.getSender().getId())
+                .receiverId(msg.getReceiver().getId())
+                .content(msg.getContent())
+                .timestamp(msg.getTimestamp())
+                .isRead(msg.isRead())
+                .build())
+            .toList();
+    }
+
+  Step 3 – Add missing fields to ChatMessageDto.java
+  ────────────────────────────────────────────────────
+  The current ChatMessageDto is missing the id and isRead fields.
+  The frontend needs these for deduplication and display.
+
+    // BEFORE:
+    public class ChatMessageDto {
+        private UUID senderId;
+        private UUID receiverId;
+        private String content;
+        private LocalDateTime timestamp;
+    }
+
+    // AFTER:
+    public class ChatMessageDto {
+        private UUID id;          // ← ADD: needed by frontend for deduplication
+        private UUID senderId;
+        private UUID receiverId;
+        private String content;
+        private LocalDateTime timestamp;
+        private boolean isRead;   // ← ADD: needed by frontend for read indicators
+    }
+
+  NOTE: The ChatController (WebSocket) already sets chatMessageDto.setTimestamp()
+  from the saved entity, but it does NOT set the id. Update ChatController.java too:
+
+    // In ChatController.processMessage(), after saving:
+    chatMessageDto.setId(savedMsg.getId());       // ← ADD THIS LINE
+    chatMessageDto.setTimestamp(savedMsg.getTimestamp());
+    // then convertAndSend as before
+
+--------------------------------------------------------------------------------
+CHANGE 3 (OPTIONAL IMPROVEMENT) – Add /ws endpoint to Spring Security whitelist
+--------------------------------------------------------------------------------
+
+FILE: skillshare-backend/src/main/java/.../config/SecurityConfig.java
+
+PROBLEM:
+  The SockJS handshake goes through an HTTP GET request to /ws/info before
+  upgrading to WebSocket. The current SecurityConfig requires authentication
+  for every request. During the STOMP handshake, the Authorization header sent
+  in connectHeaders is not visible to the HTTP security filter (it is a STOMP
+  header, not an HTTP header).
+
+  Currently WebSocketConfig uses .setAllowedOriginPatterns("*") and the
+  JwtAuthenticationFilter presumably passes through the /ws/** path.
+  If users see 403 errors in the Network tab on the /ws/info preflight,
+  add the following whitelist:
+
+FIX:
+    // In SecurityConfig.securityFilterChain(), add to the permitAll() list:
+    .requestMatchers("/ws/**").permitAll()
+
+  So it becomes:
+    .requestMatchers("/api/auth/**", "/login/oauth2/**", "/oauth2/**", "/ws/**").permitAll()
+
+  The JWT is still validated at the STOMP level (via connectHeaders["Authorization"]),
+  so this does not weaken application security – it only allows the handshake
+  HTTP upgrade to proceed without the JWT filter blocking it.
+
+--------------------------------------------------------------------------------
+SUMMARY TABLE
+--------------------------------------------------------------------------------
+
+  # | File                            | Priority | Status
+  ──┼─────────────────────────────────┼──────────┼───────────────
+  1 │ application.properties          │ CRITICAL │ Must be done
+  2 │ ChatRestController.java         │ CRITICAL │ Must be done
+  3 │ ChatService.java                │ CRITICAL │ Must be done
+  4 │ ChatMessageDto.java             │ CRITICAL │ Must be done
+  5 │ ChatController.java (ws)        │ CRITICAL │ Must be done
+  6 │ SecurityConfig.java             │ Optional │ Do if 403 on /ws/info
+
+================================================================================
+END OF BACKEND CHANGES DOCUMENT
+================================================================================
