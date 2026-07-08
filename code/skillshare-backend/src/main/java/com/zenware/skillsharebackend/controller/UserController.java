@@ -1,11 +1,15 @@
 package com.zenware.skillsharebackend.controller;
 
 import com.zenware.skillsharebackend.entity.User;
+import com.zenware.skillsharebackend.service.FileUploadService;
 import com.zenware.skillsharebackend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -14,6 +18,7 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final FileUploadService fileUploadService;
 
     // GET: /api/users/{id}
     // LOGIC: Publicly visible endpoint so learners can view a mentor's profile
@@ -28,5 +33,27 @@ public class UserController {
     @PatchMapping("/my-bio")
     public ResponseEntity<User> updateMyBio(@RequestBody String bio) {
         return ResponseEntity.ok(userService.updateMyBio(bio));
+    }
+
+    @PostMapping("/profile-picture")
+    public ResponseEntity<?> uploadProfilePicture(@RequestParam("file") MultipartFile file) {
+        try {
+            // Guardrail: Ensure a file was actually sent
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest().body("Please select a file to upload.");
+            }
+
+            // Upload the file and get the URL back
+            String imageUrl = fileUploadService.uploadProfilePicture(file);
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", "Profile picture updated!",
+                    "imageUrl", imageUrl
+            ));
+
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().body("Failed to upload image. Please try again.");
+        }
     }
 }
