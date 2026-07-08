@@ -55,6 +55,10 @@ public class User implements UserDetails {
     @Column(name = "profile_picture_url")
     private String profilePictureUrl;
 
+    // ADD THIS: To track the specific file in Cloudinary for safe deletion
+    @Column(name = "profile_picture_public_id")
+    private String profilePicturePublicId;
+
     @Column(name = "credits")
     @Builder.Default
     private Integer credits = 100;
