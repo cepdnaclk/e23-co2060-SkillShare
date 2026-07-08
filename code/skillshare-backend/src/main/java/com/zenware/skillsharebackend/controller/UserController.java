@@ -38,9 +38,16 @@ public class UserController {
     @PostMapping("/profile-picture")
     public ResponseEntity<?> uploadProfilePicture(@RequestParam("file") MultipartFile file) {
         try {
-            // Guardrail: Ensure a file was actually sent
+            // Guardrail 1: Ensure a file was actually sent
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body("Please select a file to upload.");
+            }
+
+            // Guardrail 2: ZERO-TRUST MIME-Type Check
+            // This strictly blocks non-image files (like .exe, .sh, or .js disguised as images)
+            String contentType = file.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                return ResponseEntity.badRequest().body("Security Violation: Only image files are allowed.");
             }
 
             // Upload the file and get the URL back
