@@ -6,6 +6,7 @@ import com.zenware.skillsharebackend.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 import java.util.Map;
@@ -20,8 +21,11 @@ public class ChatRestController {
 
     // 1. Fetch History (Called when the frontend opens a specific chat window)
     @GetMapping("/history/{contactId}")
-    public ResponseEntity<List<ChatMessage>> getHistory(@PathVariable UUID contactId) {
-        return ResponseEntity.ok(chatService.getConversationHistory(contactId));
+    public ResponseEntity<Page<ChatMessage>> getHistory(
+            @PathVariable UUID contactId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        return ResponseEntity.ok(chatService.getConversationHistory(contactId, page, size));
     }
 
     // 2. Get Global Unread Count (Called when the app first loads to show the red badge)

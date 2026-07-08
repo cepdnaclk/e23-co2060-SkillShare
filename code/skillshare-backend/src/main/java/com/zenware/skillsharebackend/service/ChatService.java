@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.UUID;
@@ -28,9 +31,11 @@ public class ChatService {
     }
 
     // Fetch the chat history between the logged-in user and a target user
-    public List<ChatMessage> getConversationHistory(UUID contactId) {
+    public Page<ChatMessage> getConversationHistory(UUID contactId, int page, int size) {
         User currentUser = getAuthenticatedUser();
-        return chatMessageRepository.findConversationHistory(currentUser.getId(), contactId);
+        // Create a page request (e.g., page 0, size 50)
+        Pageable pageable = PageRequest.of(page, size);
+        return chatMessageRepository.findConversationHistory(currentUser.getId(), contactId, pageable);
     }
 
     // Fetch the total unread message count for the notification bell
