@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { FloatingChatWidget } from "@/components/chat";
 
 import Landing from "./pages/Landing";
 import SignUp from "./pages/SignUp";
@@ -63,6 +64,8 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        {/* Floating Chat Widget — rendered globally for all authenticated users */}
+        <FloatingChatWidget />
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
