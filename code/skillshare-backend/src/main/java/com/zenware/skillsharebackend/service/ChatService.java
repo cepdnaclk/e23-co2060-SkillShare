@@ -1,6 +1,5 @@
 package com.zenware.skillsharebackend.service;
 
-import com.zenware.skillsharebackend.dto.ChatMessageDto;
 import com.zenware.skillsharebackend.dto.RecentChatDto;
 import com.zenware.skillsharebackend.entity.ChatMessage;
 import com.zenware.skillsharebackend.entity.User;
@@ -10,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.UUID;
@@ -28,22 +30,12 @@ public class ChatService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found!"));
     }
 
-    // Fetch the chat history between the logged-in user and a target user.
-    // Returns ChatMessageDto (flat) instead of the raw entity so the frontend
-    // receives clean senderId / receiverId UUID strings, not nested User objects.
-    public List<ChatMessageDto> getConversationHistory(UUID contactId) {
+    // Fetch the chat history between the logged-in user and a target user
+    public Page<ChatMessage> getConversationHistory(UUID contactId, int page, int size) {
         User currentUser = getAuthenticatedUser();
-        return chatMessageRepository.findConversationHistory(currentUser.getId(), contactId)
-                .stream()
-                .map(msg -> ChatMessageDto.builder()
-                        .id(msg.getId())
-                        .senderId(msg.getSender().getId())
-                        .receiverId(msg.getReceiver().getId())
-                        .content(msg.getContent())
-                        .timestamp(msg.getTimestamp())
-                        .isRead(msg.isRead())
-                        .build())
-                .toList();
+        // Create a page request (e.g., page 0, size 50)
+        Pageable pageable = PageRequest.of(page, size);
+        return chatMessageRepository.findConversationHistory(currentUser.getId(), contactId, pageable);
     }
 
     // Fetch the total unread message count for the notification bell
@@ -53,17 +45,13 @@ public class ChatService {
     }
 
     // Mark all messages from a specific user as "Read" when opening the chat
+    // Mark all messages from a specific user as "Read" when opening the chat
     @Transactional
     public void markMessagesAsRead(UUID senderId) {
         User currentUser = getAuthenticatedUser();
 
-        // Find all messages sent BY the contact, TO the current user, where isRead is false
-        // (For a production app, you might want a custom query for this to be faster,
-        // but fetching the history and updating the flags works perfectly for the MVP)
-        List<ChatMessage> unreadMessages = chatMessageRepository.findConversationHistory(currentUser.getId(), senderId)
-                .stream()
-                .filter(msg -> msg.getReceiver().getId().equals(currentUser.getId()) && !msg.isRead())
-                .toList();
+        // Use our new, highly optimized query instead of fetching the entire history
+        List<ChatMessage> unreadMessages = chatMessageRepository.findUnreadMessages(senderId, currentUser.getId());
 
         for (ChatMessage msg : unreadMessages) {
             msg.setRead(true);

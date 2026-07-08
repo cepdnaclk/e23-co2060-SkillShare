@@ -42,13 +42,6 @@ public class SecurityConfig {
                                 // --- NEW: ADD OAUTH2 ENDPOINTS TO WHITELIST ---
                                 .requestMatchers("/api/auth/**", "/login/oauth2/**", "/oauth2/**").permitAll()
                                 .requestMatchers("/api/skills/**").permitAll()
-                                // CRITICAL: Allow the SockJS/WebSocket HTTP handshake through.
-                                // SockJS negotiation makes GET requests to /ws/info BEFORE the
-                                // WebSocket upgrade. These HTTP requests carry NO Authorization header
-                                // (the JWT travels inside STOMP connectHeaders, not HTTP headers).
-                                // Without this line, Spring Security returns 401 and the WebSocket
-                                // connection never establishes — so no messages are ever sent or saved.
-                                .requestMatchers("/ws/**").permitAll()
 
                                 // BLACKLIST: Every other single endpoint requires a valid JWT Token!
                                 .anyRequest().authenticated())

@@ -30,7 +30,7 @@ public class ConnectionService {
                 .orElseThrow(() -> new IllegalArgumentException("Authenticated user not found!"));
     }
 
-    // 1. SEND A FRIEND REQUEST
+    // 1. SEND A FRIEND REQUEST (Patched with State-Machine Loophole Fixes)
     @Transactional
     public Connection sendConnectionRequest(UUID receiverId) {
         User sender = getAuthenticatedUser();
@@ -44,12 +44,41 @@ public class ConnectionService {
                 .orElseThrow(() -> new IllegalArgumentException("Target user not found!"));
 
         // Guardrail 2: Check if a connection (Pending, Accepted, or Rejected) already exists
-        Optional<Connection> existingConnection = connectionRepository.findExistingConnection(sender.getId(), receiver.getId());
-        if (existingConnection.isPresent()) {
-            throw new IllegalStateException("A connection or pending request already exists between you and this user.");
+        // *Note: Ensure your findExistingConnection query checks BOTH directions (sender->receiver OR receiver->sender)
+        Optional<Connection> existingConnectionOpt = connectionRepository.findExistingConnection(sender.getId(), receiver.getId());
+
+        if (existingConnectionOpt.isPresent()) {
+            Connection existingConnection = existingConnectionOpt.get();
+
+            // Scenario A: They are already friends
+            if (existingConnection.getStatus() == ConnectionStatus.ACCEPTED) {
+                throw new IllegalStateException("You are already connected with this user.");
+            }
+
+            // Scenario B: We already sent them a request (Pending)
+            if (existingConnection.getSender().getId().equals(sender.getId())) {
+                throw new IllegalStateException("You have already sent a connection request to this user.");
+            }
+
+            // Scenario C: The Inverse Deadlock Fix!
+            // They sent US a request, and we are trying to send one back.
+            // Instead of throwing an error or making a duplicate, we auto-accept theirs!
+            if (existingConnection.getReceiver().getId().equals(sender.getId())) {
+                existingConnection.setStatus(ConnectionStatus.ACCEPTED);
+                Connection updatedConnection = connectionRepository.save(existingConnection);
+
+                // Notify the original sender that their request was implicitly accepted!
+                notificationService.sendNotification(
+                        existingConnection.getSender(),
+                        sender.getFullName() + " accepted your connection request!",
+                        NotificationType.SYSTEM_ALERT
+                );
+
+                return updatedConnection;
+            }
         }
 
-        // Create and save the new pending connection
+        // 3. If we made it past all checks, create and save the new pending connection
         Connection newConnection = Connection.builder()
                 .sender(sender)
                 .receiver(receiver)
@@ -111,8 +140,7 @@ public class ConnectionService {
             throw new IllegalArgumentException("Security Violation: You do not have permission to reject this request.");
         }
 
-        // Action: We can either set the status to REJECTED, or simply delete the row so they can try again in the future.
-        // For Skill-Connect, deleting the row is usually cleaner so the database doesn't fill up with rejected requests.
+        // Action: For Skill-Connect, deleting the row is usually cleaner so the database doesn't fill up with rejected requests.
         connectionRepository.delete(connection);
     }
 
