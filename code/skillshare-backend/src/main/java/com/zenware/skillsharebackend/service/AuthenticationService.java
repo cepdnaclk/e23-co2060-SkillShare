@@ -39,19 +39,25 @@ public class AuthenticationService {
 
         user.setRole(Role.USER);
         user.setCredits(100);
+        // xp and level default to 0 and 1 automatically via the Entity @Builder.Default
 
         userRepository.save(user);
 
         // Generate the token instantly so they don't have to log in immediately after registering
         String jwtToken = jwtService.generateToken(user);
 
-        // Return the token AND the user details!
+        // Return the token AND the full gamified user details!
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .userId(user.getId())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .role(user.getRole().name())
+                // --- NEW ---
+                .xp(user.getXp())
+                .level(user.getLevel())
+                .credits(user.getCredits())
+                .reputationScore(user.getReputationScore())
                 .build();
     }
 
@@ -75,13 +81,18 @@ public class AuthenticationService {
         // Generate their token
         String jwtToken = jwtService.generateToken(user);
 
-        // Return the token AND the user details!
+        // Return the token AND the full gamified user details!
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .userId(user.getId())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .role(user.getRole().name())
+                // --- NEW ---
+                .xp(user.getXp())
+                .level(user.getLevel())
+                .credits(user.getCredits())
+                .reputationScore(user.getReputationScore())
                 .build();
     }
 }
