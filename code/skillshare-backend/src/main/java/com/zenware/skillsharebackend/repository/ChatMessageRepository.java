@@ -60,4 +60,10 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> 
             "OR u.id IN " +
             "(SELECT m.receiver.id FROM ChatMessage m WHERE m.sender.id = :userId)")
     List<User> findUsersWithConversation(@Param("userId") UUID userId);
+
+    /**
+     * Fetches all unread messages sent by a specific user to the current user.
+     */
+    @Query("SELECT m FROM ChatMessage m WHERE m.sender.id = :senderId AND m.receiver.id = :receiverId AND m.isRead = false")
+    List<ChatMessage> findUnreadMessages(@Param("senderId") UUID senderId, @Param("receiverId") UUID receiverId);
 }
