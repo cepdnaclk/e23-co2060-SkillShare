@@ -41,11 +41,9 @@ public class ChatController {
         chatMessageDto.setTimestamp(savedMsg.getTimestamp());
 
         // 4. Instantly push the message to the receiver's active WebSocket connection
-        // The URL pattern becomes: /user/{receiverId}/queue/messages
-        messagingTemplate.convertAndSendToUser(
-                String.valueOf(chatMessageDto.getReceiverId()),
-                "/queue/messages",
-                chatMessageDto
-        );
+        // FIX: We use convertAndSend with the exact destination string instead of convertAndSendToUser
+        // to bypass the missing Principal issue when using JWTs over WebSockets.
+        String destination = "/user/" + chatMessageDto.getReceiverId() + "/queue/messages";
+        messagingTemplate.convertAndSend(destination, chatMessageDto);
     }
 }

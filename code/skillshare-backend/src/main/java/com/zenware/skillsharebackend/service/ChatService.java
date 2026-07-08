@@ -62,21 +62,23 @@ public class ChatService {
     public List<RecentChatDto> getRecentConversations() {
         User currentUser = getAuthenticatedUser();
 
-        // 1. Get all accepted friends from the network
-        return connectionService.getMyFriends().stream().map(connection -> {
+        // 1. Get all accepted friends and map them directly to 'User' objects
+        java.util.Set<User> contactList = connectionService.getMyFriends().stream()
+                .map(connection -> connection.getSender().getId().equals(currentUser.getId())
+                        ? connection.getReceiver()
+                        : connection.getSender())
+                .collect(java.util.stream.Collectors.toSet());
 
-                    // Figure out who the "other person" is in the connection
-                    User contact = connection.getSender().getId().equals(currentUser.getId())
-                            ? connection.getReceiver()
-                            : connection.getSender();
+        // 2. Fetch anyone we have chatted with, regardless of friend status, and add them to the Set
+        List<User> chatPartners = chatMessageRepository.findUsersWithConversation(currentUser.getId());
+        contactList.addAll(chatPartners); // A Set automatically ignores duplicates!
 
-                    // 2. Fetch the last message snippet
+        // 3. Build the UI row for every unique contact
+        return contactList.stream().map(contact -> {
+
                     ChatMessage lastMsg = chatMessageRepository.findLastMessageBetweenUsers(currentUser.getId(), contact.getId());
-
-                    // 3. Fetch the unread count for this specific chat
                     long unreadCount = chatMessageRepository.countUnreadMessagesFromContact(contact.getId(), currentUser.getId());
 
-                    // 4. Build the UI row
                     return RecentChatDto.builder()
                             .contactId(contact.getId())
                             .contactName(contact.getFullName())
@@ -87,7 +89,7 @@ public class ChatService {
                             .build();
 
                 })
-                // Sort the whole list so the most recent conversations jump to the top, just like WhatsApp!
+                // 4. Sort the whole list so the most recent conversations jump to the top
                 .sorted((c1, c2) -> {
                     if (c1.getLastMessageTime() == null && c2.getLastMessageTime() == null) return 0;
                     if (c1.getLastMessageTime() == null) return 1;
