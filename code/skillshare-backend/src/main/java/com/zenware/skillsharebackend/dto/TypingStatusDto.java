@@ -11,5 +11,7 @@ import java.util.UUID;
 public class TypingStatusDto {
     private UUID senderId;
     private UUID receiverId;
+    
+    @com.fasterxml.jackson.annotation.JsonProperty("isTyping")
     private boolean isTyping;
 }
