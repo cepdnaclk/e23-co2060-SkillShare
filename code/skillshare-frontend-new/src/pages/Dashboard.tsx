@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Clock, Sparkles, ArrowRight, Calendar, TrendingUp,
-  BookOpen, Coins, Star, Zap
+  BookOpen, Coins, Star, Zap, Award, Users, Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,16 @@ import ErrorBanner from "@/components/ErrorBanner";
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0 },
+};
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
@@ -28,12 +38,8 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log("Dashboard useEffect running");
-    console.log("Current user:", user);
-    console.log("Current user id:", user?.id);
-
     if (!user?.id) {
-      setLoading(false)
+      setLoading(false);
       return;
     }
 
@@ -45,14 +51,17 @@ const Dashboard = () => {
       sessionsApi.getMentorSessions(uid).catch(() => [] as Session[]),
       feedbackApi.getForUser(uid).catch(() => [] as Feedback[]),
       userSkillsApi.getByUser(uid).catch(() => [] as UserSkill[]),
-    ]).then(([ls, ms, fb, sk]) => {
-      setLearnerSessions(ls);
-      setMentorSessions(ms);
-      setFeedback(fb);
-      setSkills(sk);
-    }).catch((err: ApiError) => {
-      setError(err.message ?? "Failed to load dashboard data.");
-    }).finally(() => setLoading(false));
+    ])
+      .then(([ls, ms, fb, sk]) => {
+        setLearnerSessions(ls);
+        setMentorSessions(ms);
+        setFeedback(fb);
+        setSkills(sk);
+      })
+      .catch((err: ApiError) => {
+        setError(err.message ?? "Failed to load dashboard data.");
+      })
+      .finally(() => setLoading(false));
   }, [user?.id]);
 
   const upcomingLearner = learnerSessions.filter(s => ["PENDING", "ACCEPTED"].includes(s.status));
@@ -60,34 +69,50 @@ const Dashboard = () => {
   const teachSkills = skills.filter(s => s.id?.skillType === "TEACH");
 
   const stats = [
-    { icon: BookOpen, label: "Booked Sessions",   value: upcomingLearner.length, color: "text-primary",      bg: "bg-primary/10",      href: "/sessions" },
-    { icon: Zap,      label: "Pending Requests",  value: upcomingMentor.length,  color: "text-yellow-400",  bg: "bg-yellow-400/10",   href: "/sessions" },
-    { icon: Sparkles, label: "Skills Added",       value: teachSkills.length,     color: "text-accent",      bg: "bg-accent/10",       href: "/create-profile", hrefState: { startStep: 2 } },
-    { icon: Star,     label: "Feedback Received",  value: feedback.length,        color: "text-emerald-400", bg: "bg-emerald-400/10",  href: "/notifications" },
+    { icon: BookOpen, label: "Booked Sessions",  value: upcomingLearner.length, grad: "from-violet-500 to-purple-600", href: "/sessions" },
+    { icon: Zap,      label: "Pending Requests", value: upcomingMentor.length,  grad: "from-amber-500 to-orange-500",  href: "/sessions" },
+    { icon: Sparkles, label: "Skills Added",     value: teachSkills.length,     grad: "from-fuchsia-500 to-purple-500", href: "/create-profile", hrefState: { startStep: 2 } },
+    { icon: Star,     label: "Feedback Received",value: feedback.length,        grad: "from-orange-500 to-amber-400",  href: "/notifications" },
   ];
 
   const firstName = user?.fullName?.split(" ")[0] ?? "there";
 
   return (
     <AppLayout>
-      <div className="p-6 md:p-8 max-w-5xl mx-auto pb-24 md:pb-8">
+      <div className="container mx-auto px-6 py-10 max-w-5xl">
 
         {/* Welcome */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-heading font-bold mb-1">
-                Welcome back, {firstName}! 👋
-              </h1>
-              <p className="text-muted-foreground text-sm">Here's your skill-sharing activity at a glance.</p>
-            </div>
-            {/* Credits chip */}
-            <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border">
-              <Coins className="w-4 h-4 text-yellow-400" />
-              <span className="font-heading font-semibold text-sm">{user?.credits ?? 0}</span>
-              <span className="text-muted-foreground text-xs">credits</span>
-            </div>
+        <motion.div
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 p-5 rounded-2xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400 text-white"
+        >
+          <div>
+            <h1 className="text-3xl font-heading font-bold flex items-center gap-2">
+              Welcome back, {firstName}!
+              <motion.span
+                animate={{ rotate: [0, 18, -8, 18, 0] }}
+                transition={{ duration: 1.4, repeat: Infinity, repeatDelay: 2.5 }}
+                className="inline-block origin-[70%_70%]"
+              >
+                👋
+              </motion.span>
+            </h1>
+            <p className="text-white/90 text-sm mt-1">
+              Here's your skill-sharing activity at a glance.
+            </p>
           </div>
+
+          {/* Credits chip */}
+          <motion.div
+            whileHover={{ scale: 1.04 }}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 w-fit"
+          >
+            <Coins className="w-4 h-4 text-yellow-200" />
+            <span className="font-semibold text-white">{user?.credits ?? 0}</span>
+            <span className="text-white/80 text-sm">credits</span>
+          </motion.div>
         </motion.div>
 
         <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-6" />
@@ -97,93 +122,111 @@ const Dashboard = () => {
           {loading ? (
             <SkeletonStats />
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <motion.div
+              variants={stagger}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-2 md:grid-cols-4 gap-3"
+            >
               {stats.map((stat, i) => (
                 <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.08 }}
+                  key={i}
+                  variants={fadeUp}
+                  whileHover={{ y: -4 }}
                   onClick={() => navigate(stat.href, { state: stat.hrefState ?? {} })}
-                  className="p-4 rounded-xl bg-card border border-border glow-border cursor-pointer hover:border-primary/40 transition-colors"
+                  className="p-4 rounded-xl bg-card border-2 border-border cursor-pointer hover:border-transparent hover:shadow-lg transition-all"
                 >
-                  <div className={`w-10 h-10 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
-                    <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.grad} flex items-center justify-center mb-3 shadow-md`}>
+                    <stat.icon className="w-5 h-5 text-white" />
                   </div>
                   <p className="text-2xl font-heading font-bold">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
         </div>
 
         {/* Action Cards */}
-        <div className="grid md:grid-cols-2 gap-4 mb-8">
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          animate="show"
+          className="grid md:grid-cols-2 gap-4 mb-8"
+        >
           {/* Find Mentors */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
-            className="p-6 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 glow-border"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-primary" />
+          <motion.div variants={fadeUp} className="p-5 rounded-2xl bg-gradient-to-br from-violet-500/10 to-purple-400/10 border-2 border-violet-500/30">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md">
+                <Search className="w-5 h-5 text-white" />
               </div>
-              <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">Explore</Badge>
+              <Badge className="bg-violet-500 text-white border-0">
+                Explore
+              </Badge>
             </div>
-            <h3 className="font-heading font-bold text-lg mb-2">Find Mentors</h3>
+            <h3 className="font-heading font-semibold text-lg mb-1">Find Mentors</h3>
             <p className="text-sm text-muted-foreground mb-4">
               Search by skill to discover mentors who match what you want to learn.
             </p>
-            <Button onClick={() => navigate("/search")} className="gap-2">
+            <Button onClick={() => navigate("/search")} className="gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:opacity-90 text-white border-0">
               Search Skills <ArrowRight className="w-4 h-4" />
             </Button>
           </motion.div>
 
           {/* Pending Mentor Requests */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
-            className="p-6 rounded-2xl bg-gradient-to-br from-yellow-500/10 to-yellow-500/5 border border-yellow-500/20 glow-border"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-yellow-400" />
+          <motion.div variants={fadeUp} className="p-5 rounded-2xl bg-gradient-to-br from-orange-500/10 to-amber-400/10 border-2 border-orange-500/30">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-400 flex items-center justify-center shadow-md">
+                <Users className="w-5 h-5 text-white" />
               </div>
               {upcomingMentor.length > 0 && (
-                <Badge className="bg-yellow-400/20 text-yellow-400 border-yellow-400/30 text-xs">
+                <Badge className="bg-amber-500 text-white border-0">
                   {upcomingMentor.length} pending
                 </Badge>
               )}
             </div>
-            <h3 className="font-heading font-bold text-lg mb-2">Session Requests</h3>
+            <h3 className="font-heading font-semibold text-lg mb-1">Session Requests</h3>
             <p className="text-sm text-muted-foreground mb-4">
               {upcomingMentor.length > 0
                 ? `You have ${upcomingMentor.length} session request(s) waiting for your response.`
                 : "No pending session requests right now."}
             </p>
-            <Button onClick={() => navigate("/sessions")} variant="outline" className="gap-2">
+            <Button onClick={() => navigate("/sessions")} className="gap-2 bg-gradient-to-r from-amber-500 to-orange-400 hover:opacity-90 text-white border-0">
               Manage Sessions <ArrowRight className="w-4 h-4" />
             </Button>
           </motion.div>
-        </div>
+        </motion.div>
 
         {/* Teaching Skills */}
         {!loading && teachSkills.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-            className="p-6 rounded-2xl bg-card border border-border"
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-5 rounded-2xl bg-gradient-to-br from-fuchsia-500/10 to-purple-400/10 border-2 border-fuchsia-500/30 mb-8"
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-heading font-bold">Skills You're Teaching</h3>
-              <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate("/create-profile", { state: { startStep: 2 } })}
+              <h3 className="font-heading font-semibold text-lg flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-purple-500 flex items-center justify-center">
+                  <Award className="w-4 h-4 text-white" />
+                </div>
+                Skills You're Teaching
+              </h3>
+              <button
+                onClick={() => navigate("/create-profile", { state: { startStep: 2 } })}
+                className="text-sm text-fuchsia-500 font-medium hover:underline"
               >
                 + Add More
-              </Button>
+              </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {teachSkills.map(us => (
-                <Badge key={us.id.skillId + us.id.skillType} className="px-3 py-1 bg-primary/10 text-primary border border-primary/20">
-                  {us.skill?.name?? "Unnamed Skill"}
+              {teachSkills.map((us, i) => (
+                <Badge
+                  key={`${us.id?.skillId}-${us.id?.skillType}`}
+                  className={`text-white border-0 px-3 py-1 ${
+                    ["bg-fuchsia-500", "bg-violet-500", "bg-orange-500", "bg-purple-500"][i % 4]
+                  }`}
+                >
+                  {us.skill?.name ?? "Unnamed Skill"}
                 </Badge>
               ))}
             </div>
@@ -192,27 +235,39 @@ const Dashboard = () => {
 
         {/* Upcoming sessions */}
         {!loading && upcomingLearner.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-            className="p-6 rounded-2xl bg-card border border-border mt-4"
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-5 rounded-2xl bg-card border-2 border-border mb-8"
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-heading font-bold flex items-center gap-2">
-                <Clock className="w-4 h-4 text-primary" /> Your Upcoming Sessions
-              </h3>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/sessions")}>View all</Button>
-            </div>
-            <div className="space-y-3">
-              {upcomingLearner.slice(0, 3).map(s => (
-                <div key={s.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary">
-                  <div>
-                    <p className="font-medium text-sm">{s.skill.name} with {s.mentor.fullName}</p>
-                    <p className="text-xs text-muted-foreground">{formatDate(s.startTime)}</p>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    s.status === "ACCEPTED" ? "status-accepted" :
-                    s.status === "PENDING" ? "status-pending" : ""
-                  }`}>{s.status}</span>
+              <h3 className="font-heading font-semibold text-lg flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-orange-400 flex items-center justify-center">
+                  <Calendar className="w-4 h-4 text-white" />
                 </div>
+                Your Upcoming Sessions
+              </h3>
+              <button onClick={() => navigate("/sessions")} className="text-sm text-violet-500 font-medium hover:underline">
+                View all
+              </button>
+            </div>
+            <div className="space-y-2">
+              {upcomingLearner.slice(0, 3).map(s => (
+                <motion.div
+                  whileHover={{ x: 3 }}
+                  key={s.id}
+                  className="flex items-center justify-between p-3 rounded-xl bg-secondary"
+                >
+                  <div>
+                    <p className="text-sm font-medium">{s.skill.name} with {s.mentor.fullName}</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                      <Clock className="w-3 h-3" /> {formatDate(s.startTime)}
+                    </p>
+                  </div>
+                  <Badge className="bg-orange-500 text-white border-0">
+                    {s.status}
+                  </Badge>
+                </motion.div>
               ))}
             </div>
           </motion.div>
@@ -220,21 +275,25 @@ const Dashboard = () => {
 
         {/* Reputation */}
         {!loading && user && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-            className="p-6 rounded-2xl bg-card border border-border mt-4"
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-5 rounded-2xl bg-card border-2 border-border"
           >
-            <h3 className="font-heading font-bold flex items-center gap-2 mb-4">
-              <TrendingUp className="w-4 h-4 text-accent" /> Your Reputation
-            </h3>
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div className="p-3 rounded-xl bg-secondary">
-                <p className="text-xl font-heading font-bold gradient-text">{user.reputationScore}</p>
-                <p className="text-xs text-muted-foreground mt-1">Rep Score</p>
+            <h3 className="font-heading font-semibold text-lg flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-orange-400 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-white" />
               </div>
-
-              <div className="p-3 rounded-xl bg-secondary">
-                <p className="text-xl font-heading font-bold text-yellow-400">{user.credits}</p>
-                <p className="text-xs text-muted-foreground mt-1">Credits</p>
+              Your Reputation
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white">
+                <p className="text-2xl font-heading font-bold">{user.reputationScore}</p>
+                <p className="text-xs text-white/90 mt-1">Rep Score</p>
+              </div>
+              <div className="text-center p-4 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 text-white">
+                <p className="text-2xl font-heading font-bold">{user.credits}</p>
+                <p className="text-xs text-white/90 mt-1">Credits</p>
               </div>
             </div>
           </motion.div>
