@@ -1,6 +1,7 @@
 package com.zenware.skillsharebackend.service;
 
 import com.zenware.skillsharebackend.dto.FeedbackRequest;
+import com.zenware.skillsharebackend.dto.FeedbackResponse;
 import com.zenware.skillsharebackend.dto.FeedbackTagDto;
 import com.zenware.skillsharebackend.entity.*;
 import com.zenware.skillsharebackend.repository.FeedbackRepository;
@@ -37,7 +38,7 @@ public class FeedbackService {
     }
 
     @Transactional
-    public Feedback leaveFeedback(FeedbackRequest request) {
+    public FeedbackResponse leaveFeedback(FeedbackRequest request) {
 
         // 1. Fetch Session
         Session session = sessionRepository.findById(request.getSessionId())
@@ -124,7 +125,22 @@ public class FeedbackService {
             notificationService.sendNotification(session.getMentor(), "Your session is fully closed. Thank you for leaving feedback!", NotificationType.SYSTEM_ALERT);
         }
 
-        return savedFeedback;
+        // CRITICAL FIX: Map to DTO *inside* the @Transactional boundary.
+        // The Hibernate session is still open here, so all lazy proxies
+        // (Feedback -> Session -> Skill) are safely accessible.
+        // If we returned the raw Feedback entity, Jackson would try to
+        // serialize the lazy Skill proxy AFTER the transaction closes -> "no session" crash.
+        return FeedbackResponse.builder()
+                .id(savedFeedback.getId())
+                .sessionId(session.getId())
+                .giverId(giver.getId())
+                .giverName(giver.getFullName())
+                .receiverId(receiver.getId())
+                .receiverName(receiver.getFullName())
+                .feedbackTag(savedFeedback.getFeedbackTag())
+                .weight(savedFeedback.getWeight())
+                .createdAt(savedFeedback.getCreatedAt())
+                .build();
     }
 
     public List<Feedback> getUserFeedback(UUID userId) {
