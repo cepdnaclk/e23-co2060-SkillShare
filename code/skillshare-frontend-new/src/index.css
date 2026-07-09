@@ -6,7 +6,70 @@
 
 @layer base {
   :root {
-    /* ─── Deep Dark Mode (Default) ─────────────────────── */
+    /* ─── Light Mode ─────────────────────────────────── */
+    color-scheme: light;
+
+    --background:       240 20% 99%;     /* near-white       */
+    --foreground:       222 47% 11%;     /* dark navy text   */
+
+    --card:             0 0% 100%;       /* white card       */
+    --card-foreground:  222 47% 11%;
+
+    --popover:          0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Electric indigo-violet — the signature accent, darkened for contrast on white */
+    --primary:          245 80% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary:        222 25% 95%;
+    --secondary-foreground: 222 30% 20%;
+
+    --muted:            222 20% 96%;
+    --muted-foreground: 215 15% 40%;
+
+    /* Electric teal — secondary accent, darkened for contrast on white */
+    --accent:           174 70% 38%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive:      0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border:           222 20% 88%;
+    --input:            222 20% 90%;
+    --ring:             245 80% 58%;
+
+    --radius: 0.75rem;
+
+    /* ─── Custom Design Tokens (light) ─────────────────── */
+    --gradient-hero:     linear-gradient(135deg, hsl(245 80% 58%), hsl(280 75% 55%));
+    --gradient-teal:     linear-gradient(135deg, hsl(174 70% 38%), hsl(195 70% 45%));
+    --gradient-card:     linear-gradient(145deg, hsl(0 0% 100%), hsl(222 20% 97%));
+    --gradient-glow:     radial-gradient(ellipse at top, hsl(245 80% 58% / 0.08), transparent 65%);
+
+    --shadow-card:       0 4px 24px -4px hsl(222 20% 60% / 0.15);
+    --shadow-elevated:   0 12px 32px -8px hsl(222 20% 50% / 0.2);
+    --shadow-glow-primary: 0 0 32px -8px hsl(245 80% 58% / 0.25);
+    --shadow-glow-accent:  0 0 32px -8px hsl(174 70% 38% / 0.2);
+
+    --font-heading: 'Space Grotesk', sans-serif;
+    --font-body:    'Inter', sans-serif;
+
+    /* Sidebar (light) */
+    --sidebar-background: 0 0% 99%;
+    --sidebar-foreground: 222 30% 25%;
+    --sidebar-primary: 245 80% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 20% 94%;
+    --sidebar-accent-foreground: 222 30% 15%;
+    --sidebar-border: 222 20% 88%;
+    --sidebar-ring: 245 80% 58%;
+  }
+
+  .dark {
+    /* ─── Deep Dark Mode ─────────────────────────────── */
+    color-scheme: dark;
+
     --background:       222 47% 5%;      /* near-black navy */
     --foreground:       210 20% 93%;     /* off-white       */
 
@@ -37,9 +100,7 @@
     --input:            222 25% 14%;
     --ring:             245 88% 66%;
 
-    --radius: 0.75rem;
-
-    /* ─── Custom Design Tokens ─────────────────────────── */
+    /* ─── Custom Design Tokens (dark) ──────────────────── */
     --gradient-hero:     linear-gradient(135deg, hsl(245 88% 66%), hsl(280 85% 60%));
     --gradient-teal:     linear-gradient(135deg, hsl(174 75% 48%), hsl(195 80% 50%));
     --gradient-card:     linear-gradient(145deg, hsl(222 40% 10%), hsl(222 35% 8%));
@@ -50,10 +111,7 @@
     --shadow-glow-primary: 0 0 40px -8px hsl(245 88% 66% / 0.4);
     --shadow-glow-accent:  0 0 40px -8px hsl(174 75% 48% / 0.35);
 
-    --font-heading: 'Space Grotesk', sans-serif;
-    --font-body:    'Inter', sans-serif;
-
-    /* Sidebar */
+    /* Sidebar (dark) */
     --sidebar-background: 222 44% 6%;
     --sidebar-foreground: 210 20% 70%;
     --sidebar-primary: 245 88% 66%;
@@ -63,12 +121,7 @@
     --sidebar-border: 222 25% 14%;
     --sidebar-ring: 245 88% 66%;
   }
-
-  /* No light-mode variables — dark is the one true mode */
 }
-
-/* ─── Force dark mode on root ─────────────────────────────── */
-html { color-scheme: dark; }
 
 @layer base {
   * { @apply border-border; }

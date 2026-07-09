@@ -15,6 +15,7 @@ import ViewProfile from "./pages/ViewProfile";
 import MySchedule from "./pages/MySchedule";
 import Notifications from "./pages/Notifications";
 import Sessions from "./pages/Sessions";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -58,7 +59,9 @@ const App = () => (
             <Route path="/sessions" element={
               <ProtectedRoute><Sessions /></ProtectedRoute>
             } />
-
+            <Route path="/settings" element={
+              <ProtectedRoute><Settings /></ProtectedRoute>
+            } />
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
