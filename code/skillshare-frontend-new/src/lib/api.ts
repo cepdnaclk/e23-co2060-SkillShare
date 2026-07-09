@@ -100,7 +100,7 @@ export const usersApi = {
         method: "PATCH",
         body: JSON.stringify(bio),
       }),
-};
+
 
     /**
  * Uploads a new profile picture binary stream to the backend
@@ -256,6 +256,7 @@ export interface User {
   role: string;
   isActive?: boolean;
   createdAt?: string;
+    profilePictureUrl?: string;// 👈 Add this
 }
 
 
@@ -269,7 +270,7 @@ export interface AuthResponse {
     level?: number;        // 👈 Add this
     xp?: number;           // 👈 Add this
     reputationScore?: number;
-    profilePictureUrl?: string;// 👈 Add this
+
 }
 
 export interface Skill {
