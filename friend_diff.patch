@@ -1,0 +1,539 @@
+﻿commit 10fcd0b116e6fc060d1262a872bc5937f072c853
+Author: poornamg <e23104@end.pdn.ac.lk>
+Date:   Fri Jul 10 01:11:06 2026 +0530
+
+    Implemented friend system
+
+diff --git a/code/skillshare-backend/src/main/java/com/zenware/skillsharebackend/controller/ConnectionController.java b/code/skillshare-backend/src/main/java/com/zenware/skillsharebackend/controller/ConnectionController.java
+index 5f568c3..19909cc 100644
+--- a/code/skillshare-backend/src/main/java/com/zenware/skillsharebackend/controller/ConnectionController.java
++++ b/code/skillshare-backend/src/main/java/com/zenware/skillsharebackend/controller/ConnectionController.java
+@@ -60,6 +60,12 @@ public class ConnectionController {
+         return ResponseEntity.ok(dtos);
+     }
+ 
++    // 4.5. Get Connection Status (For the ViewProfile page)
++    @GetMapping("/status/{userId}")
++    public ResponseEntity<com.zenware.skillsharebackend.dto.ConnectionStatusDto> getConnectionStatus(@PathVariable UUID userId) {
++        return ResponseEntity.ok(connectionService.getConnectionStatus(userId));
++    }
++
+     // 5. Get All Friends (To populate the chat sidebar or network page)
+     @GetMapping("/friends")
+     public ResponseEntity<List<ConnectionDto>> getMyFriends() {
+diff --git a/code/skillshare-backend/src/main/java/com/zenware/skillsharebackend/dto/ConnectionStatusDto.java b/code/skillshare-backend/src/main/java/com/zenware/skillsharebackend/dto/ConnectionStatusDto.java
+new file mode 100644
+index 0000000..b852b66
+--- /dev/null
++++ b/code/skillshare-backend/src/main/java/com/zenware/skillsharebackend/dto/ConnectionStatusDto.java
+@@ -0,0 +1,16 @@
++package com.zenware.skillsharebackend.dto;
++
++import lombok.AllArgsConstructor;
++import lombok.Builder;
++import lombok.Data;
++import lombok.NoArgsConstructor;
++import java.util.UUID;
++
++@Data
++@Builder
++@AllArgsConstructor
++@NoArgsConstructor
++public class ConnectionStatusDto {
++    private String status; // NONE, PENDING_SENT, PENDING_RECEIVED, FRIENDS
++    private UUID connectionId; // ID of the connection record if exists, or null
++}
+diff --git a/code/skillshare-backend/src/main/java/com/zenware/skillsharebackend/dto/TypingStatusDto.java b/code/skillshare-backend/src/main/java/com/zenware/skillsharebackend/dto/TypingStatusDto.java
+index 2e0ec85..2d254af 100644
+--- a/code/skillshare-backend/src/main/java/com/zenware/skillsharebackend/dto/TypingStatusDto.java
++++ b/code/skillshare-backend/src/main/java/com/zenware/skillsharebackend/dto/TypingStatusDto.java
+@@ -13,5 +13,5 @@ public class TypingStatusDto {
+     private UUID receiverId;
+     
+     @com.fasterxml.jackson.annotation.JsonProperty("isTyping")
+-    private boolean isTyping;
++    private Boolean typing;
+ }
+\ No newline at end of file
+diff --git a/code/skillshare-backend/src/main/java/com/zenware/skillsharebackend/service/ConnectionService.java b/code/skillshare-backend/src/main/java/com/zenware/skillsharebackend/service/ConnectionService.java
+index d50954c..5f62d39 100644
+--- a/code/skillshare-backend/src/main/java/com/zenware/skillsharebackend/service/ConnectionService.java
++++ b/code/skillshare-backend/src/main/java/com/zenware/skillsharebackend/service/ConnectionService.java
+@@ -155,4 +155,41 @@ public class ConnectionService {
+         User currentUser = getAuthenticatedUser();
+         return connectionRepository.findAllAcceptedConnectionsForUser(currentUser.getId());
+     }
++
++    // 6. GET CONNECTION STATUS (For dynamic UI rendering on profile pages)
++    public com.zenware.skillsharebackend.dto.ConnectionStatusDto getConnectionStatus(UUID targetUserId) {
++        User currentUser = getAuthenticatedUser();
++        
++        if (currentUser.getId().equals(targetUserId)) {
++            return com.zenware.skillsharebackend.dto.ConnectionStatusDto.builder().status("NONE").build();
++        }
++
++        Optional<Connection> existingConnectionOpt = connectionRepository.findExistingConnection(currentUser.getId(), targetUserId);
++
++        if (existingConnectionOpt.isEmpty()) {
++            return com.zenware.skillsharebackend.dto.ConnectionStatusDto.builder().status("NONE").build();
++        }
++
++        Connection connection = existingConnectionOpt.get();
++
++        if (connection.getStatus() == ConnectionStatus.ACCEPTED) {
++            return com.zenware.skillsharebackend.dto.ConnectionStatusDto.builder()
++                    .status("FRIENDS")
++                    .connectionId(connection.getId())
++                    .build();
++        }
++
++        // If it's pending, check who sent it
++        if (connection.getSender().getId().equals(currentUser.getId())) {
++            return com.zenware.skillsharebackend.dto.ConnectionStatusDto.builder()
++                    .status("PENDING_SENT")
++                    .connectionId(connection.getId())
++                    .build();
++        } else {
++            return com.zenware.skillsharebackend.dto.ConnectionStatusDto.builder()
++                    .status("PENDING_RECEIVED")
++                    .connectionId(connection.getId())
++                    .build();
++        }
++    }
+ }
+\ No newline at end of file
+diff --git a/code/skillshare-frontend-new/src/lib/api.ts b/code/skillshare-frontend-new/src/lib/api.ts
+index 3988f13..92933bc 100644
+--- a/code/skillshare-frontend-new/src/lib/api.ts
++++ b/code/skillshare-frontend-new/src/lib/api.ts
+@@ -240,9 +240,46 @@ export const notificationsApi = {
+       apiFetch<string>(`/api/notifications/${notificationId}/read`, { method: "PUT" }),
+ };
+ 
++export const connectionsApi = {
++  getStatus: (userId: string) =>
++      apiFetch<{ status: string; connectionId: string | null }>(`/api/connections/status/${userId}`),
++
++  sendRequest: (userId: string) =>
++      apiFetch<{ status: string; message: string }>(`/api/connections/request/${userId}`, { method: "POST" }),
++
++  acceptRequest: (connectionId: string) =>
++      apiFetch<{ status: string; message: string }>(`/api/connections/accept/${connectionId}`, { method: "PUT" }),
++
++  rejectRequest: (connectionId: string) =>
++      apiFetch<{ status: string; message: string }>(`/api/connections/reject/${connectionId}`, { method: "DELETE" }),
++
++  getFriends: () =>
++      apiFetch<ConnectionDto[]>("/api/connections/friends"),
++
++  getPending: () =>
++      apiFetch<ConnectionDto[]>("/api/connections/pending"),
++};
++
+ // ============================================================
+ // TypeScript types matching backend entities/DTOs
+ // ============================================================
++export interface ConnectionUserDto {
++  id: string;
++  fullName: string;
++  bio?: string;
++  profilePictureUrl?: string;
++  xp: number;
++  level: number;
++  reputationScore: number;
++}
++
++export interface ConnectionDto {
++  id: string;
++  status: string;
++  sender: ConnectionUserDto;
++  receiver: ConnectionUserDto;
++}
++
+ export interface User {
+   id: string; //This must be userId
+   fullName: string;
+@@ -256,7 +293,7 @@ export interface User {
+   role: string;
+   isActive?: boolean;
+   createdAt?: string;
+-    profilePictureUrl?: string;// ≡ƒæê Add this
++  profilePictureUrl?: string;
+ }
+ 
+ 
+diff --git a/code/skillshare-frontend-new/src/pages/Notifications.tsx b/code/skillshare-frontend-new/src/pages/Notifications.tsx
+index 166177c..5d750a4 100644
+--- a/code/skillshare-frontend-new/src/pages/Notifications.tsx
++++ b/code/skillshare-frontend-new/src/pages/Notifications.tsx
+@@ -1,9 +1,9 @@
+ import { useEffect, useState } from "react";
+ import { motion, AnimatePresence } from "framer-motion";
+-import { Bell, Check, Clock, RefreshCw, Sparkles, ShieldCheck } from "lucide-react";
++import { Bell, Check, Clock, RefreshCw, Sparkles, ShieldCheck, UserPlus, UserCheck, X } from "lucide-react";
+ import { Button } from "@/components/ui/button";
+ import AppLayout from "@/components/AppLayout";
+-import { notificationsApi, type Notification, type ApiError } from "@/lib/api";
++import { notificationsApi, connectionsApi, type Notification, type ApiError, type ConnectionDto } from "@/lib/api";
+ import { SkeletonList } from "@/components/SkeletonCard";
+ import ErrorBanner from "@/components/ErrorBanner";
+ import { toast } from "sonner";
+@@ -29,6 +29,7 @@ const fmtTime = (iso: string) => {
+ 
+ const Notifications = () => {
+   const [notifications, setNotifications] = useState<Notification[]>([]);
++  const [pendingRequests, setPendingRequests] = useState<ConnectionDto[]>([]);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState<string | null>(null);
+   const navigate = useNavigate();
+@@ -36,8 +37,12 @@ const Notifications = () => {
+   const load = async () => {
+     setLoading(true);
+     try {
+-      const data = await notificationsApi.getInbox();
++      const [data, pending] = await Promise.all([
++        notificationsApi.getInbox(),
++        connectionsApi.getPending().catch(() => [] as ConnectionDto[]),
++      ]);
+       setNotifications(data);
++      setPendingRequests(pending);
+     } catch (err: unknown) {
+       setError((err as ApiError).message ?? "Failed to load notifications.");
+     } finally { setLoading(false); }
+@@ -45,6 +50,26 @@ const Notifications = () => {
+ 
+   useEffect(() => { load(); }, []);
+ 
++  const handleAccept = async (conn: ConnectionDto) => {
++    try {
++      await connectionsApi.acceptRequest(conn.id);
++      setPendingRequests(prev => prev.filter(r => r.id !== conn.id));
++      toast.success(`You are now friends with ${conn.sender.fullName}!`);
++    } catch {
++      toast.error("Failed to accept request.");
++    }
++  };
++
++  const handleDecline = async (conn: ConnectionDto) => {
++    try {
++      await connectionsApi.rejectRequest(conn.id);
++      setPendingRequests(prev => prev.filter(r => r.id !== conn.id));
++      toast.success("Request declined.");
++    } catch {
++      toast.error("Failed to decline request.");
++    }
++  };
++
+   const markAsRead = async (id: string) => {
+     try {
+       await notificationsApi.markAsRead(id);
+@@ -83,26 +108,30 @@ const Notifications = () => {
+               <p className="text-sm">No new notifications right now.</p>
+             </div>
+           ) : (
+-            <div className="space-y-3">
++                      <div className="space-y-3">
+               {notifications.map((n, i) => {
+                 const cfg = typeConfig[n.type] ?? typeConfig.SYSTEM_ALERT;
++                const isConnectionRequest = n.message.toLowerCase().includes("connection request");
+                 return (
+                   <motion.div
+                     key={n.id}
+                     initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                     onClick={async () => {
++                      if (isConnectionRequest) return; // handled by buttons
+                       if (!n.isRead) await markAsRead(n.id);
+                       const msg = n.message.toLowerCase();
+                       const tab = msg.includes("booked") || msg.includes("requested") || msg.includes("learn") ? "mentor" : "learner";
+                       navigate("/sessions", { state: { tab } });
+                     }}
+-                    className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
++                    className={`p-5 rounded-2xl border-2 transition-all ${
++                      isConnectionRequest ? "cursor-default" : "cursor-pointer"
++                    } ${
+                       n.isRead ? "bg-card border-border hover:border-violet-500/30" : "bg-card border-violet-500/40 shadow-sm"
+                     }`}
+                   >
+                     <div className="flex items-start gap-4">
+                       <div className={`w-10 h-10 rounded-xl ${cfg.bg} ${cfg.color} flex items-center justify-center flex-shrink-0`}>
+-                        {cfg.icon}
++                        {isConnectionRequest ? <UserPlus className="w-4 h-4" /> : cfg.icon}
+                       </div>
+                       <div className="flex-1 min-w-0">
+                         <p className={`text-sm ${n.isRead ? "text-muted-foreground" : "font-semibold text-foreground"}`}>
+@@ -111,6 +140,40 @@ const Notifications = () => {
+                         <span className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+                           <Clock className="w-3.5 h-3.5" /> {fmtTime(n.createdAt)}
+                         </span>
++                        
++                        {/* Inline Accept/Decline buttons for connection requests */}
++                        {isConnectionRequest && !n.isRead && pendingRequests.length > 0 && (
++                          <div className="flex gap-2 mt-3 pt-3 border-t border-border/50">
++                            <Button
++                              size="sm"
++                              onClick={(e) => {
++                                e.stopPropagation();
++                                // Find the pending request matching this notification
++                                // Since we don't have the exact connection ID in the notification, we use the pending list
++                                // Assuming the user accepts the most recent one or we just accept the first one in the pending list
++                                const pending = pendingRequests[0];
++                                if (pending) handleAccept(pending);
++                                markAsRead(n.id);
++                              }}
++                              className="h-8 rounded-xl bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600 px-4"
++                            >
++                              <UserCheck className="w-3.5 h-3.5 mr-1" /> Accept
++                            </Button>
++                            <Button
++                              size="sm"
++                              variant="outline"
++                              onClick={(e) => {
++                                e.stopPropagation();
++                                const pending = pendingRequests[0];
++                                if (pending) handleDecline(pending);
++                                markAsRead(n.id);
++                              }}
++                              className="h-8 rounded-xl text-xs font-bold text-rose-500 border-rose-200 hover:bg-rose-50 px-4"
++                            >
++                              <X className="w-3.5 h-3.5 mr-1" /> Decline
++                            </Button>
++                          </div>
++                        )}
+                       </div>
+                     </div>
+                   </motion.div>
+@@ -122,6 +185,53 @@ const Notifications = () => {
+ 
+         {/* --- RIGHT COLUMN: Sidebar --- */}
+         <div className="hidden lg:flex flex-col w-80 shrink-0 space-y-6">
++
++          {/* Friend Requests Panel */}
++          {pendingRequests.length > 0 && (
++            <div className="p-6 rounded-2xl bg-card border-2 border-blue-500/30 shadow-lg">
++              <h4 className="font-heading font-bold mb-4 flex items-center gap-2 text-blue-600">
++                <UserPlus className="w-5 h-5" /> Friend Requests
++                <span className="ml-auto w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] flex items-center justify-center font-bold">
++                  {pendingRequests.length}
++                </span>
++              </h4>
++              <div className="space-y-4">
++                {pendingRequests.map(conn => (
++                  <div key={conn.id} className="flex flex-col gap-2">
++                    <div className="flex items-center gap-2">
++                      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden">
++                        {conn.sender.profilePictureUrl
++                          ? <img src={conn.sender.profilePictureUrl} alt={conn.sender.fullName} className="w-full h-full object-cover rounded-full" />
++                          : conn.sender.fullName.slice(0, 2).toUpperCase()}
++                      </div>
++                      <div className="flex-1 min-w-0">
++                        <p className="text-xs font-bold text-foreground truncate capitalize">{conn.sender.fullName}</p>
++                        <p className="text-[10px] text-muted-foreground">Lvl {conn.sender.level} ΓÇó {conn.sender.xp} XP</p>
++                      </div>
++                    </div>
++                    <div className="flex gap-2">
++                      <Button
++                        size="sm"
++                        onClick={() => handleAccept(conn)}
++                        className="flex-1 h-8 rounded-xl bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600"
++                      >
++                        <UserCheck className="w-3.5 h-3.5 mr-1" /> Accept
++                      </Button>
++                      <Button
++                        size="sm"
++                        variant="outline"
++                        onClick={() => handleDecline(conn)}
++                        className="flex-1 h-8 rounded-xl text-xs font-bold text-rose-500 border-rose-200 hover:bg-rose-50"
++                      >
++                        <X className="w-3.5 h-3.5 mr-1" /> Decline
++                      </Button>
++                    </div>
++                  </div>
++                ))}
++              </div>
++            </div>
++          )}
++
+           <div className="p-6 rounded-2xl bg-card border-2 border-border/80 shadow-lg">
+             <h4 className="font-heading font-bold mb-4 flex items-center gap-2">
+               <ShieldCheck className="w-5 h-5 text-violet-500" /> Quick Actions
+diff --git a/code/skillshare-frontend-new/src/pages/ViewProfile.tsx b/code/skillshare-frontend-new/src/pages/ViewProfile.tsx
+index 03ef108..cd99cb6 100644
+--- a/code/skillshare-frontend-new/src/pages/ViewProfile.tsx
++++ b/code/skillshare-frontend-new/src/pages/ViewProfile.tsx
+@@ -15,6 +15,10 @@ import {
+   Zap,
+   Users,
+   MessageSquare,
++  UserPlus,
++  UserCheck,
++  Clock as ClockIcon,
++  AlertCircle,
+ } from "lucide-react";
+ import { Button } from "@/components/ui/button";
+ import { Badge } from "@/components/ui/badge";
+@@ -26,10 +30,12 @@ import {
+   userSkillsApi,
+   availabilityApi,
+   sessionsApi,
++  connectionsApi,
+   type User,
+   type UserSkill,
+   type Availability,
+   type ApiError,
++  type ConnectionDto,
+ } from "@/lib/api";
+ import { useAuth } from "@/context/AuthContext";
+ import ErrorBanner from "@/components/ErrorBanner";
+@@ -43,32 +49,6 @@ import {
+ import { toast } from "sonner";
+ import { useLocation } from "react-router-dom";
+ 
+-interface ConnectionUserDto {
+-  id: string;
+-  fullName: string;
+-  bio?: string;
+-  profilePictureUrl?: string;
+-  xp: number;
+-  level: number;
+-  reputationScore: number;
+-}
+-
+-interface ConnectionDto {
+-  id: string;
+-  status: string;
+-  sender: ConnectionUserDto;
+-  receiver: ConnectionUserDto;
+-}
+-
+-const connectionsApi = {
+-  getFriends: async (): Promise<ConnectionDto[]> => {
+-    const res = await fetch("/api/connections/friends", {
+-      headers: { "Content-Type": "application/json" },
+-    });
+-    if (!res.ok) throw new Error("Failed to load friend connections.");
+-    return res.json();
+-  }
+-};
+ 
+ const fmt = (iso: string) =>
+     new Date(iso).toLocaleString("en-US", {
+@@ -91,6 +71,8 @@ const ViewProfile = () => {
+   const [skills, setSkills] = useState<UserSkill[]>([]);
+   const [slots, setSlots] = useState<Availability[]>([]);
+   const [friends, setFriends] = useState<ConnectionDto[]>([]);
++  const [connectionStatus, setConnectionStatus] = useState<{ status: string; connectionId: string | null }>({ status: "NONE", connectionId: null });
++  const [connLoading, setConnLoading] = useState(false);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState<string | null>(null);
+ 
+@@ -119,12 +101,14 @@ const ViewProfile = () => {
+       userSkillsApi.getByUser(id).catch(() => [] as UserSkill[]),
+       availabilityApi.getMentorSlots(id).catch(() => [] as Availability[]),
+       connectionsApi.getFriends().catch(() => [] as ConnectionDto[]),
++      connectionsApi.getStatus(id).catch(() => ({ status: "NONE", connectionId: null })),
+     ])
+-        .then(([u, sk, av, fr]) => {
+-          setMentor(u);
+-          setSkills(sk);
+-          setSlots(av);
+-          setFriends(fr);
++        .then(([u, sk, av, fr, statusData]) => {
++          setMentor(u as User);
++          setSkills(sk as UserSkill[]);
++          setSlots(av as Availability[]);
++          setFriends(fr as ConnectionDto[]);
++          setConnectionStatus(statusData as { status: string; connectionId: string | null });
+         })
+         .catch((err: ApiError) => {
+           setError(err.message ?? "Could not load profile dashboard.");
+@@ -660,6 +644,90 @@ const ViewProfile = () => {
+               >
+                 <MessageSquare className="w-4 h-4 mr-2" /> Send Message
+               </Button>
++
++              {/* FRIEND REQUEST BUTTON ΓÇö dynamic based on connection status */}
++              <div className="w-full mt-2">
++                {connectionStatus.status === "NONE" && (
++                    <Button
++                        disabled={connLoading}
++                        onClick={async () => {
++                          setConnLoading(true);
++                          try {
++                            await connectionsApi.sendRequest(mentor.id);
++                            setConnectionStatus({ status: "PENDING_SENT", connectionId: null });
++                            toast.success("Friend request sent!");
++                          } catch (e: any) {
++                            toast.error(e.message || "Failed to send request.");
++                          } finally {
++                            setConnLoading(false);
++                          }
++                        }}
++                        className="w-full bg-blue-500 text-white rounded-2xl font-bold text-xs h-11 shadow-md hover:bg-blue-600 transition-colors"
++                    >
++                      <UserPlus className="w-4 h-4 mr-2" />
++                      {connLoading ? "Sending..." : "Add Friend"}
++                    </Button>
++                )}
++                {connectionStatus.status === "PENDING_SENT" && (
++                    <Button
++                        disabled
++                        className="w-full bg-slate-100 text-slate-400 rounded-2xl font-bold text-xs h-11 border border-slate-200 cursor-not-allowed"
++                    >
++                      <AlertCircle className="w-4 h-4 mr-2" /> Request Sent
++                    </Button>
++                )}
++                {connectionStatus.status === "FRIENDS" && (
++                    <Button
++                        disabled
++                        className="w-full bg-emerald-50 text-emerald-600 rounded-2xl font-bold text-xs h-11 border border-emerald-200 cursor-not-allowed"
++                    >
++                      <UserCheck className="w-4 h-4 mr-2" /> Friends
++                    </Button>
++                )}
++                {connectionStatus.status === "PENDING_RECEIVED" && (
++                    <div className="flex gap-2">
++                      <Button
++                          disabled={connLoading}
++                          onClick={async () => {
++                            if (!connectionStatus.connectionId) return;
++                            setConnLoading(true);
++                            try {
++                              await connectionsApi.acceptRequest(connectionStatus.connectionId);
++                              setConnectionStatus({ status: "FRIENDS", connectionId: connectionStatus.connectionId });
++                              toast.success("You are now friends!");
++                            } catch (e: any) {
++                              toast.error("Failed to accept request.");
++                            } finally {
++                              setConnLoading(false);
++                            }
++                          }}
++                          className="flex-1 bg-emerald-500 text-white rounded-2xl font-bold text-xs h-11 shadow-md hover:bg-emerald-600"
++                      >
++                        Accept
++                      </Button>
++                      <Button
++                          disabled={connLoading}
++                          onClick={async () => {
++                            if (!connectionStatus.connectionId) return;
++                            setConnLoading(true);
++                            try {
++                              await connectionsApi.rejectRequest(connectionStatus.connectionId);
++                              setConnectionStatus({ status: "NONE", connectionId: null });
++                              toast.success("Request declined.");
++                            } catch (e: any) {
++                              toast.error("Failed to decline request.");
++                            } finally {
++                              setConnLoading(false);
++                            }
++                          }}
++                          variant="outline"
++                          className="flex-1 rounded-2xl font-bold text-xs h-11 text-rose-500 border-rose-200 hover:bg-rose-50"
++                      >
++                        Decline
++                      </Button>
++                    </div>
++                )}
++              </div>
+             </div>
+ 
+             <div className="lg:col-span-9 space-y-6">
