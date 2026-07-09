@@ -29,10 +29,57 @@ const STATUS_CLASSES: Record<SessionStatus, string> = {
   EXPIRED:   "status-expired",
 };
 
-const fmt = (iso: string) =>
-  new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.05 } },
+};
+
+const STATUS_CLASSES: Record<SessionStatus, string> = {
+  PENDING:   "bg-amber-500 text-white border-0",
+  ACCEPTED:  "bg-violet-500 text-white border-0",
+  REJECTED:  "bg-red-500 text-white border-0",
+  COMPLETED: "bg-emerald-500 text-white border-0",
+  EXPIRED:   "bg-muted text-muted-foreground border-0",
+};
+
+const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+
+const formatTime = (date: string) =>
+    new Date(date).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
 // ─── Feedback Dialog ─────────────────────────────────────────
+
+const TAG_EMOJI_MAP: Record<string, string> = {
+  // Positive Stickers
+  EXCELLENT_COMMUNICATOR: "🗣️",
+  DEEP_KNOWLEDGE:        "🧠",
+  VERY_PATIENT:         "⏳",
+  WELL_PREPARED:        "📚",
+  HIGHLY_ENGAGED:       "🔥",
+  PUNCTUAL:             "⏰",
+  RESPECTFUL:           "🤝",
+  FRIENDLY:             "😊",
+
+  // Negative/Warning Stickers
+  POOR_EXPLANATION:     "🤷",
+  UNPREPARED:           "❌",
+  DISTRACTED:           "📱",
+  LEFT_EARLY:           "🏃‍♂️",
+  NOISY_ENVIRONMENT:    "🔊",
+  RUDE_BEHAVIOR:        "😠",
+  LATE_TO_SESSION:      "🐢",
+  NO_SHOW:              "👻",
+};
+
+// ─── Optimized Layout Feedback Dialog ─────────────────────────────────────────
 interface FeedbackDialogProps {
   session: Session | null;
   rateName: string;
@@ -51,7 +98,7 @@ const FeedbackDialog = ({ session, rateName, onClose, onSubmitted }: FeedbackDia
   }, [session]);
 
   const toggle = (name: string) =>
-    setSelected(prev => prev.includes(name) ? prev.filter(t => t !== name) : [...prev, name]);
+      setSelected(prev => prev.includes(name) ? prev.filter(t => t !== name) : [...prev, name]);
 
   const submit = async () => {
     if (!session || selected.length === 0) return;
@@ -131,11 +178,41 @@ interface SessionCardProps {
   actionLoading: string | null;
   ratedSessionIds: string[];
 }
-
 const SessionCard = ({ session: s, role, onAction, actionLoading, ratedSessionIds }: SessionCardProps) => {
   const isBusy = actionLoading === s.id;
   const counterpart = role === "learner" ? s.mentor : s.learner;
   const initials = counterpart.fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+
+  // 🎨 Overhauled Dynamic Background & Border Matrix
+  const statusStyles = {
+    PENDING: {
+      bg: "bg-gradient-to-br from-amber-500/[0.04] via-amber-500/[0.01] to-transparent",
+      border: "border-amber-500/20 hover:border-amber-500/50 shadow-[0_4px_20px_rgba(245,158,11,0.02)]",
+      avatar: "from-amber-500/10 to-orange-500/10 border-amber-500/20 text-amber-600"
+    },
+    ACCEPTED: {
+      bg: "bg-gradient-to-br from-violet-500/[0.05] via-violet-500/[0.01] to-transparent",
+      border: "border-violet-500/20 hover:border-violet-500/50 shadow-[0_4px_20px_rgba(139,92,246,0.02)]",
+      avatar: "from-violet-500/10 to-purple-500/10 border-violet-500/20 text-violet-600"
+    },
+    COMPLETED: {
+      bg: "bg-gradient-to-br from-emerald-500/[0.04] via-emerald-500/[0.01] to-transparent",
+      border: "border-emerald-500/15 hover:border-emerald-500/40",
+      avatar: "from-emerald-500/10 to-teal-500/10 border-emerald-500/20 text-emerald-600"
+    },
+    REJECTED: {
+      bg: "bg-gradient-to-br from-red-500/[0.03] to-transparent",
+      border: "border-red-500/10 hover:border-red-500/30",
+      avatar: "from-red-500/10 to-rose-500/10 border-red-500/10 text-red-400"
+    },
+    EXPIRED: {
+      bg: "bg-secondary/20",
+      border: "border-border/60",
+      avatar: "from-muted to-muted border-border text-muted-foreground"
+    }
+  };
+
+  const currentStyle = statusStyles[s.status] || statusStyles.EXPIRED;
 
   return (
     <motion.div
@@ -365,7 +442,21 @@ const Sessions = () => {
           ))}
         </div>
 
-        <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-4" />
+        <FeedbackDialog
+            session={feedbackSession}
+            rateName={feedbackRateName}
+            onClose={() => setFeedbackSession(null)}
+            onSubmitted={(sessionId) => {
+              setRatedSessionIds(prev => {
+                const updated = prev.includes(sessionId) ? prev : [...prev, sessionId];
+                if (user?.id) {
+                  localStorage.setItem(`ratedSessionIds_${user.id}`, JSON.stringify(updated));
+                }
+                return updated;
+              });
+              setFeedbackSession(null);
+            }}
+        />
 
         {loading ? (
           <SkeletonList count={3} />
