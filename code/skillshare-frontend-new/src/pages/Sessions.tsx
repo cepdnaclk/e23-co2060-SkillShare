@@ -361,10 +361,6 @@ const SessionCard = ({ session: s, role, onAction, actionLoading, ratedSessionId
                 onClick={() => onAction(s, "feedback")} 
                 disabled={isBusy || ratedSessionIds.includes(s.id)}
             >
-<<<<<<< HEAD
-              <MessageSquare className="w-4 h-4" />
-              Rate {role === "learner" ? s.mentorName : s.learnerName}
-=======
               {ratedSessionIds.includes(s.id) ? (
                   <>
                     <Check className="w-4 h-4 text-emerald-500 animate-in zoom-in duration-300" />
@@ -373,10 +369,9 @@ const SessionCard = ({ session: s, role, onAction, actionLoading, ratedSessionId
               ) : (
                   <>
                     <MessageSquare className="w-4 h-4" />
-                    Rate {role === "learner" ? s.mentor.fullName : s.learner.fullName}
+                    Rate {role === "learner" ? s.mentorName : s.learnerName}
                   </>
               )}
->>>>>>> b32d3325a982e5a6252eff058d3c4db19e1c12fe
             </Button>
         )}
       </motion.div>

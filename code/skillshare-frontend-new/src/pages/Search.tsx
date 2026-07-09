@@ -260,20 +260,6 @@ const Search = () => {
           </div>
         )}
 
-<<<<<<< HEAD
-          {loadingMentors ? <SkeletonList count={3} /> : (
-            <div className="space-y-3">
-              {mentors.filter(us => us.userName.toLowerCase().includes(nameFilter.toLowerCase())).map((us, i) => (
-                <motion.div 
-                  key={`${us.userId}-${us.skillId}`} 
-                  variants={fadeUp} initial="hidden" animate="show" transition={{ delay: i * 0.05 }}
-                  onClick={() => navigate(`/profile/${us.userId}`, { state: { skillId: selectedSkill?.id } })}
-                  className="p-5 rounded-2xl border-2 border-border/60 hover:border-violet-500/50 bg-card hover:bg-secondary/20 transition-all cursor-pointer flex items-start gap-4 shadow-sm"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 flex items-center justify-center font-bold text-violet-600">
-<<<<<<< HEAD
-                    {getInitials(us.user.fullName)}
-=======
         <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-4" />
 
         {/* Results layout logic */}
@@ -311,14 +297,12 @@ const Search = () => {
                       isDropdownOpen ? 'border-orange-400 ring-2 ring-orange-400/10' : 'border-border hover:border-violet-500/30'
                     }`}
                   >
-                    {/* Shows placeholder string if no active category select item exists */}
                     <span className={!selectedCategory ? "text-muted-foreground font-normal" : "text-foreground font-medium"}>
                       {selectedCategory || "Select Field of Expertise"}
                     </span>
                     <motion.div animate={{ rotate: isDropdownOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
                       <ChevronDown className="w-4 h-4 text-orange-400" />
                     </motion.div>
->>>>>>> b32d3325a982e5a6252eff058d3c4db19e1c12fe
                   </div>
 
                   {/* Absolute Popup Options List Tray */}
@@ -402,24 +386,6 @@ const Search = () => {
                   )}
                 </div>
               </div>
-=======
-                    {getInitials(us.userName)}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-semibold">{us.userName}</h3>
-                      <div className="flex items-center gap-1 text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md text-xs font-bold">
-                        <Star className="w-3 h-3 fill-amber-500" /> {us.userRatingAvg?.toFixed(1) ?? "New"}
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{us.userBio || "No bio available."}</p>
-                    <div className="mt-3 flex gap-2">
-                      <Badge variant="secondary">Rep: {us.userReputationScore}</Badge>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
->>>>>>> unittests
             </div>
 
             {/* Hint message label */}
@@ -431,17 +397,16 @@ const Search = () => {
         ) : (
           <div className="space-y-3">
             {mentors
-              .filter(us => !nameFilter || us.user.fullName.toLowerCase().includes(nameFilter.toLowerCase()))
+              .filter(us => !nameFilter || us.userName.toLowerCase().includes(nameFilter.toLowerCase()))
               .map((us, i) => {
-                const u = us.user;
-                const initials = getInitials(u.fullName);
+                const initials = getInitials(us.userName);
                 return (
                   <motion.div
-                    key={`${u.id}-${us.id.skillType}`}
+                    key={`${us.userId}-${us.skillId}`}
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    onClick={() => navigate(`/profile/${u.id}`, { state: { skillId: selectedSkill?.id } })}
+                    onClick={() => navigate(`/profile/${us.userId}`, { state: { skillId: selectedSkill?.id } })}
                     className="p-5 rounded-2xl bg-card border-2 border-border hover:border-violet-400/40 transition-colors cursor-pointer flex items-start gap-4"
                   >
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-orange-400 text-white flex items-center justify-center font-heading font-bold text-sm flex-shrink-0 shadow-md">
@@ -449,17 +414,16 @@ const Search = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-0.5">
-                        <h3 className="font-heading font-semibold">{u.fullName}</h3>
+                        <h3 className="font-heading font-semibold">{us.userName}</h3>
                         <div className="flex items-center gap-1 text-amber-400">
                           <Star className="w-3.5 h-3.5 fill-amber-400" />
-                          <span className="text-xs font-medium">{u.ratingAvg?.toFixed(1) ?? "New"}</span>
+                          <span className="text-xs font-medium">{us.userRatingAvg?.toFixed(1) ?? "New"}</span>
                         </div>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">{u.email}</p>
-                      {u.bio && <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{u.bio}</p>}
+                      {us.userBio && <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{us.userBio}</p>}
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <Users2 className="w-3 h-3" /> Rep: {u.reputationScore}
+                          <Users2 className="w-3 h-3" /> Rep: {us.userReputationScore}
                         </span>
                         <Badge className="bg-gradient-to-r from-violet-500 to-orange-400 text-white border-0 text-xs">
                           Teaches {selectedSkill?.name}
