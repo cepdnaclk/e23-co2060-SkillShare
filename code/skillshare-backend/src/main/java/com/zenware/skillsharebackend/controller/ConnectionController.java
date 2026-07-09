@@ -60,6 +60,12 @@ public class ConnectionController {
         return ResponseEntity.ok(dtos);
     }
 
+    // 4.5. Get Connection Status (For the ViewProfile page)
+    @GetMapping("/status/{userId}")
+    public ResponseEntity<com.zenware.skillsharebackend.dto.ConnectionStatusDto> getConnectionStatus(@PathVariable UUID userId) {
+        return ResponseEntity.ok(connectionService.getConnectionStatus(userId));
+    }
+
     // 5. Get All Friends (To populate the chat sidebar or network page)
     @GetMapping("/friends")
     public ResponseEntity<List<ConnectionDto>> getMyFriends() {
