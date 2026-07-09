@@ -7,7 +7,6 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ChatProvider } from "@/context/ChatContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import FloatingChatWidget from "@/components/chat/FloatingChatWidget";
-
 import Landing from "./pages/Landing";
 import SignUp from "./pages/SignUp";
 import CreateProfile from "./pages/CreateProfile";
@@ -25,6 +24,17 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 });
 
+// Fixed, click-through gradient wash that sits ABOVE every page's own
+// (opaque) background div, so the violet/orange glow is visible on
+// every route regardless of what bg-* class that page's root div uses.
+const GradientOverlay = () => (
+  <div
+    aria-hidden
+    className="pointer-events-none fixed inset-0 z-[60]"
+    style={{ backgroundImage: "var(--gradient-glow)" }}
+  />
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -32,6 +42,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner richColors position="top-right" />
+        <GradientOverlay />
           <BrowserRouter>
           <Routes>
             {/* Public routes */}
@@ -41,7 +52,6 @@ const App = () => (
             {/* GitHub OAuth2 redirect handler — must be public (not behind ProtectedRoute)
                 because the JWT arrives here for the first time and auth state is not yet set. */}
             <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
-
             {/* Protected routes */}
             <Route path="/create-profile" element={
               <ProtectedRoute><CreateProfile /></ProtectedRoute>
