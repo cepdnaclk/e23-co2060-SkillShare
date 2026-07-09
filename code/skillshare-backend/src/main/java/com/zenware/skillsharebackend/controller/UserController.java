@@ -47,7 +47,13 @@ public class UserController {
                 return ResponseEntity.badRequest().body("Please select a file to upload.");
             }
 
-            // Guardrail 2: ZERO-TRUST MIME-Type Check
+            // Guardrail 2: Hardened File Extension Validation
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || !originalFilename.toLowerCase().matches(".*\\.(png|jpg|jpeg)$")) {
+                return ResponseEntity.badRequest().body("Security Violation: Invalid file extension.");
+            }
+
+            // Guardrail 3: ZERO-TRUST MIME-Type Check
             // This strictly blocks non-image files (like .exe, .sh, or .js disguised as images)
             String contentType = file.getContentType();
             if (contentType == null || !contentType.startsWith("image/")) {
