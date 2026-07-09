@@ -675,38 +675,38 @@ const ViewProfile = () => {
                 )}
               </motion.div>
 
-              {slots.filter(s => !s.isBooked).length > 0 && (
-                  <motion.div
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="flex gap-4 pt-2"
-                  >
+              <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="flex gap-4 pt-2"
+              >
+                {slots.filter(s => !s.isBooked).length > 0 && (
                     <Button
                         className="flex-1 h-12 gap-2 bg-gradient-to-r from-orange-600 via-fuchsia-500 to-orange-500 text-white border-0 font-extrabold text-sm uppercase tracking-wider rounded-2xl shadow-[0_0_20px_rgba(249,115,22,0.2)] hover:shadow-[0_0_25px_rgba(249,115,22,0.4)] transition-all duration-300"
                         onClick={() => setBookingOpen(true)}
                     >
                       <Calendar className="w-4 h-4 shrink-0" /> Book a Session Now
                     </Button>
-                    <Button
-                        variant="outline"
-                        className="flex-1 h-12 gap-2 border-border/80 hover:bg-secondary text-foreground font-extrabold text-sm uppercase tracking-wider rounded-2xl shadow-sm transition-colors"
-                        onClick={() => {
-                          openWidget();
-                          openChat({
-                            contactId: mentor.id,
-                            contactName: mentor.fullName,
-                            contactProfilePicture: null,
-                            lastMessage: "",
-                            lastMessageTime: null,
-                            unreadCount: 0,
-                          });
-                        }}
-                    >
-                      <MessageSquare className="w-4 h-4 text-fuchsia-400 shrink-0" /> Launch Chat
-                    </Button>
-                  </motion.div>
-              )}
+                )}
+                <Button
+                    variant="outline"
+                    className="flex-1 h-12 gap-2 border-border/80 hover:bg-secondary text-foreground font-extrabold text-sm uppercase tracking-wider rounded-2xl shadow-sm transition-colors"
+                    onClick={() => {
+                      openWidget();
+                      openChat({
+                        contactId: mentor.id,
+                        contactName: mentor.fullName,
+                        contactProfilePicture: null,
+                        lastMessage: "",
+                        lastMessageTime: null,
+                        unreadCount: 0,
+                      });
+                    }}
+                >
+                  <MessageSquare className="w-4 h-4 text-fuchsia-400 shrink-0" /> Launch Chat
+                </Button>
+              </motion.div>
 
             </div>
           </div>
