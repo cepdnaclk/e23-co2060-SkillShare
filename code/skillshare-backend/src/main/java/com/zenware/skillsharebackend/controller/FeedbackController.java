@@ -28,7 +28,7 @@ public class FeedbackController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Feedback>> getFeedbackForUser(@PathVariable UUID userId) {
+    public ResponseEntity<List<FeedbackResponse>> getFeedbackForUser(@PathVariable UUID userId) {
         // LOGIC: Public endpoint. Anyone can see the public reviews of any Mentor/Learner.
         return ResponseEntity.ok(feedbackService.getUserFeedback(userId));
     }

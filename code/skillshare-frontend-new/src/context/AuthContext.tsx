@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
 import { authApi, usersApi, type User, type ApiError } from "@/lib/api";
 import {
   getToken, setToken, removeToken,
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("userId is missing");
       }
 
-      const fullProfile = await usersApi.getById(response.userId);
+      const fullProfile = await usersApi.getMe();
 
       // 🔥 THE HYDRATION MERGE: Blend backend profile with auth numbers!
       const completeUser: User = {
@@ -136,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Fetch the newly created profile snapshot
-      const fullProfile = await usersApi.getById(response.userId);
+      const fullProfile = await usersApi.getMe();
 
       // 🔥 THE HYDRATION MERGE: Combine profile data with initial auth payload fields
       const completeUser: User = {
@@ -179,7 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(jwt);
       setTokenState(jwt);
 
-      const fullUser = await usersApi.getById(userId);
+      const fullUser = await usersApi.getMe();
       
       const completeUser: User = {
         ...fullUser,
@@ -200,11 +200,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = useCallback(async (userId: string) => {
     try {
-      const freshUser = await usersApi.getById(userId);
-      //  FIX: Use functional state update to preserve existing gamified scores
+      const freshUser = await usersApi.getMe();
       setUser((prevUser) => {
-        if (!prevUser) return freshUser;
-        return {
+        if (!prevUser) {
+          setStoredUser(freshUser);
+          return freshUser;
+        }
+        const completeUser = {
           ...freshUser,
           // Always pick the new incoming database total first.
           // Only fallback to prevUser if the field is missing from the payload.
@@ -212,6 +214,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           level: freshUser.level !== undefined ? freshUser.level : prevUser.level,
           xp: freshUser.xp !== undefined ? freshUser.xp : prevUser.xp,
         };
+        setStoredUser(completeUser);
+        return completeUser;
       });
     } catch {
       // silent — don't log out on a profile refresh failure
@@ -224,6 +228,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokenState(null);
     setUser(null);
   }, []);
+
+  // Hydrate user data in the background on initial load / refresh
+  // This ensures that no matter what page the user is on (e.g., MySchedule),
+  // they always get the latest credits and XP from the backend without needing
+  // to navigate to a page that explicitly calls refreshUser.
+  useEffect(() => {
+    if (token && user?.id) {
+      refreshUser(user.id);
+    }
+  }, [token, user?.id, refreshUser]);
 
   return (
     <AuthContext.Provider value={{ user, token, isLoading, error, login, register, loginWithToken, logout, clearError, refreshUser }}>
