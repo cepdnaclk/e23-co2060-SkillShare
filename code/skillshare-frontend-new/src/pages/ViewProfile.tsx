@@ -62,7 +62,6 @@ interface ConnectionDto {
 // Inline API addition for Connections endpoints
 const connectionsApi = {
   getFriends: async (): Promise<ConnectionDto[]> => {
-    // Dynamically matching your backend endpoint mapping URL path
     const res = await fetch("/api/connections/friends", {
       headers: { "Content-Type": "application/json" },
     });
@@ -274,8 +273,6 @@ const ViewProfile = () => {
 
   const mentorLevel = mentor.level ?? 1;
   const mentorXp = mentor.xp ?? 0;
-
-  // Calculates contextual target benchmarks matching diagram metadata profiles
   const xpNeededForNextLevel = 35;
 
   if (isOwnProfile) {
@@ -293,20 +290,33 @@ const ViewProfile = () => {
                   className="lg:col-span-3 p-6 rounded-3xl bg-gradient-to-b from-[#E3F2FD]/50 via-[#FFF3E0]/30 to-white border border-white shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col items-center text-center lg:sticky lg:top-24"
               >
                 {/* Profile Halo Image Frame */}
-                <div className="relative mb-4">
-                  <div className="w-24 h-24 rounded-full bg-white p-1 shadow-[0_0_16px_rgba(56,189,248,0.15)] flex items-center justify-center border-2 border-[#4FC3F7]">
-                    <div className="w-full h-full rounded-full bg-[#FFE0B2] text-[#E65100] flex items-center justify-center font-bold text-2xl font-sans">
-                      {getInitials(mentor.fullName)}
-                    </div>
+                <div className="relative mb-4 group">
+                  <div className="w-24 h-24 rounded-full bg-white p-1 shadow-[0_0_16px_rgba(56,189,248,0.15)] flex items-center justify-center border-2 border-[#4FC3F7] overflow-hidden relative">
+                    {mentor.profilePictureUrl ? (
+                        <img
+                            src={mentor.profilePictureUrl}
+                            alt={mentor.fullName}
+                            className="w-full h-full rounded-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-full h-full rounded-full bg-[#FFE0B2] text-[#E65100] flex items-center justify-center font-bold text-2xl font-sans">
+                          {getInitials(mentor.fullName)}
+                        </div>
+                    )}
+
+                    {/* Contextual Pencil Button Overlay on Hover/Focus */}
+                    <button
+                        onClick={() => navigate("/create-profile", { state: { startStep: 1 } })}
+                        className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                        aria-label="Change profile picture"
+                    >
+                      <Edit3 className="w-5 h-5 text-white" />
+                    </button>
                   </div>
-                  <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-[#4CAF50] border-4 border-white" />
+
+                  {/* Active Status Indicator dot */}
+                  <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-[#4CAF50] border-4 border-white z-10" />
                 </div>
-
-                <h1 className="text-xl font-bold text-slate-800 tracking-tight">
-                  {mentor.fullName}
-                </h1>
-                <p className="text-slate-400 text-xs mt-0.5 mb-6">@{mentor.fullName.toLowerCase().replace(/\s+/g, '_')}</p>
-
                 {/* Balance Block Component */}
                 <div className="w-full bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-3 flex items-center justify-between text-left">
                   <div>
@@ -343,8 +353,6 @@ const ViewProfile = () => {
 
               {/* MAIN METRIC LAYOUT CONTAINER DECK */}
               <div className="lg:col-span-9 space-y-6">
-
-                {/* TOP ROW: SKILLS GRID PANELS */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                   {/* Teaching Deck */}
@@ -403,13 +411,11 @@ const ViewProfile = () => {
                         </div>
                     )}
                   </div>
-
                 </div>
 
-                {/* BOTTOM ROW: MATRIX LAYOUT SYSTEM */}
+                {/* BOTTOM MATRIX PANELS */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-
-                  {/* SUB PANEL 1: FRIEND LIST COMPONENT (COMMUNITY ACTIVITY OVERRIDE RENDER) */}
+                  {/* FRIEND LIST COMPONENT */}
                   <div className="md:col-span-4 bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex flex-col justify-between">
                     <div>
                       <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2 mb-4">
@@ -423,12 +429,15 @@ const ViewProfile = () => {
                       ) : (
                           <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
                             {friends.map((conn) => {
-                              // Extract connection peer dynamic context mappings
                               const friendObj = conn.sender.id === mentor.id ? conn.receiver : conn.sender;
                               return (
                                   <div key={conn.id} className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-100">
-                                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold text-xs flex items-center justify-center shrink-0">
-                                      {getInitials(friendObj.fullName)}
+                                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden">
+                                      {friendObj.profilePictureUrl ? (
+                                          <img src={friendObj.profilePictureUrl} alt={friendObj.fullName} className="w-full h-full object-cover rounded-full" />
+                                      ) : (
+                                          getInitials(friendObj.fullName)
+                                      )}
                                     </div>
                                     <div className="min-w-0 flex-1">
                                       <p className="text-xs font-bold text-slate-700 truncate capitalize">{friendObj.fullName}</p>
@@ -442,7 +451,7 @@ const ViewProfile = () => {
                     </div>
                   </div>
 
-                  {/* SUB PANEL 2: AVAILABILITY CALENDAR BLOCK */}
+                  {/* AVAILABILITY CALENDAR BLOCK */}
                   <div className="md:col-span-4 bg-white rounded-2xl border border-slate-100 p-4 shadow-sm flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between mb-3">
@@ -484,20 +493,16 @@ const ViewProfile = () => {
                     </div>
                   </div>
 
-                  {/* SUB PANEL 3: GROWTH DASHBOARD (EXACT COLOR BENCHMARK MATCH) */}
+                  {/* GROWTH DASHBOARD */}
                   <div className="md:col-span-4 bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex flex-col items-center justify-between text-center">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 self-start">
                       Growth Dashboard
                     </h3>
 
-                    {/* Concentric Circle Progress Graph Section */}
                     <div className="flex items-center justify-around w-full mt-2">
-
-                      {/* Level Ring Structure Block */}
                       <div className="flex flex-col items-center">
                         <span className="text-[10px] font-bold uppercase text-slate-400 mb-2">Level</span>
                         <div className="relative w-20 h-20 flex items-center justify-center">
-                          {/* Outer Track Circular Graphics */}
                           <svg className="absolute w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                             <path className="text-slate-100" strokeWidth="2.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                             <path className="text-blue-400" strokeDasharray="75, 100" strokeWidth="2.5" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
@@ -507,39 +512,30 @@ const ViewProfile = () => {
                         </div>
                       </div>
 
-                      {/* Stacked Vertical XP Configuration Element matching precise drawing context guidelines */}
                       <div className="flex flex-col items-center">
                         <span className="text-[10px] font-bold uppercase text-slate-400 mb-2">XP Points</span>
                         <div className="flex flex-col items-center gap-0.5">
-
-                          {/* Ambient Pulsing Glow Lightning Bolt */}
                           <div className="relative">
                             <div className="absolute inset-0 bg-amber-400/30 blur-md rounded-full scale-150 animate-pulse" />
                             <Zap className="w-6 h-6 text-amber-400 fill-amber-400 relative z-10 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
                           </div>
-
                           <span className="text-2xl font-sans font-black tracking-tight text-slate-800 mt-1">
                             {mentorXp}
                           </span>
                           <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Total Points</span>
                         </div>
                       </div>
-
                     </div>
 
-                    {/* Progress Goal Tracker text */}
                     <div className="w-full border-t border-slate-50 pt-3 mt-4 flex items-center justify-between text-[11px] font-medium text-slate-400">
                       <span>Next Level in {xpNeededForNextLevel} XP</span>
-                      {/* Decorative Line Graph mimicking diagram metric paths */}
                       <svg className="w-16 h-5 text-purple-400" fill="none" viewBox="0 0 50 20" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2 17c5-3 10-12 15-8s8 8 15-2 10-11 16-11" />
                       </svg>
                     </div>
-
                   </div>
 
                 </div>
-
               </div>
 
             </div>
@@ -565,8 +561,16 @@ const ViewProfile = () => {
 
             {/* PUBLIC VIEW CARD PANEL */}
             <div className="lg:col-span-3 p-6 rounded-3xl bg-white border border-slate-100 shadow-sm flex flex-col items-center text-center">
-              <div className="w-20 h-20 rounded-full bg-slate-100 text-slate-600 font-bold text-xl flex items-center justify-center mb-3 border-2 border-slate-200">
-                {getInitials(mentor.fullName)}
+              <div className="w-20 h-20 rounded-full bg-slate-100 text-slate-600 font-bold text-xl flex items-center justify-center mb-3 border-2 border-slate-200 overflow-hidden">
+                {mentor.profilePictureUrl ? (
+                    <img
+                        src={mentor.profilePictureUrl}
+                        alt={mentor.fullName}
+                        className="w-full h-full object-cover rounded-full"
+                    />
+                ) : (
+                    getInitials(mentor.fullName)
+                )}
               </div>
               <h1 className="text-lg font-bold text-slate-800 capitalize">{mentor.fullName}</h1>
               {mentor.bio && <p className="text-xs text-slate-400 mt-3 text-left bg-slate-50 p-3 rounded-xl border border-slate-100">{mentor.bio}</p>}
