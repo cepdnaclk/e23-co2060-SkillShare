@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Clock, Sparkles, ArrowRight, Calendar, TrendingUp,
-  BookOpen, Coins, Star, Zap, ChevronLeft, ChevronRight,
+  BookOpen, Coins, Star, Zap, Award, ChevronLeft, Search, ChevronRight,
   UserPlus, Users, CheckCircle, XCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -351,6 +351,16 @@ const Dashboard = () => {
               <span className="text-white/40 text-xs">credits</span>
             </div>
           </div>
+
+          {/* Credits chip */}
+          <motion.div
+            whileHover={{ scale: 1.04 }}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 w-fit"
+          >
+            <Coins className="w-4 h-4 text-yellow-200" />
+            <span className="font-semibold text-white">{user?.credits ?? 0}</span>
+            <span className="text-white/80 text-sm">credits</span>
+          </motion.div>
         </motion.div>
 
         <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-6" />
