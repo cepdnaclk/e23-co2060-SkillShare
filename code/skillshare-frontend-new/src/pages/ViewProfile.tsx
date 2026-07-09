@@ -443,8 +443,8 @@ const ViewProfile = () => {
                     ) : (
                         <div className="flex flex-wrap gap-2">
                           {teachSkills.map((us) => (
-                              <Badge key={us.id.skillId} className="bg-gradient-to-r from-violet-500 to-orange-400 text-white border-0 px-3 py-1 rounded-xl text-xs font-medium capitalize flex items-center gap-2">
-                                {us.skill.name}
+                              <Badge key={us.skillId} className="bg-gradient-to-r from-violet-500 to-orange-400 text-white border-0 px-3 py-1 rounded-xl text-xs font-medium capitalize flex items-center gap-2">
+                                {us.skillName}
                                 <X className="w-3 h-3 cursor-pointer opacity-80 hover:opacity-100" onClick={() => handleDeleteSkill(us)} />
                               </Badge>
                           ))}
@@ -473,8 +473,8 @@ const ViewProfile = () => {
                     ) : (
                         <div className="flex flex-wrap gap-2">
                           {learnSkills.map((us) => (
-                              <Badge key={us.id.skillId} className="bg-secondary text-foreground hover:bg-secondary/70 border-0 px-3 py-1 rounded-xl text-xs font-medium capitalize flex items-center gap-2">
-                                {us.skill.name}
+                              <Badge key={us.skillId} className="bg-secondary text-foreground hover:bg-secondary/70 border-0 px-3 py-1 rounded-xl text-xs font-medium capitalize flex items-center gap-2">
+                                {us.skillName}
                                 <X className="w-3 h-3 cursor-pointer opacity-60 hover:opacity-100" onClick={() => handleDeleteSkill(us)} />
                               </Badge>
                           ))}
@@ -671,8 +671,8 @@ const ViewProfile = () => {
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {teachSkills.map((us) => (
-                          <Badge key={us.id.skillId} className="px-3 py-1.5 bg-orange-500/10 text-orange-500 border border-orange-500/20 rounded-xl font-medium text-xs capitalize">
-                            {us.skill.name}
+                          <Badge key={us.skillId} className="px-3 py-1.5 bg-orange-500/10 text-orange-500 border border-orange-500/20 rounded-xl font-medium text-xs capitalize">
+                            {us.skillName}
                           </Badge>
                       ))}
                     </div>
