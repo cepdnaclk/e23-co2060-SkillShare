@@ -27,7 +27,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         // Messages sent FROM the server TO the client will start with this prefix
-        registry.enableSimpleBroker("/user");
+        registry.enableSimpleBroker("/user", "/queue");
 
         // Messages sent FROM the client TO the server must start with this prefix
         registry.setApplicationDestinationPrefixes("/app");
