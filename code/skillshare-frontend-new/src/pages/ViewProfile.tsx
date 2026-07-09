@@ -378,7 +378,7 @@ const ViewProfile = () => {
                     <span className="text-lg font-black text-slate-800 mt-0.5 block">{me?.credits ?? 0}<span className="text-xs font-normal text-slate-500">  Credits </span>**/}
 
                     <span className="text-[10px] font-bold text-muted-foreground block uppercase tracking-wider">Balance</span>
-                    <span className="text-xl font-black text-foreground mt-0.5 block">{mentor.credits} <span className="text-xs font-normal text-muted-foreground">Credits</span></span>
+                    <span className="text-xl font-black text-foreground mt-0.5 block">{me.credits} <span className="text-xs font-normal text-muted-foreground">Credits</span></span>
                   </div>
                   <Coins className="w-8 h-8 text-[#FFB74D]/80 stroke-[1.5]" />
                 </div>
