@@ -18,7 +18,7 @@ public class UserService {
 
     // --- THE SECURITY ENGINE ---
     // LOGIC: Extracts the exact user making the request from the JWT Token!
-    private User getAuthenticatedUser() {
+    public User getAuthenticatedUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Authenticated user not found"));

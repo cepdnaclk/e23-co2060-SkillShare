@@ -263,14 +263,15 @@ const Search = () => {
 <<<<<<< HEAD
           {loadingMentors ? <SkeletonList count={3} /> : (
             <div className="space-y-3">
-              {mentors.filter(us => us.user.fullName.toLowerCase().includes(nameFilter.toLowerCase())).map((us, i) => (
+              {mentors.filter(us => us.userName.toLowerCase().includes(nameFilter.toLowerCase())).map((us, i) => (
                 <motion.div 
-                  key={`${us.id.userId}-${us.id.skillId}`} 
+                  key={`${us.userId}-${us.skillId}`} 
                   variants={fadeUp} initial="hidden" animate="show" transition={{ delay: i * 0.05 }}
-                  onClick={() => navigate(`/profile/${us.user.id}`, { state: { skillId: selectedSkill?.id } })}
+                  onClick={() => navigate(`/profile/${us.userId}`, { state: { skillId: selectedSkill?.id } })}
                   className="p-5 rounded-2xl border-2 border-border/60 hover:border-violet-500/50 bg-card hover:bg-secondary/20 transition-all cursor-pointer flex items-start gap-4 shadow-sm"
                 >
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 flex items-center justify-center font-bold text-violet-600">
+<<<<<<< HEAD
                     {getInitials(us.user.fullName)}
 =======
         <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-4" />
@@ -401,6 +402,24 @@ const Search = () => {
                   )}
                 </div>
               </div>
+=======
+                    {getInitials(us.userName)}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-semibold">{us.userName}</h3>
+                      <div className="flex items-center gap-1 text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md text-xs font-bold">
+                        <Star className="w-3 h-3 fill-amber-500" /> {us.userRatingAvg?.toFixed(1) ?? "New"}
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{us.userBio || "No bio available."}</p>
+                    <div className="mt-3 flex gap-2">
+                      <Badge variant="secondary">Rep: {us.userReputationScore}</Badge>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+>>>>>>> unittests
             </div>
 
             {/* Hint message label */}

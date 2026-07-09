@@ -2,6 +2,7 @@ package com.zenware.skillsharebackend.service;
 
 import com.zenware.skillsharebackend.dto.UserSearchResponse;
 import com.zenware.skillsharebackend.dto.UserSkillRequest;
+import com.zenware.skillsharebackend.dto.UserSkillDto;
 import com.zenware.skillsharebackend.entity.Skill;
 import com.zenware.skillsharebackend.entity.User;
 import com.zenware.skillsharebackend.entity.UserSkill;
@@ -34,7 +35,7 @@ public class UserSkillService {
     }
 
     @Transactional
-    public UserSkill addUserSkill(UserSkillRequest request) {
+    public UserSkillDto addUserSkill(UserSkillRequest request) {
 
         // SECURITY: Fetch User directly from the token!
         User user = getAuthenticatedUser();
@@ -86,7 +87,22 @@ public class UserSkillService {
                 .skill(skill)
                 .build();
 
-        return userSkillRepository.save(userSkill);
+        UserSkill saved = userSkillRepository.save(userSkill);
+        return toDto(saved);
+    }
+
+    private UserSkillDto toDto(UserSkill userSkill) {
+        return UserSkillDto.builder()
+                .userId(userSkill.getUser().getId())
+                .userName(userSkill.getUser().getFullName())
+                .userBio(userSkill.getUser().getBio())
+                .userRatingAvg(0.0) // We will hardcode to 0.0 for now, unless User entity has ratingAvg
+                .userReputationScore(userSkill.getUser().getReputationScore() != null ? userSkill.getUser().getReputationScore() : 0)
+                .skillId(userSkill.getSkill().getId())
+                .skillType(userSkill.getId().getSkillType())
+                .skillName(userSkill.getSkill().getName())
+                .skillCategory(userSkill.getSkill().getCategory())
+                .build();
     }
 
     // --- NEW FEATURE: Secure Delete ---
@@ -108,22 +124,34 @@ public class UserSkillService {
         userSkillRepository.deleteById(id);
     }
 
-    public List<UserSkill> getUserProfileSkills(UUID userId) {
-        return userSkillRepository.findByUserId(userId);
+    @Transactional
+    public List<UserSkillDto> getUserProfileSkills(UUID userId) {
+        return userSkillRepository.findByUserId(userId).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
-    public List<UserSkill> getUserTeachingSkills(UUID userId) {
-        return userSkillRepository.findByUserIdAndIdSkillType(userId, "TEACH");
+    @Transactional
+    public List<UserSkillDto> getUserTeachingSkills(UUID userId) {
+        return userSkillRepository.findByUserIdAndIdSkillType(userId, "TEACH").stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
-    public List<UserSkill> getUserLearningSkills(UUID userId) {
-        return userSkillRepository.findByUserIdAndIdSkillType(userId, "LEARN");
+    @Transactional
+    public List<UserSkillDto> getUserLearningSkills(UUID userId) {
+        return userSkillRepository.findByUserIdAndIdSkillType(userId, "LEARN").stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
     // --- DISCOVERY LOGIC ---
-    public List<UserSkill> findMentorsBySkill(UUID skillId) {
+    @Transactional
+    public List<UserSkillDto> findMentorsBySkill(UUID skillId) {
         // We only want users who are teaching ("TEACH") this skill
-        return userSkillRepository.findByIdSkillIdAndIdSkillType(skillId, "TEACH");
+        return userSkillRepository.findByIdSkillIdAndIdSkillType(skillId, "TEACH").stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
 

@@ -92,6 +92,9 @@ export const publicSkillsApi = {
 // Protected endpoint groups (require Bearer JWT)
 // ============================================================
 export const usersApi = {
+  getMe: () =>
+      apiFetch<User>("/api/users/me"),
+
   getById: (userId: string) =>
       apiFetch<User>(`/api/users/${userId}`),
 
@@ -318,13 +321,15 @@ export interface Skill {
 }
 
 export interface UserSkill {
-  id: {
-    userId: string;
-    skillId: number;
-    skillType: string;
-  };
-  user: User;
-  skill: Skill;
+  userId: string;
+  userName: string;
+  userBio?: string;
+  userRatingAvg?: number;
+  userReputationScore?: number;
+  skillId: string;
+  skillType: string;
+  skillName: string;
+  skillCategory: string;
 }
 
 export interface Availability {
@@ -357,10 +362,12 @@ export interface Session {
 }
 
 export interface Feedback {
-  id: number;
-  session: Session;
-  giver: User;
-  receiver: User;
+  id: string;
+  sessionId: string;
+  giverId: string;
+  giverName: string;
+  receiverId: string;
+  receiverName: string;
   feedbackTag: string;
   weight: number;
   createdAt: string;

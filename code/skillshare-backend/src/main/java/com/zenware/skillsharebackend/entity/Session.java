@@ -42,6 +42,9 @@ public class Session {
     @Column(name = "end_time", nullable = false)
     private LocalDateTime endTime;
 
+    @Column(name = "availability_id")
+    private UUID availabilityId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     @Builder.Default // LOGIC: Ensures the Builder pattern respects our default value
