@@ -266,7 +266,7 @@ const ViewProfile = () => {
       if (hasBooking) {
         statusStyles = "bg-rose-500 text-white font-bold rounded-full";
       } else if (hasAvailability) {
-        statusStyles = "bg-purple-100 text-purple-700 font-bold rounded-full";
+        statusStyles = "bg-violet-500/15 text-violet-500 font-bold rounded-full";
       }
 
       dayCells.push(
@@ -317,7 +317,7 @@ const ViewProfile = () => {
   if (isOwnProfile) {
     return (
         <AppLayout>
-          <div className="p-6 max-w-7xl mx-auto bg-[#F9FAFC] min-h-screen">
+          <div className="p-6 max-w-7xl mx-auto bg-background min-h-screen">
             <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-6" />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -326,7 +326,7 @@ const ViewProfile = () => {
               <motion.div
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="lg:col-span-3 p-6 rounded-3xl bg-gradient-to-b from-[#E3F2FD]/50 via-[#FFF3E0]/30 to-white border border-white shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col items-center text-center lg:sticky lg:top-24"
+                  className="lg:col-span-3 p-6 rounded-3xl bg-gradient-to-b from-violet-500/10 via-orange-400/10 to-card border border-border shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col items-center text-center lg:sticky lg:top-24"
               >
                 {/* Profile Image / Initials Container with Float Pencil UI Element */}
                 <div className="relative inline-block mb-4 w-24 h-24 mx-auto">
@@ -344,7 +344,7 @@ const ViewProfile = () => {
 
                   {/* Dedicated Floating Bottom-Right Pencil Action Button */}
                   <label
-                      className={`absolute bottom-[-4px] right-[-4px] w-8 h-8 rounded-xl bg-white border border-orange-500/30 shadow-[0_4px_12px_rgba(249,115,22,0.2)] flex items-center justify-center cursor-pointer hover:border-orange-500/60 hover:bg-orange-500/5 transition-all duration-200 group/pencil ${uploadingPic ? 'opacity-50 pointer-events-none' : ''}`}
+                      className={`absolute bottom-[-4px] right-[-4px] w-8 h-8 rounded-xl bg-card border border-orange-500/30 shadow-[0_4px_12px_rgba(249,115,22,0.2)] flex items-center justify-center cursor-pointer hover:border-orange-500/60 hover:bg-orange-500/5 transition-all duration-200 group/pencil ${uploadingPic ? 'opacity-50 pointer-events-none' : ''}`}
                       title="Upload profile picture"
                   >
                     <Edit3 className="w-3.5 h-3.5 text-orange-400 group-hover/pencil:scale-110 transition-transform" />
@@ -359,38 +359,38 @@ const ViewProfile = () => {
 
                   {/* Local Upload Loading Shimmer Overlay */}
                   {uploadingPic && (
-                      <div className="absolute inset-0 rounded-full bg-white/80 flex items-center justify-center backdrop-blur-[2px]">
+                      <div className="absolute inset-0 rounded-full bg-card/80 flex items-center justify-center backdrop-blur-[2px]">
                         <span className="w-5 h-5 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
                       </div>
                   )}
                 </div>
 
-                <h1 className="text-2xl font-heading font-black tracking-tight text-slate-800 capitalize mb-1">
+                <h1 className="text-2xl font-heading font-black tracking-tight text-foreground capitalize mb-1">
                   {mentor.fullName}
                 </h1>
-                <p className="text-slate-400 text-xs font-medium truncate mb-4">{mentor.email || `${mentor.fullName.toLowerCase().replace(/\s+/g, '_')}@skillshare.com`}</p>
+                <p className="text-muted-foreground text-xs font-medium truncate mb-4">{mentor.email || `${mentor.fullName.toLowerCase().replace(/\s+/g, '_')}@skillshare.com`}</p>
 
                 {/* Balance Block Component */}
-                <div className="w-full bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-3 flex items-center justify-between text-left">
+                <div className="w-full bg-card rounded-2xl border border-border p-4 shadow-sm mb-3 flex items-center justify-between text-left">
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Balance</span>
-                    <span className="text-xl font-black text-slate-800 mt-0.5 block">{mentor.credits} <span className="text-xs font-normal text-slate-500">Credits</span></span>
+                    <span className="text-[10px] font-bold text-muted-foreground block uppercase tracking-wider">Balance</span>
+                    <span className="text-xl font-black text-foreground mt-0.5 block">{mentor.credits} <span className="text-xs font-normal text-muted-foreground">Credits</span></span>
                   </div>
                   <Coins className="w-8 h-8 text-[#FFB74D]/80 stroke-[1.5]" />
                 </div>
 
                 {/* REPUTATION BLOCK COMPONENT */}
-                <div className="w-full bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-6 text-left">
-  <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
+                <div className="w-full bg-card rounded-2xl border border-border p-4 shadow-sm mb-6 text-left">
+  <span className="text-[10px] font-bold text-muted-foreground block uppercase tracking-wider">
     Reputation
   </span>
 
                   <div className="flex items-baseline gap-1.5 mt-0.5">
                     {/* 1. Dynamic Reputation Score Display */}
-                    <span className="text-xl font-black text-slate-800">
+                    <span className="text-xl font-black text-foreground">
       {mentor.reputationScore ?? 0}
     </span>
-                    <span className="text-xs font-medium text-slate-500">Points</span>
+                    <span className="text-xs font-medium text-muted-foreground">Points</span>
                   </div>
 
                   {/* Visual Star Rating representation based on their score hierarchy */}
@@ -401,9 +401,9 @@ const ViewProfile = () => {
                   </div>
 
                   {/* 2. Fully Dynamic Progress Logic Bar */}
-                  <div className="w-full h-1.5 bg-slate-100 rounded-full mt-3 overflow-hidden">
+                  <div className="w-full h-1.5 bg-secondary rounded-full mt-3 overflow-hidden">
                     <div
-                        className="h-full bg-gradient-to-r from-purple-500 to-orange-400 rounded-full transition-all duration-500 ease-out"
+                        className="h-full bg-gradient-to-r from-violet-500 to-orange-400 rounded-full transition-all duration-500 ease-out"
                         style={{
                           // Logic: Calculate how close they are to the next 100-point milestone tier
                           width: `${(mentor.reputationScore ?? 0) % 100}%`
@@ -414,7 +414,7 @@ const ViewProfile = () => {
 
                 <Button
                     onClick={() => navigate("/create-profile", { state: { startStep: 1 } })}
-                    className="w-full bg-gradient-to-r from-[#7E57C2] to-[#FF7043] text-white rounded-2xl font-bold text-xs h-11 shadow-md hover:opacity-95 transition-opacity"
+                    className="w-full bg-gradient-to-r from-violet-500 to-orange-400 text-white rounded-2xl font-bold text-xs h-11 shadow-md hover:opacity-95 transition-opacity border-0"
                 >
                   <Edit3 className="w-3.5 h-3.5 mr-2" /> Edit Profile Description
                 </Button>
@@ -425,9 +425,9 @@ const ViewProfile = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                   {/* Teaching Deck */}
-                  <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-                    <div className="flex items-center justify-between border-b border-slate-50 pb-3 mb-4">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                  <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+                    <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                         <GraduationCap className="w-4 h-4 text-orange-400" /> Teaching
                       </h3>
                       <button
@@ -438,11 +438,11 @@ const ViewProfile = () => {
                       </button>
                     </div>
                     {teachSkills.length === 0 ? (
-                        <p className="text-xs text-slate-400 italic py-2">No skills listed yet.</p>
+                        <p className="text-xs text-muted-foreground italic py-2">No skills listed yet.</p>
                     ) : (
                         <div className="flex flex-wrap gap-2">
                           {teachSkills.map((us) => (
-                              <Badge key={us.id.skillId} className="bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0 px-3 py-1 rounded-xl text-xs font-medium capitalize flex items-center gap-2">
+                              <Badge key={us.id.skillId} className="bg-gradient-to-r from-violet-500 to-orange-400 text-white border-0 px-3 py-1 rounded-xl text-xs font-medium capitalize flex items-center gap-2">
                                 {us.skill.name}
                                 <X className="w-3 h-3 cursor-pointer opacity-80 hover:opacity-100" onClick={() => handleDeleteSkill(us)} />
                               </Badge>
@@ -452,27 +452,27 @@ const ViewProfile = () => {
                   </div>
 
                   {/* Learning Deck */}
-                  <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-                    <div className="flex items-center justify-between border-b border-slate-50 pb-3 mb-4">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                        <BookOpen className="w-4 h-4 text-purple-400" /> Learning
+                  <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+                    <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-violet-400" /> Learning
                       </h3>
                       <button
                           onClick={() => navigate("/create-profile", { state: { startStep: 2 } })}
-                          className="text-xs font-bold text-purple-400 hover:underline"
+                          className="text-xs font-bold text-violet-400 hover:underline"
                       >
                         + Add Skill
                       </button>
                     </div>
                     {learnSkills.length === 0 ? (
                         <div className="flex flex-col items-center justify-center text-center py-2 space-y-1">
-                          <BookOpen className="w-6 h-6 text-slate-300 stroke-[1.5]" />
-                          <p className="text-xs text-slate-400 font-medium">Ready to learn? <span className="text-purple-400 block">+ Add your first skill.</span></p>
+                          <BookOpen className="w-6 h-6 text-muted-foreground/40 stroke-[1.5]" />
+                          <p className="text-xs text-muted-foreground font-medium">Ready to learn? <span className="text-violet-400 block">+ Add your first skill.</span></p>
                         </div>
                     ) : (
                         <div className="flex flex-wrap gap-2">
                           {learnSkills.map((us) => (
-                              <Badge key={us.id.skillId} className="bg-slate-100 text-slate-700 hover:bg-slate-200 border-0 px-3 py-1 rounded-xl text-xs font-medium capitalize flex items-center gap-2">
+                              <Badge key={us.id.skillId} className="bg-secondary text-foreground hover:bg-secondary/70 border-0 px-3 py-1 rounded-xl text-xs font-medium capitalize flex items-center gap-2">
                                 {us.skill.name}
                                 <X className="w-3 h-3 cursor-pointer opacity-60 hover:opacity-100" onClick={() => handleDeleteSkill(us)} />
                               </Badge>
@@ -485,14 +485,14 @@ const ViewProfile = () => {
                 {/* BOTTOM MATRIX PANELS */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                   {/* FRIEND LIST COMPONENT */}
-                  <div className="md:col-span-4 bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex flex-col justify-between">
+                  <div className="md:col-span-4 bg-card rounded-2xl border border-border p-5 shadow-sm flex flex-col justify-between">
                     <div>
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2 mb-4">
-                        <Users className="w-4 h-4 text-blue-500" /> Friend List
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-2 mb-4">
+                        <Users className="w-4 h-4 text-violet-400" /> Friend List
                       </h3>
 
                       {friends.length === 0 ? (
-                          <div className="text-center py-8 text-slate-400 space-y-2">
+                          <div className="text-center py-8 text-muted-foreground space-y-2">
                             <p className="text-xs italic">No connected friends yet.</p>
                           </div>
                       ) : (
@@ -500,8 +500,8 @@ const ViewProfile = () => {
                             {friends.map((conn) => {
                               const friendObj = conn.sender.id === mentor.id ? conn.receiver : conn.sender;
                               return (
-                                  <div key={conn.id} className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-100">
-                                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden">
+                                  <div key={conn.id} className="flex items-center gap-2.5 p-2 rounded-xl bg-secondary border border-border">
+                                    <div className="w-8 h-8 rounded-full bg-violet-500/15 text-violet-500 font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden">
                                       {friendObj.profilePictureUrl ? (
                                           <img src={friendObj.profilePictureUrl} alt={friendObj.fullName} className="w-full h-full object-cover rounded-full" />
                                       ) : (
@@ -509,8 +509,8 @@ const ViewProfile = () => {
                                       )}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                      <p className="text-xs font-bold text-slate-700 truncate capitalize">{friendObj.fullName}</p>
-                                      <p className="text-[10px] text-slate-400 truncate">Lvl {friendObj.level} • {friendObj.xp} XP</p>
+                                      <p className="text-xs font-bold text-foreground truncate capitalize">{friendObj.fullName}</p>
+                                      <p className="text-[10px] text-muted-foreground truncate">Lvl {friendObj.level} • {friendObj.xp} XP</p>
                                     </div>
                                   </div>
                               );
@@ -521,26 +521,26 @@ const ViewProfile = () => {
                   </div>
 
                   {/* AVAILABILITY CALENDAR BLOCK */}
-                  <div className="md:col-span-4 bg-white rounded-2xl border border-slate-100 p-4 shadow-sm flex flex-col justify-between">
+                  <div className="md:col-span-4 bg-card rounded-2xl border border-border p-4 shadow-sm flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-[10px] font-bold uppercase tracking-wide text-slate-800 flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-purple-500" /> My Availability Calendar
+                        <h3 className="text-[10px] font-bold uppercase tracking-wide text-foreground flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-violet-500" /> My Availability Calendar
                         </h3>
                         <div className="flex items-center gap-0.5">
-                          <button onClick={handlePrevMonth} className="p-0.5 rounded text-slate-400 hover:bg-slate-100">
+                          <button onClick={handlePrevMonth} className="p-0.5 rounded text-muted-foreground hover:bg-secondary">
                             <ChevronLeft className="w-3 h-3" />
                           </button>
-                          <span className="text-[10px] font-bold uppercase text-slate-600 px-1">
+                          <span className="text-[10px] font-bold uppercase text-foreground px-1">
                             {currentDate.toLocaleString("en-US", { month: "short", year: "2-digit" })}
                           </span>
-                          <button onClick={handleNextMonth} className="p-0.5 rounded text-slate-400 hover:bg-slate-100">
+                          <button onClick={handleNextMonth} className="p-0.5 rounded text-muted-foreground hover:bg-secondary">
                             <ChevronRight className="w-3 h-3" />
                           </button>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-bold uppercase text-slate-400 tracking-wider mb-1">
+                      <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-bold uppercase text-muted-foreground tracking-wider mb-1">
                         <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
                       </div>
 
@@ -549,12 +549,12 @@ const ViewProfile = () => {
                       </div>
                     </div>
 
-                    <div className="border-t border-slate-100 pt-3 space-y-1.5">
-                      <span className="text-[9px] font-bold uppercase text-slate-400 tracking-wider block">Next Slots</span>
+                    <div className="border-t border-border pt-3 space-y-1.5">
+                      <span className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider block">Next Slots</span>
                       {slots.filter(s => !s.isBooked).length === 0 ? (
-                          <p className="text-[10px] text-slate-400 italic">No slots open.</p>
+                          <p className="text-[10px] text-muted-foreground italic">No slots open.</p>
                       ) : (
-                          <div className="p-2 rounded-xl bg-purple-50/50 border border-purple-100 flex items-center gap-2 text-[11px] text-purple-700 font-semibold">
+                          <div className="p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-2 text-[11px] text-violet-500 font-semibold">
                             <Clock className="w-3.5 h-3.5" />
                             <span className="truncate">{fmt(slots.filter(s => !s.isBooked)[0].startTime)}</span>
                           </div>
@@ -563,42 +563,42 @@ const ViewProfile = () => {
                   </div>
 
                   {/* GROWTH DASHBOARD */}
-                  <div className="md:col-span-4 bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex flex-col items-center justify-between text-center">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 self-start">
+                  <div className="md:col-span-4 bg-card rounded-2xl border border-border p-5 shadow-sm flex flex-col items-center justify-between text-center">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-foreground self-start">
                       Growth Dashboard
                     </h3>
 
                     <div className="flex items-center justify-around w-full mt-2">
                       <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-bold uppercase text-slate-400 mb-2">Level</span>
+                        <span className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Level</span>
                         <div className="relative w-20 h-20 flex items-center justify-center">
                           <svg className="absolute w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                            <path className="text-slate-100" strokeWidth="2.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                            <path className="text-blue-400" strokeDasharray="75, 100" strokeWidth="2.5" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path className="text-secondary" strokeWidth="2.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path className="text-violet-400" strokeDasharray="75, 100" strokeWidth="2.5" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                             <path className="text-orange-400" strokeDasharray="45, 100" strokeWidth="2.5" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 5.5 a 12.5 12.5 0 0 1 0 25 a 12.5 12.5 0 0 1 0 -25" />
                           </svg>
-                          <span className="text-2xl font-sans font-extrabold text-slate-800 relative z-10">{mentorLevel}</span>
+                          <span className="text-2xl font-sans font-extrabold text-foreground relative z-10">{mentorLevel}</span>
                         </div>
                       </div>
 
                       <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-bold uppercase text-slate-400 mb-2">XP Points</span>
+                        <span className="text-[10px] font-bold uppercase text-muted-foreground mb-2">XP Points</span>
                         <div className="flex flex-col items-center gap-0.5">
                           <div className="relative">
                             <div className="absolute inset-0 bg-amber-400/30 blur-md rounded-full scale-150 animate-pulse" />
                             <Zap className="w-6 h-6 text-amber-400 fill-amber-400 relative z-10 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
                           </div>
-                          <span className="text-2xl font-sans font-black tracking-tight text-slate-800 mt-1">
+                          <span className="text-2xl font-sans font-black tracking-tight text-foreground mt-1">
                             {mentorXp}
                           </span>
-                          <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Total Points</span>
+                          <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Total Points</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="w-full border-t border-slate-50 pt-3 mt-4 flex items-center justify-between text-[11px] font-medium text-slate-400">
+                    <div className="w-full border-t border-border pt-3 mt-4 flex items-center justify-between text-[11px] font-medium text-muted-foreground">
                       <span>Next Level in {xpNeededForNextLevel} XP</span>
-                      <svg className="w-16 h-5 text-purple-400" fill="none" viewBox="0 0 50 20" stroke="currentColor" strokeWidth="2">
+                      <svg className="w-16 h-5 text-violet-400" fill="none" viewBox="0 0 50 20" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2 17c5-3 10-12 15-8s8 8 15-2 10-11 16-11" />
                       </svg>
                     </div>
@@ -616,10 +616,10 @@ const ViewProfile = () => {
   {/* PUBLIC VIEW PROFILE ARCHITECTURE */}
   return (
       <AppLayout>
-        <div className="p-6 max-w-7xl mx-auto bg-[#F9FAFC] min-h-screen">
+        <div className="p-6 max-w-7xl mx-auto bg-background min-h-screen">
           <button
               onClick={() => navigate(-1)}
-              className="flex items-center gap-1 text-slate-400 hover:text-slate-600 mb-5 text-[10px] font-bold uppercase tracking-wider transition-colors"
+              className="flex items-center gap-1 text-muted-foreground hover:text-foreground mb-5 text-[10px] font-bold uppercase tracking-wider transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back
           </button>
@@ -629,8 +629,8 @@ const ViewProfile = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
             {/* PUBLIC VIEW CARD PANEL */}
-            <div className="lg:col-span-3 p-6 rounded-3xl bg-white border border-slate-100 shadow-sm flex flex-col items-center text-center">
-              <div className="w-20 h-20 rounded-full bg-slate-100 text-slate-600 font-bold text-xl flex items-center justify-center mb-3 border-2 border-slate-200 overflow-hidden">
+            <div className="lg:col-span-3 p-6 rounded-3xl bg-card border border-border shadow-sm flex flex-col items-center text-center">
+              <div className="w-20 h-20 rounded-full bg-secondary text-foreground font-bold text-xl flex items-center justify-center mb-3 border-2 border-border overflow-hidden">
                 {mentor.profilePictureUrl ? (
                     <img
                         src={mentor.profilePictureUrl}
@@ -641,8 +641,8 @@ const ViewProfile = () => {
                     getInitials(mentor.fullName)
                 )}
               </div>
-              <h1 className="text-lg font-bold text-slate-800 capitalize">{mentor.fullName}</h1>
-              {mentor.bio && <p className="text-xs text-slate-400 mt-3 mb-4 text-left bg-slate-50 p-3 rounded-xl border border-slate-100">{mentor.bio}</p>}
+              <h1 className="text-lg font-bold text-foreground capitalize">{mentor.fullName}</h1>
+              {mentor.bio && <p className="text-xs text-muted-foreground mt-3 mb-4 text-left bg-secondary p-3 rounded-xl border border-border">{mentor.bio}</p>}
               
               <Button
                   onClick={() => {
@@ -656,7 +656,7 @@ const ViewProfile = () => {
                       unreadCount: 0,
                     });
                   }}
-                  className="w-full mt-4 bg-purple-600 text-white rounded-2xl font-bold text-xs h-11 shadow-md hover:bg-purple-700 transition-colors"
+                  className="w-full mt-4 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white rounded-2xl font-bold text-xs h-11 shadow-md hover:opacity-90 transition-opacity border-0"
               >
                 <MessageSquare className="w-4 h-4 mr-2" /> Send Message
               </Button>
@@ -664,13 +664,13 @@ const ViewProfile = () => {
 
             <div className="lg:col-span-9 space-y-6">
               {teachSkills.length > 0 && (
-                  <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
+                  <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
                       <BookOpen className="w-4 h-4 text-orange-400" /> Skills Available For Learning
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {teachSkills.map((us) => (
-                          <Badge key={us.id.skillId} className="px-3 py-1.5 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl font-medium text-xs capitalize">
+                          <Badge key={us.id.skillId} className="px-3 py-1.5 bg-orange-500/10 text-orange-500 border border-orange-500/20 rounded-xl font-medium text-xs capitalize">
                             {us.skill.name}
                           </Badge>
                       ))}
@@ -679,22 +679,22 @@ const ViewProfile = () => {
               )}
 
               {/* TIMENODE SLOTS VIEWING DECK */}
-              <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-                <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-800 mb-4">
-                  <Clock className="w-4 h-4 text-purple-500" /> Open Available Timeslots
+              <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+                <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-foreground mb-4">
+                  <Clock className="w-4 h-4 text-violet-500" /> Open Available Timeslots
                 </h3>
                 {slots.filter(s => !s.isBooked).length === 0 ? (
-                    <p className="text-xs text-slate-400 text-center py-8 bg-slate-50/50 border border-dashed border-slate-200 rounded-xl">
+                    <p className="text-xs text-muted-foreground text-center py-8 bg-secondary/40 border border-dashed border-border rounded-xl">
                       No open slots listed right now.
                     </p>
                 ) : (
                     <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
                       {slots.filter(s => !s.isBooked).map((slot) => (
-                          <div key={slot.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 hover:border-purple-300 transition-all">
-                            <span className="text-xs font-semibold text-slate-700">{fmt(slot.startTime)}</span>
+                          <div key={slot.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary border border-border hover:border-violet-400/50 transition-all">
+                            <span className="text-xs font-semibold text-foreground">{fmt(slot.startTime)}</span>
                             <Button
                                 size="sm"
-                                className="h-8 rounded-xl px-4 text-xs font-bold bg-purple-600 text-white shadow-sm hover:bg-purple-700"
+                                className="h-8 rounded-xl px-4 text-xs font-bold bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-sm hover:opacity-90 border-0"
                                 onClick={() => {
                                   setSelectedSlot(slot);
                                   setBookingOpen(true);
@@ -714,23 +714,23 @@ const ViewProfile = () => {
 
         {/* DIALOG BOOKING CONFIRMATION PORTAL */}
         <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
-          <DialogContent className="max-w-md rounded-2xl p-6 bg-white border border-slate-100 shadow-xl">
+          <DialogContent className="max-w-md rounded-2xl p-6 bg-card border border-border shadow-xl">
             <DialogHeader>
-              <DialogTitle className="font-sans font-bold text-lg text-slate-800">Confirm Session Request</DialogTitle>
-              <DialogDescription className="text-xs text-slate-400">
+              <DialogTitle className="font-sans font-bold text-lg text-foreground">Confirm Session Request</DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
                 Please pick the skill or topic you want to learn during this session.
               </DialogDescription>
             </DialogHeader>
 
             {selectedSlot && (
-                <div className="my-3 p-3.5 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
-                  <p className="text-xs text-slate-700 font-bold">{fmt(selectedSlot.startTime)}</p>
-                  <p className="text-[11px] text-slate-400">Mentor: <span className="font-semibold text-slate-600 capitalize">{mentor.fullName}</span></p>
+                <div className="my-3 p-3.5 bg-secondary rounded-xl border border-border space-y-1">
+                  <p className="text-xs text-foreground font-bold">{fmt(selectedSlot.startTime)}</p>
+                  <p className="text-[11px] text-muted-foreground">Mentor: <span className="font-semibold text-foreground capitalize">{mentor.fullName}</span></p>
                 </div>
             )}
 
             <div className="space-y-2 mb-4">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Choose Topic</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Choose Topic</label>
               <div className="grid grid-cols-1 gap-1.5 max-h-[120px] overflow-y-auto custom-scrollbar">
                 {teachSkills.map((us) => {
                   const isSelected = selectedSkill?.skill.id === us.skill.id;
@@ -740,8 +740,8 @@ const ViewProfile = () => {
                           onClick={() => setSelectedSkill(us)}
                           className={`p-2.5 rounded-xl border text-xs font-semibold capitalize cursor-pointer transition-all ${
                               isSelected
-                                  ? "bg-purple-50 border-purple-400 text-purple-600 shadow-sm"
-                                  : "bg-slate-50/50 border-slate-100 text-slate-600 hover:bg-slate-50"
+                                  ? "bg-violet-500/10 border-violet-400 text-violet-500 shadow-sm"
+                                  : "bg-secondary/40 border-border text-foreground hover:bg-secondary"
                           }`}
                       >
                         {us.skill.name}
@@ -751,12 +751,12 @@ const ViewProfile = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 justify-end pt-3 border-t border-slate-100">
+            <div className="flex items-center gap-2 justify-end pt-3 border-t border-border">
               <Button variant="ghost" onClick={() => setBookingOpen(false)} className="rounded-xl text-xs font-bold h-9">Cancel</Button>
               <Button
                   disabled={booking || !selectedSkill || !selectedSlot}
                   onClick={handleBook}
-                  className="rounded-xl bg-purple-600 text-white font-bold px-4 text-xs h-9 shadow-md hover:bg-purple-700"
+                  className="rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-bold px-4 text-xs h-9 shadow-md hover:opacity-90 border-0"
               >
                 {booking ? "Booking..." : "Send Request"}
               </Button>
