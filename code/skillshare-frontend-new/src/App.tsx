@@ -4,7 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
+import { ChatProvider } from "@/context/ChatContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import FloatingChatWidget from "@/components/chat/FloatingChatWidget";
 
 import Landing from "./pages/Landing";
 import SignUp from "./pages/SignUp";
@@ -26,10 +28,11 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner richColors position="top-right" />
-        <BrowserRouter>
+      <ChatProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner richColors position="top-right" />
+          <BrowserRouter>
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Landing />} />
@@ -70,8 +73,10 @@ const App = () => (
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <FloatingChatWidget />
         </BrowserRouter>
       </TooltipProvider>
+    </ChatProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
