@@ -36,6 +36,7 @@ const STATUS_CLASSES: Record<SessionStatus, string> = {
   REJECTED:  "bg-red-500 text-white border-0",
   COMPLETED: "bg-emerald-500 text-white border-0",
   EXPIRED:   "bg-muted text-muted-foreground border-0",
+  CANCELLED: "bg-red-500 text-white border-0",
 };
 
 const formatDate = (date: string) =>

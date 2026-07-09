@@ -141,7 +141,7 @@ const Search = () => {
             <div className="space-y-3">
               {mentors.filter(us => us.user.fullName.toLowerCase().includes(nameFilter.toLowerCase())).map((us, i) => (
                 <motion.div 
-                  key={us.id} 
+                  key={`${us.id.userId}-${us.id.skillId}`} 
                   variants={fadeUp} initial="hidden" animate="show" transition={{ delay: i * 0.05 }}
                   onClick={() => navigate(`/profile/${us.user.id}`, { state: { skillId: selectedSkill?.id } })}
                   className="p-5 rounded-2xl border-2 border-border/60 hover:border-violet-500/50 bg-card hover:bg-secondary/20 transition-all cursor-pointer flex items-start gap-4 shadow-sm"
