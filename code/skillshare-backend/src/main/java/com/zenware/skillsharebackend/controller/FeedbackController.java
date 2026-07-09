@@ -1,6 +1,7 @@
 package com.zenware.skillsharebackend.controller;
 
 import com.zenware.skillsharebackend.dto.FeedbackRequest;
+import com.zenware.skillsharebackend.dto.FeedbackResponse;
 import com.zenware.skillsharebackend.dto.FeedbackTagDto;
 import com.zenware.skillsharebackend.entity.Feedback;
 import com.zenware.skillsharebackend.service.FeedbackService;
@@ -19,10 +20,10 @@ public class FeedbackController {
     private final FeedbackService feedbackService;
 
     @PostMapping("/leave")
-    public ResponseEntity<Feedback> submitFeedback(@RequestBody FeedbackRequest request) {
+    public ResponseEntity<FeedbackResponse> submitFeedback(@RequestBody FeedbackRequest request) {
         // LOGIC: No try-catch! If it fails, the GlobalExceptionHandler will automatically take over.
         // SECURITY: The giver is determined strictly by the JWT token, not the request body.
-        Feedback newFeedback = feedbackService.leaveFeedback(request);
+        FeedbackResponse newFeedback = feedbackService.leaveFeedback(request);
         return ResponseEntity.ok(newFeedback);
     }
 
