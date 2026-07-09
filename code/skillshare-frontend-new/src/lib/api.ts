@@ -218,6 +218,7 @@ export interface User {
   fullName: string;
   email: string;
   bio?: string;
+  profilePictureUrl?: string;
   credits?: number;
   reputationScore?: number;
   level?: number;
