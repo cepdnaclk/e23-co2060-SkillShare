@@ -24,28 +24,43 @@ public class ChatController {
 
     @MessageMapping("/chat")
     public void processMessage(@Payload ChatMessageDto chatMessageDto) {
-        // 1. Find the sender and receiver in the database
-        User sender = userRepository.findById(chatMessageDto.getSenderId())
-                .orElseThrow(() -> new IllegalArgumentException("Sender not found"));
-        User receiver = userRepository.findById(chatMessageDto.getReceiverId())
-                .orElseThrow(() -> new IllegalArgumentException("Receiver not found"));
+        System.out.println("\n🚀 --- NEW WEBSOCKET MESSAGE RECEIVED ---");
+        System.out.println("Sender ID: " + chatMessageDto.getSenderId());
+        System.out.println("Receiver ID: " + chatMessageDto.getReceiverId());
+        System.out.println("Content: " + chatMessageDto.getContent());
 
-        // 2. Build and save the message to PostgreSQL for history
-        ChatMessage savedMsg = chatMessageRepository.save(ChatMessage.builder()
-                .sender(sender)
-                .receiver(receiver)
-                .content(chatMessageDto.getContent())
-                .isRead(false)
-                .build());
+        try {
+            // 1. Find the sender and receiver in the database
+            User sender = userRepository.findById(chatMessageDto.getSenderId())
+                    .orElseThrow(() -> new IllegalArgumentException("Sender not found in DB! UUID: " + chatMessageDto.getSenderId()));
 
-        // 3. Update the DTO with the exact server timestamp before sending it to the receiver
-        chatMessageDto.setTimestamp(savedMsg.getTimestamp());
+            User receiver = userRepository.findById(chatMessageDto.getReceiverId())
+                    .orElseThrow(() -> new IllegalArgumentException("Receiver not found in DB! UUID: " + chatMessageDto.getReceiverId()));
 
-        // 4. Instantly push the message to the receiver's active WebSocket connection
-        // FIX: We use convertAndSend with the exact destination string instead of convertAndSendToUser
-        // to bypass the missing Principal issue when using JWTs over WebSockets.
-        String destination = "/user/" + chatMessageDto.getReceiverId() + "/queue/messages";
-        messagingTemplate.convertAndSend(destination, chatMessageDto);
+            // 2. Build and save the message to PostgreSQL for history
+            ChatMessage savedMsg = chatMessageRepository.save(ChatMessage.builder()
+                    .sender(sender)
+                    .receiver(receiver)
+                    .content(chatMessageDto.getContent())
+                    .isRead(false)
+                    .build());
+
+            System.out.println("✅ Message successfully saved to PostgreSQL!");
+
+            // 3. Update the DTO with the exact server timestamp
+            chatMessageDto.setTimestamp(savedMsg.getTimestamp());
+
+            // 4. Instantly push the message to the receiver's active WebSocket connection
+            String destination = "/user/" + chatMessageDto.getReceiverId() + "/queue/messages";
+            messagingTemplate.convertAndSend(destination, chatMessageDto);
+
+            System.out.println("✅ Message routed to destination: " + destination + "\n");
+
+        } catch (Exception e) {
+            // IF ANYTHING FAILS, WE CATCH IT AND PRINT IT HERE INSTEAD OF FAILING SILENTLY
+            System.err.println("❌ ERROR PROCESSING WEBSOCKET MESSAGE:");
+            e.printStackTrace();
+        }
     }
 
     @MessageMapping("/chat/typing")
