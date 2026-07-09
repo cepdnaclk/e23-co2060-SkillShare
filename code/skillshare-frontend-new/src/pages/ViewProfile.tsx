@@ -208,7 +208,7 @@ const ViewProfile = () => {
     if (!selectedSlot || !selectedSkill || !me?.id) return;
     setBooking(true);
     try {
-      await sessionsApi.book(me.id, selectedSkill.skill.id, selectedSlot.id);
+      await sessionsApi.book(String(selectedSkill.skill.id), String(selectedSlot.id));
       toast.success("Session booked! Waiting for confirmation.");
       setBookingOpen(false);
       if (id)

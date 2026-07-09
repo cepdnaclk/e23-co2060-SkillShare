@@ -1,7 +1,7 @@
 package com.zenware.skillsharebackend.controller;
 
 import com.zenware.skillsharebackend.dto.SessionRequest;
-import com.zenware.skillsharebackend.entity.Session;
+import com.zenware.skillsharebackend.dto.SessionResponse;
 import com.zenware.skillsharebackend.entity.SessionStatus;
 import com.zenware.skillsharebackend.service.SessionService;
 import lombok.RequiredArgsConstructor;
@@ -20,41 +20,41 @@ public class SessionController {
     private final SessionService sessionService;
 
     @PostMapping("/book")
-    public ResponseEntity<Session> bookSession(@RequestBody SessionRequest request) {
+    public ResponseEntity<SessionResponse> bookSession(@RequestBody SessionRequest request) {
         return ResponseEntity.ok(sessionService.bookSession(request));
     }
 
     @PatchMapping("/{sessionId}/status")
-    public ResponseEntity<Session> updateStatus(
+    public ResponseEntity<SessionResponse> updateStatus(
             @PathVariable UUID sessionId,
             @RequestParam SessionStatus status) {
 
         // SECURITY UPGRADE: Removed @RequestParam UUID mentorId
         // The Mentor's identity is now pulled directly from the JWT Context!
-        Session updatedSession = sessionService.updateSessionStatus(sessionId, status);
+        SessionResponse updatedSession = sessionService.updateSessionStatus(sessionId, status);
         return ResponseEntity.ok(updatedSession);
     }
 
     @PatchMapping("/{sessionId}/complete")
-    public ResponseEntity<Session> completeSession(@PathVariable UUID sessionId) {
-        Session completedSession = sessionService.completeSession(sessionId);
+    public ResponseEntity<SessionResponse> completeSession(@PathVariable UUID sessionId) {
+        SessionResponse completedSession = sessionService.completeSession(sessionId);
         return ResponseEntity.ok(completedSession);
     }
 
     @PutMapping("/{sessionId}/cancel")
-    public ResponseEntity<Session> cancelSession(@PathVariable UUID sessionId) {
+    public ResponseEntity<SessionResponse> cancelSession(@PathVariable UUID sessionId) {
         // SECURITY UPGRADE: Removed @RequestParam UUID userId
         // The Canceling User's identity is pulled directly from JWT!
         return ResponseEntity.ok(sessionService.cancelSession(sessionId));
     }
 
     @GetMapping("/learner/{userId}")
-    public ResponseEntity<List<Session>> getMyClasses(@PathVariable UUID userId) {
+    public ResponseEntity<List<SessionResponse>> getMyClasses(@PathVariable UUID userId) {
         return ResponseEntity.ok(sessionService.getLearnerSessions(userId));
     }
 
     @GetMapping("/mentor/{userId}")
-    public ResponseEntity<List<Session>> getMyTeachingSchedule(@PathVariable UUID userId) {
+    public ResponseEntity<List<SessionResponse>> getMyTeachingSchedule(@PathVariable UUID userId) {
         return ResponseEntity.ok(sessionService.getMentorSessions(userId));
     }
 
@@ -66,7 +66,7 @@ public class SessionController {
 
     // PATCH: /api/sessions/{sessionId}/meeting-link
     @PatchMapping("/{sessionId}/meeting-link")
-    public ResponseEntity<Session> addMeetingLink(
+    public ResponseEntity<SessionResponse> addMeetingLink(
             @PathVariable UUID sessionId,
             @RequestBody Map<String, String> payload) {
 
