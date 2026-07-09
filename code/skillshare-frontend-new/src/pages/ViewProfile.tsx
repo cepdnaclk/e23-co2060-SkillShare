@@ -14,11 +14,13 @@ import {
   ChevronLeft,
   Zap,
   Users,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
+import { useChat } from "@/context/ChatContext";
 import {
   usersApi,
   userSkillsApi,
@@ -81,6 +83,7 @@ const ViewProfile = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user: me } = useAuth();
+  const { openWidget, openChat } = useChat();
   const location = useLocation();
   const preselectedSkillId = location.state?.skillId;
 
@@ -639,7 +642,24 @@ const ViewProfile = () => {
                 )}
               </div>
               <h1 className="text-lg font-bold text-slate-800 capitalize">{mentor.fullName}</h1>
-              {mentor.bio && <p className="text-xs text-slate-400 mt-3 text-left bg-slate-50 p-3 rounded-xl border border-slate-100">{mentor.bio}</p>}
+              {mentor.bio && <p className="text-xs text-slate-400 mt-3 mb-4 text-left bg-slate-50 p-3 rounded-xl border border-slate-100">{mentor.bio}</p>}
+              
+              <Button
+                  onClick={() => {
+                    openWidget();
+                    openChat({
+                      contactId: mentor.id,
+                      contactName: mentor.fullName,
+                      contactProfilePicture: mentor.profilePictureUrl || null,
+                      lastMessage: "",
+                      lastMessageTime: null,
+                      unreadCount: 0,
+                    });
+                  }}
+                  className="w-full mt-4 bg-purple-600 text-white rounded-2xl font-bold text-xs h-11 shadow-md hover:bg-purple-700 transition-colors"
+              >
+                <MessageSquare className="w-4 h-4 mr-2" /> Send Message
+              </Button>
             </div>
 
             <div className="lg:col-span-9 space-y-6">
