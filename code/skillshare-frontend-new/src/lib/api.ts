@@ -100,6 +100,36 @@ export const usersApi = {
         method: "PATCH",
         body: JSON.stringify(bio),
       }),
+
+
+    /**
+ * Uploads a new profile picture binary stream to the backend
+ * @param file The image file from the input element
+ */
+    uploadProfilePicture: async (file: File): Promise<ProfilePictureResponse> => {
+    const formData = new FormData();
+    formData.append("file", file); // Must match @RequestParam("file") in Spring Boot
+
+    const token = localStorage.getItem("skillshare_token");
+
+    // Cleaned up the bracket formatting error completely here
+    const response = await fetch(`${BASE_URL}/api/users/profile-picture`, {
+        method: "POST",
+        body: formData,
+        headers: {
+            "Authorization": `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        const errorData: ApiError = await response.json().catch(() => ({
+            message: "Failed to upload profile picture.",
+        }));
+        throw errorData;
+    }
+
+    return response.json();
+}
 };
 
 export const skillsApi = {
@@ -227,6 +257,7 @@ export interface User {
   role: string;
   isActive?: boolean;
   createdAt?: string;
+    profilePictureUrl?: string;// 👈 Add this
 }
 
 
@@ -239,7 +270,8 @@ export interface AuthResponse {
     credits: number;       // 👈 Add this
     level?: number;        // 👈 Add this
     xp?: number;           // 👈 Add this
-    reputationScore?: number; // 👈 Add this
+    reputationScore?: number;
+
 }
 
 export interface Skill {
@@ -311,3 +343,9 @@ export interface UserSearchResponse {
     ratingAvg?: number;
     reputationScore?: number;
 }
+
+export interface ProfilePictureResponse {
+    imageUrl: string;
+}
+
+

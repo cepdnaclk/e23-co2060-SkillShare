@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -43,7 +43,6 @@ import {
 import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
 
-// Extended connection models matching your backend controller structure
 interface ConnectionUserDto {
   id: string;
   fullName: string;
@@ -61,10 +60,8 @@ interface ConnectionDto {
   receiver: ConnectionUserDto;
 }
 
-// Inline API addition for Connections endpoints
 const connectionsApi = {
   getFriends: async (): Promise<ConnectionDto[]> => {
-    // Dynamically matching your backend endpoint mapping URL path
     const res = await fetch("/api/connections/friends", {
       headers: { "Content-Type": "application/json" },
     });
@@ -105,6 +102,9 @@ const ViewProfile = () => {
   const [booking, setBooking] = useState(false);
   const [deletingSkill, setDeletingSkill] = useState<string | null>(null);
 
+  // File Upload State Control
+  const [uploadingPic, setUploadingPic] = useState(false);
+
   useEffect(() => {
     if (!id || id === "undefined") {
       setLoading(false);
@@ -144,6 +144,41 @@ const ViewProfile = () => {
       }
     }
   }, [preselectedSkillId, skills]);
+
+  const handleProfilePictureUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !mentor) return;
+
+    // Fast local file size check (4MB limit)
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error("Image file size must be less than 4MB");
+      return;
+    }
+
+    setUploadingPic(true);
+    try {
+      // 1. Invoke your centralized API service method
+      const data = await usersApi.uploadProfilePicture(file);
+
+      // 2. Extract imageUrl from ProfilePictureResponse interface definitions
+      const updatedUrl = data.imageUrl;
+
+      if (updatedUrl) {
+        setMentor((prev) => prev ? { ...prev, profilePictureUrl: updatedUrl } : null);
+        toast.success("Profile picture updated successfully!");
+      } else {
+        // Fallback re-fetch just in case
+        const refreshedUser = await usersApi.getById(mentor.id);
+        setMentor(refreshedUser);
+        toast.success("Profile picture updated!");
+      }
+    } catch (err) {
+      console.error("Upload error context:", err);
+      toast.error(err.message || "Failed to upload profile picture. Please try again.");
+    } finally {
+      setUploadingPic(false);
+    }
+  };
 
   const handleDeleteSkill = async (us: UserSkill) => {
     const key = `${us.id.skillId}-${us.id.skillType}`;
@@ -277,8 +312,6 @@ const ViewProfile = () => {
 
   const mentorLevel = mentor.level ?? 1;
   const mentorXp = mentor.xp ?? 0;
-
-  // Calculates contextual target benchmarks matching diagram metadata profiles
   const xpNeededForNextLevel = 35;
 
   if (isOwnProfile) {
@@ -295,20 +328,47 @@ const ViewProfile = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   className="lg:col-span-3 p-6 rounded-3xl bg-gradient-to-b from-[#E3F2FD]/50 via-[#FFF3E0]/30 to-white border border-white shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col items-center text-center lg:sticky lg:top-24"
               >
-                {/* Profile Halo Image Frame */}
-                <div className="relative mb-4">
-                  <div className="w-24 h-24 rounded-full bg-white p-1 shadow-[0_0_16px_rgba(56,189,248,0.15)] flex items-center justify-center border-2 border-[#4FC3F7]">
-                    <div className="w-full h-full rounded-full bg-[#FFE0B2] text-[#E65100] flex items-center justify-center font-bold text-2xl font-sans">
-                      {getInitials(mentor.fullName)}
-                    </div>
+                {/* Profile Image / Initials Container with Float Pencil UI Element */}
+                <div className="relative inline-block mb-4 w-24 h-24 mx-auto">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-orange-500/15 via-fuchsia-500/10 to-transparent text-orange-400 border-2 border-orange-500/30 flex items-center justify-center font-heading font-black text-3xl shadow-[0_0_25px_rgba(249,115,22,0.15)] overflow-hidden">
+                    {mentor.profilePictureUrl ? (
+                        <img
+                            src={mentor.profilePictureUrl}
+                            alt={mentor.fullName}
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        getInitials(mentor.fullName)
+                    )}
                   </div>
-                  <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-[#4CAF50] border-4 border-white" />
+
+                  {/* Dedicated Floating Bottom-Right Pencil Action Button */}
+                  <label
+                      className={`absolute bottom-[-4px] right-[-4px] w-8 h-8 rounded-xl bg-white border border-orange-500/30 shadow-[0_4px_12px_rgba(249,115,22,0.2)] flex items-center justify-center cursor-pointer hover:border-orange-500/60 hover:bg-orange-500/5 transition-all duration-200 group/pencil ${uploadingPic ? 'opacity-50 pointer-events-none' : ''}`}
+                      title="Upload profile picture"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-orange-400 group-hover/pencil:scale-110 transition-transform" />
+                    <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleProfilePictureUpload}
+                        disabled={uploadingPic}
+                    />
+                  </label>
+
+                  {/* Local Upload Loading Shimmer Overlay */}
+                  {uploadingPic && (
+                      <div className="absolute inset-0 rounded-full bg-white/80 flex items-center justify-center backdrop-blur-[2px]">
+                        <span className="w-5 h-5 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                  )}
                 </div>
 
-                <h1 className="text-xl font-bold text-slate-800 tracking-tight">
+                <h1 className="text-2xl font-heading font-black tracking-tight text-slate-800 capitalize mb-1">
                   {mentor.fullName}
                 </h1>
-                <p className="text-slate-400 text-xs mt-0.5 mb-6">@{mentor.fullName.toLowerCase().replace(/\s+/g, '_')}</p>
+                <p className="text-slate-400 text-xs font-medium truncate mb-4">{mentor.email || `${mentor.fullName.toLowerCase().replace(/\s+/g, '_')}@skillshare.com`}</p>
 
                 {/* Balance Block Component */}
                 <div className="w-full bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-3 flex items-center justify-between text-left">
@@ -319,20 +379,36 @@ const ViewProfile = () => {
                   <Coins className="w-8 h-8 text-[#FFB74D]/80 stroke-[1.5]" />
                 </div>
 
-                {/* Reputation Block Component */}
+                {/* REPUTATION BLOCK COMPONENT */}
                 <div className="w-full bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-6 text-left">
-                  <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Reputation</span>
+  <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
+    Reputation
+  </span>
+
                   <div className="flex items-baseline gap-1.5 mt-0.5">
-                    <span className="text-xl font-black text-slate-800">{mentor.reputationScore}</span>
+                    {/* 1. Dynamic Reputation Score Display */}
+                    <span className="text-xl font-black text-slate-800">
+      {mentor.reputationScore ?? 0}
+    </span>
                     <span className="text-xs font-medium text-slate-500">Points</span>
                   </div>
+
+                  {/* Visual Star Rating representation based on their score hierarchy */}
                   <div className="flex gap-0.5 mt-2">
                     {[...Array(5)].map((_, i) => (
                         <Star key={i} className="w-3.5 h-3.5 fill-[#FFB74D] text-[#FFB74D]" />
                     ))}
                   </div>
+
+                  {/* 2. Fully Dynamic Progress Logic Bar */}
                   <div className="w-full h-1.5 bg-slate-100 rounded-full mt-3 overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-purple-500 to-orange-400 w-3/4 rounded-full" />
+                    <div
+                        className="h-full bg-gradient-to-r from-purple-500 to-orange-400 rounded-full transition-all duration-500 ease-out"
+                        style={{
+                          // Logic: Calculate how close they are to the next 100-point milestone tier
+                          width: `${(mentor.reputationScore ?? 0) % 100}%`
+                        }}
+                    />
                   </div>
                 </div>
 
@@ -340,14 +416,12 @@ const ViewProfile = () => {
                     onClick={() => navigate("/create-profile", { state: { startStep: 1 } })}
                     className="w-full bg-gradient-to-r from-[#7E57C2] to-[#FF7043] text-white rounded-2xl font-bold text-xs h-11 shadow-md hover:opacity-95 transition-opacity"
                 >
-                  <Edit3 className="w-3.5 h-3.5 mr-2" /> Edit Profile
+                  <Edit3 className="w-3.5 h-3.5 mr-2" /> Edit Profile Description
                 </Button>
               </motion.div>
 
               {/* MAIN METRIC LAYOUT CONTAINER DECK */}
               <div className="lg:col-span-9 space-y-6">
-
-                {/* TOP ROW: SKILLS GRID PANELS */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                   {/* Teaching Deck */}
@@ -406,13 +480,11 @@ const ViewProfile = () => {
                         </div>
                     )}
                   </div>
-
                 </div>
 
-                {/* BOTTOM ROW: MATRIX LAYOUT SYSTEM */}
+                {/* BOTTOM MATRIX PANELS */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-
-                  {/* SUB PANEL 1: FRIEND LIST COMPONENT (COMMUNITY ACTIVITY OVERRIDE RENDER) */}
+                  {/* FRIEND LIST COMPONENT */}
                   <div className="md:col-span-4 bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex flex-col justify-between">
                     <div>
                       <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2 mb-4">
@@ -426,12 +498,15 @@ const ViewProfile = () => {
                       ) : (
                           <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
                             {friends.map((conn) => {
-                              // Extract connection peer dynamic context mappings
                               const friendObj = conn.sender.id === mentor.id ? conn.receiver : conn.sender;
                               return (
                                   <div key={conn.id} className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-100">
-                                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold text-xs flex items-center justify-center shrink-0">
-                                      {getInitials(friendObj.fullName)}
+                                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden">
+                                      {friendObj.profilePictureUrl ? (
+                                          <img src={friendObj.profilePictureUrl} alt={friendObj.fullName} className="w-full h-full object-cover rounded-full" />
+                                      ) : (
+                                          getInitials(friendObj.fullName)
+                                      )}
                                     </div>
                                     <div className="min-w-0 flex-1">
                                       <p className="text-xs font-bold text-slate-700 truncate capitalize">{friendObj.fullName}</p>
@@ -445,7 +520,7 @@ const ViewProfile = () => {
                     </div>
                   </div>
 
-                  {/* SUB PANEL 2: AVAILABILITY CALENDAR BLOCK */}
+                  {/* AVAILABILITY CALENDAR BLOCK */}
                   <div className="md:col-span-4 bg-white rounded-2xl border border-slate-100 p-4 shadow-sm flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between mb-3">
@@ -487,20 +562,16 @@ const ViewProfile = () => {
                     </div>
                   </div>
 
-                  {/* SUB PANEL 3: GROWTH DASHBOARD (EXACT COLOR BENCHMARK MATCH) */}
+                  {/* GROWTH DASHBOARD */}
                   <div className="md:col-span-4 bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex flex-col items-center justify-between text-center">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 self-start">
                       Growth Dashboard
                     </h3>
 
-                    {/* Concentric Circle Progress Graph Section */}
                     <div className="flex items-center justify-around w-full mt-2">
-
-                      {/* Level Ring Structure Block */}
                       <div className="flex flex-col items-center">
                         <span className="text-[10px] font-bold uppercase text-slate-400 mb-2">Level</span>
                         <div className="relative w-20 h-20 flex items-center justify-center">
-                          {/* Outer Track Circular Graphics */}
                           <svg className="absolute w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                             <path className="text-slate-100" strokeWidth="2.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                             <path className="text-blue-400" strokeDasharray="75, 100" strokeWidth="2.5" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
@@ -510,39 +581,30 @@ const ViewProfile = () => {
                         </div>
                       </div>
 
-                      {/* Stacked Vertical XP Configuration Element matching precise drawing context guidelines */}
                       <div className="flex flex-col items-center">
                         <span className="text-[10px] font-bold uppercase text-slate-400 mb-2">XP Points</span>
                         <div className="flex flex-col items-center gap-0.5">
-
-                          {/* Ambient Pulsing Glow Lightning Bolt */}
                           <div className="relative">
                             <div className="absolute inset-0 bg-amber-400/30 blur-md rounded-full scale-150 animate-pulse" />
                             <Zap className="w-6 h-6 text-amber-400 fill-amber-400 relative z-10 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
                           </div>
-
                           <span className="text-2xl font-sans font-black tracking-tight text-slate-800 mt-1">
                             {mentorXp}
                           </span>
                           <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Total Points</span>
                         </div>
                       </div>
-
                     </div>
 
-                    {/* Progress Goal Tracker text */}
                     <div className="w-full border-t border-slate-50 pt-3 mt-4 flex items-center justify-between text-[11px] font-medium text-slate-400">
                       <span>Next Level in {xpNeededForNextLevel} XP</span>
-                      {/* Decorative Line Graph mimicking diagram metric paths */}
                       <svg className="w-16 h-5 text-purple-400" fill="none" viewBox="0 0 50 20" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2 17c5-3 10-12 15-8s8 8 15-2 10-11 16-11" />
                       </svg>
                     </div>
-
                   </div>
 
                 </div>
-
               </div>
 
             </div>
@@ -568,8 +630,16 @@ const ViewProfile = () => {
 
             {/* PUBLIC VIEW CARD PANEL */}
             <div className="lg:col-span-3 p-6 rounded-3xl bg-white border border-slate-100 shadow-sm flex flex-col items-center text-center">
-              <div className="w-20 h-20 rounded-full bg-slate-100 text-slate-600 font-bold text-xl flex items-center justify-center mb-3 border-2 border-slate-200">
-                {getInitials(mentor.fullName)}
+              <div className="w-20 h-20 rounded-full bg-slate-100 text-slate-600 font-bold text-xl flex items-center justify-center mb-3 border-2 border-slate-200 overflow-hidden">
+                {mentor.profilePictureUrl ? (
+                    <img
+                        src={mentor.profilePictureUrl}
+                        alt={mentor.fullName}
+                        className="w-full h-full object-cover rounded-full"
+                    />
+                ) : (
+                    getInitials(mentor.fullName)
+                )}
               </div>
               <h1 className="text-lg font-bold text-slate-800 capitalize">{mentor.fullName}</h1>
               {mentor.bio && <p className="text-xs text-slate-400 mt-3 mb-4 text-left bg-slate-50 p-3 rounded-xl border border-slate-100">{mentor.bio}</p>}
