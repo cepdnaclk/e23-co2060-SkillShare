@@ -17,6 +17,7 @@ import Notifications from "./pages/Notifications";
 import Sessions from "./pages/Sessions";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import OAuth2RedirectHandler from "@/components/OAuth2RedirectHandler";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -33,6 +34,10 @@ const App = () => (
             {/* Public routes */}
             <Route path="/" element={<Landing />} />
             <Route path="/signup" element={<SignUp />} />
+
+            {/* GitHub OAuth2 redirect handler — must be public (not behind ProtectedRoute)
+                because the JWT arrives here for the first time and auth state is not yet set. */}
+            <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
 
             {/* Protected routes */}
             <Route path="/create-profile" element={
