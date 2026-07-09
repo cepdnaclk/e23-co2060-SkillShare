@@ -27,6 +27,7 @@ interface AuthContextType {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (fullName: string, email: string, password: string) => Promise<void>;
+  loginWithToken: (jwt: string) => Promise<void>;
   logout: () => void;
   clearError: () => void;
   refreshUser: (userId: string) => Promise<void>;
@@ -146,6 +147,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  /**
+   * Called by OAuth2RedirectHandler after the backend redirects back with ?token=...
+   * Stores the JWT, decodes the userId from the payload, fetches the full user
+   * profile, and syncs everything into global state — identical to a normal login.
+   */
+  const loginWithToken = useCallback(async (jwt: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Decode the JWT payload (base64url → JSON) to extract the userId claim.
+      const payload = JSON.parse(atob(jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+      const userId: string | undefined = payload.userId ?? payload.sub;
+
+      if (!userId) {
+        throw new Error("Could not determine userId from OAuth2 token.");
+      }
+
+      setToken(jwt);
+      setTokenState(jwt);
+
+      const fullUser = await usersApi.getById(userId);
+      setUser(fullUser);
+      setStoredUser(fullUser);
+    } catch (err) {
+      const apiErr = err as ApiError;
+      setError(apiErr.message ?? "OAuth2 authentication failed.");
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const refreshUser = useCallback(async (userId: string) => {
     try {
       const freshUser = await usersApi.getById(userId);
@@ -164,7 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, error, login, register, logout, clearError, refreshUser }}>
+    <AuthContext.Provider value={{ user, token, isLoading, error, login, register, loginWithToken, logout, clearError, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
