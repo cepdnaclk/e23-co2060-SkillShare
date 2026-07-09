@@ -405,7 +405,7 @@ const Dashboard = () => {
                           className="flex items-center justify-between p-3 rounded-xl bg-secondary"
                       >
                         <div>
-                          <p className="text-sm font-medium">{s.skill.name} with {s.mentor.fullName}</p>
+                          <p className="text-sm font-medium">{s.skillName} with {s.mentorName}</p>
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                             <Clock className="w-3 h-3" /> {formatDate(s.startTime)}
                           </p>

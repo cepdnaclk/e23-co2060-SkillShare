@@ -286,11 +286,11 @@ const MySchedule = () => {
                             </div>
                             <div>
                                <p className="font-semibold text-foreground text-sm flex items-center gap-2 capitalize">
-                                {session.learner.fullName}
+                                {session.learnerName}
                               </p>
                               <div className="flex flex-col gap-1 mt-1">
                                 <p className="text-[11px] font-medium text-foreground bg-secondary/60 w-fit px-1.5 py-0.5 rounded border border-border/40">
-                                  {session.skill.name}
+                                  {session.skillName}
                                 </p>
                                 <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                                   <Clock className="w-3.5 h-3.5" />

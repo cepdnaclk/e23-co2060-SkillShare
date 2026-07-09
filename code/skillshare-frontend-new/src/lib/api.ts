@@ -188,19 +188,24 @@ export const availabilityApi = {
 
 
 export const sessionsApi = {
-  book: (learnerId: string, skillId: number, availabilityId: number) =>
+  // FIXED: Only sends skillId + availabilityId as UUID strings.
+  // learnerId is removed — the backend extracts it securely from the JWT token.
+  book: (skillId: string, availabilityId: string) =>
       apiFetch<Session>("/api/sessions/book", {
         method: "POST",
-        body: JSON.stringify({ learnerId, skillId, availabilityId }),
+        body: JSON.stringify({ skillId, availabilityId }),
       }),
 
-  updateStatus: (sessionId: string, mentorId: string, status: SessionStatus) =>
-      apiFetch<Session>(`/api/sessions/${sessionId}/status?mentorId=${mentorId}&status=${status}`, {
+  updateStatus: (sessionId: string, status: SessionStatus) =>
+      apiFetch<Session>(`/api/sessions/${sessionId}/status?status=${status}`, {
         method: "PATCH",
       }),
 
   complete: (sessionId: string) =>
       apiFetch<Session>(`/api/sessions/${sessionId}/complete`, { method: "PATCH" }),
+
+  cancel: (sessionId: string) =>
+      apiFetch<Session>(`/api/sessions/${sessionId}/cancel`, { method: "PUT" }),
 
   getLearnerSessions: (userId: string) =>
       apiFetch<Session[]>(`/api/sessions/learner/${userId}`),
@@ -209,7 +214,7 @@ export const sessionsApi = {
       apiFetch<Session[]>(`/api/sessions/mentor/${userId}`),
 
     addMeetingLink: (sessionId: string, meetingLink: string) =>
-        apiFetch<Session[]>(`/api/sessions/${sessionId}/meeting-link`, {
+        apiFetch<Session>(`/api/sessions/${sessionId}/meeting-link`, {
             method: "PATCH",
             body: JSON.stringify({ meetingLink }),
         }),
@@ -257,7 +262,6 @@ export interface User {
   role: string;
   isActive?: boolean;
   createdAt?: string;
-    profilePictureUrl?: string;// 👈 Add this
 }
 
 
@@ -298,17 +302,24 @@ export interface Availability {
   isBooked: boolean;
 }
 
-export type SessionStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "COMPLETED" | "EXPIRED";
+export type SessionStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "COMPLETED" | "EXPIRED" | "CANCELLED";
 
+// Matches the backend SessionResponse DTO — flat, no lazy proxies
 export interface Session {
   id: string;
-  learner: User;
-  mentor: User;
-  skill: Skill;
+  learnerId: string;
+  learnerName: string;
+  learnerProfilePictureUrl?: string;
+  mentorId: string;
+  mentorName: string;
+  mentorProfilePictureUrl?: string;
+  skillId: string;
+  skillName: string;
   startTime: string;
   endTime: string;
-  meetingLink?: string | null;
   status: SessionStatus;
+  meetingLink?: string | null;
+  creditValue?: number;
   createdAt: string;
 }
 

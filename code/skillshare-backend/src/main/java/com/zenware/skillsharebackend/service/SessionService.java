@@ -1,6 +1,7 @@
 package com.zenware.skillsharebackend.service;
 
 import com.zenware.skillsharebackend.dto.SessionRequest;
+import com.zenware.skillsharebackend.dto.SessionResponse;
 import com.zenware.skillsharebackend.entity.*;
 import com.zenware.skillsharebackend.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -33,8 +34,36 @@ public class SessionService {
                 .orElseThrow(() -> new IllegalArgumentException("Authenticated user not found!"));
     }
 
+    // -------------------------------------------------------
+    // PRIVATE HELPER: Maps a Session entity to a safe DTO.
+    // CRITICAL: This must be called while the Hibernate session is still open
+    // (i.e. inside a @Transactional method) so all lazy proxies are available.
+    // -------------------------------------------------------
+    private SessionResponse toDto(Session session) {
+        User learner = session.getLearner();
+        User mentor  = session.getMentor();
+        Skill skill  = session.getSkill();
+        return SessionResponse.builder()
+                .id(session.getId())
+                .learnerId(learner.getId())
+                .learnerName(learner.getFullName())
+                .learnerProfilePictureUrl(learner.getProfilePictureUrl())
+                .mentorId(mentor.getId())
+                .mentorName(mentor.getFullName())
+                .mentorProfilePictureUrl(mentor.getProfilePictureUrl())
+                .skillId(skill.getId())
+                .skillName(skill.getName())
+                .startTime(session.getStartTime())
+                .endTime(session.getEndTime())
+                .status(session.getStatus())
+                .meetingLink(session.getMeetingLink())
+                .creditValue(session.getCreditValue())
+                .createdAt(session.getCreatedAt())
+                .build();
+    }
+
     @Transactional
-    public Session bookSession(SessionRequest request) {
+    public SessionResponse bookSession(SessionRequest request) {
 
         // 1. Fetch the Learner (From JWT, NOT from the request body!)
         User learner = getAuthenticatedUser();
@@ -57,13 +86,13 @@ public class SessionService {
             throw new IllegalArgumentException("You cannot book your own time slot!");
         }
 
-        // Logic: The Upfront Payment (Escrow)
+        // CREDIT GUARD RAIL: Enforce minimum credit balance before booking
         int sessionCost = 10;
-        if (learner.getCredits() < sessionCost) {
-            throw new IllegalStateException("You do not have enough credits to book this session!");
+        if (learner.getCredits() == null || learner.getCredits() < sessionCost) {
+            throw new IllegalStateException("You do not have enough credits to book this session! You need " + sessionCost + " credits.");
         }
 
-        // Deduct the money immediately so they cannot double-spend it
+        // ESCROW: Deduct credits immediately so they cannot double-spend
         learner.setCredits(learner.getCredits() - sessionCost);
         userRepository.save(learner);
 
@@ -87,11 +116,15 @@ public class SessionService {
                 NotificationType.SESSION_UPDATE
         );
 
-        return sessionRepository.save(session);
+        // CRITICAL FIX: Map to DTO *inside* the @Transactional boundary.
+        // This resolves all lazy proxies (Session -> Skill, -> User) before the
+        // Hibernate session closes, preventing "no session" serialization crashes.
+        Session saved = sessionRepository.save(session);
+        return toDto(saved);
     }
 
     @Transactional
-    public Session updateSessionStatus(UUID sessionId, SessionStatus newStatus) {
+    public SessionResponse updateSessionStatus(UUID sessionId, SessionStatus newStatus) {
 
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Session not found"));
@@ -130,14 +163,15 @@ public class SessionService {
             );
         }
 
-        return sessionRepository.save(session);
+        Session saved = sessionRepository.save(session);
+        return toDto(saved);
     }
 
     // ---------------------------------------------------------
     // THE CANCELLATION ENGINE
     // ---------------------------------------------------------
     @Transactional
-    public Session cancelSession(UUID sessionId) {
+    public SessionResponse cancelSession(UUID sessionId) {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Session not found"));
 
@@ -192,11 +226,12 @@ public class SessionService {
         availabilityRepository.save(availability);
 
         session.setStatus(SessionStatus.CANCELLED);
-        return sessionRepository.save(session);
+        Session saved = sessionRepository.save(session);
+        return toDto(saved);
     }
 
     @Transactional
-    public Session completeSession(UUID sessionId) {
+    public SessionResponse completeSession(UUID sessionId) {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Session not found"));
 
@@ -213,7 +248,7 @@ public class SessionService {
         User mentor = session.getMentor();
         User learner = session.getLearner();
 
-        notificationService.sendNotification(mentor, "Your session with " + learner.getFullName()+ " is completed.", NotificationType.MESSAGE);
+        notificationService.sendNotification(mentor, "Your session with " + learner.getFullName() + " is completed.", NotificationType.MESSAGE);
         notificationService.sendNotification(learner, "Your session with " + mentor.getFullName() + " is completed.", NotificationType.MESSAGE);
 
         gamificationService.awardSessionCompletionXp(session.getMentor());
@@ -223,22 +258,35 @@ public class SessionService {
         session.setStatus(SessionStatus.COMPLETED);
 
         userRepository.save(mentor);
-        return sessionRepository.save(session);
+        Session saved = sessionRepository.save(session);
+        return toDto(saved);
     }
 
-    public List<Session> getLearnerSessions(UUID learnerId) {
+    @Transactional
+    public List<SessionResponse> getLearnerSessions(UUID learnerId) {
         // SECURITY GUARD: You can only view your own history
         if (!getAuthenticatedUser().getId().equals(learnerId)) {
             throw new IllegalStateException("Security Violation: You can only view your own classes!");
         }
-        return sessionRepository.findByLearnerId(learnerId);
+        // CRITICAL FIX: Map to DTO inside @Transactional so lazy proxies are resolved
+        // before the Hibernate session closes.
+        return sessionRepository.findByLearnerId(learnerId)
+                .stream()
+                .map(this::toDto)
+                .toList();
     }
 
-    public List<Session> getMentorSessions(UUID mentorId) {
+    @Transactional
+    public List<SessionResponse> getMentorSessions(UUID mentorId) {
         if (!getAuthenticatedUser().getId().equals(mentorId)) {
             throw new IllegalStateException("Security Violation: You can only view your own schedule!");
         }
-        return sessionRepository.findByMentorId(mentorId);
+        // CRITICAL FIX: Map to DTO inside @Transactional so lazy proxies are resolved
+        // before the Hibernate session closes.
+        return sessionRepository.findByMentorId(mentorId)
+                .stream()
+                .map(this::toDto)
+                .toList();
     }
 
     @Transactional
@@ -280,7 +328,7 @@ public class SessionService {
     }
 
     @Transactional
-    public Session addMeetingLink(UUID sessionId, String meetingLink) {
+    public SessionResponse addMeetingLink(UUID sessionId, String meetingLink) {
         User currentUser = getAuthenticatedUser(); // Grabs the logged-in user from JWT
 
         Session session = sessionRepository.findById(sessionId)
@@ -298,13 +346,12 @@ public class SessionService {
 
         // 3. Update the link
         session.setMeetingLink(meetingLink);
-        sessionRepository.save(session);
+        Session saved = sessionRepository.save(session);
 
         // 4. Fire the Notification to the Learner!
         String message = "Your mentor, " + currentUser.getFullName() + ", has posted the meeting link for your upcoming session!";
-        // Assuming your NotificationService has a method like createNotification(User recipient, String message)
         notificationService.sendNotification(session.getLearner(), message, NotificationType.SESSION_UPDATE);
 
-        return session;
+        return toDto(saved);
     }
 }

@@ -223,8 +223,8 @@ interface SessionCardProps {
 }
 const SessionCard = ({ session: s, role, onAction, actionLoading, ratedSessionIds }: SessionCardProps) => {
   const isBusy = actionLoading === s.id;
-  const counterpart = role === "learner" ? s.mentor : s.learner;
-  const initials = counterpart.fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  const counterpartName = role === "learner" ? s.mentorName : s.learnerName;
+  const initials = counterpartName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
   // 🎨 Overhauled Dynamic Background & Border Matrix
   const statusStyles = {
@@ -274,9 +274,8 @@ const SessionCard = ({ session: s, role, onAction, actionLoading, ratedSessionId
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
-              {/* Added "capitalize" layout class here so usernames display professionally */}
               <h3 className="font-heading font-semibold text-base tracking-tight text-foreground capitalize">
-                {counterpart.fullName}
+                {counterpartName}
               </h3>
               <Badge className={`${STATUS_CLASSES[s.status]} text-xs font-semibold px-2.5 py-0.5 shadow-sm`}>
                 {s.status}
@@ -284,7 +283,7 @@ const SessionCard = ({ session: s, role, onAction, actionLoading, ratedSessionId
             </div>
 
             <p className="text-sm font-medium text-foreground mb-3 bg-secondary/40 w-fit px-2 py-0.5 rounded-md border border-border/40">
-              {s.skill.name}
+              {s.skillName}
             </p>
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1.5">
@@ -370,7 +369,7 @@ const SessionCard = ({ session: s, role, onAction, actionLoading, ratedSessionId
                 onClick={() => onAction(s, "feedback")} disabled={isBusy}
             >
               <MessageSquare className="w-4 h-4" />
-              Rate {role === "learner" ? s.mentor.fullName : s.learner.fullName}
+              Rate {role === "learner" ? s.mentorName : s.learnerName}
             </Button>
         )}
       </motion.div>
@@ -442,7 +441,7 @@ const Sessions = () => {
     const counts: Record<string, number> = {};
 
     learnerSessions.forEach(s => {
-      counts[s.skill.name] = (counts[s.skill.name] || 0) + 1;
+      counts[s.skillName] = (counts[s.skillName] || 0) + 1;
     });
 
     return Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
@@ -452,7 +451,7 @@ const Sessions = () => {
 
   const handleAction = async (session: Session, action: "accept" | "reject" | "complete" | "feedback"|"link") => {
     if (action === "feedback") {
-      const rateName = user?.id === session.learner.id ? session.mentor.fullName : session.learner.fullName;
+      const rateName = user?.id === session.learnerId ? session.mentorName : session.learnerName;
       setFeedbackRateName(rateName);
       setFeedbackSession(session);
       return;
@@ -466,10 +465,10 @@ const Sessions = () => {
     setActionLoading(session.id);
     try {
       if (action === "accept") {
-        await sessionsApi.updateStatus(session.id, user.id, "ACCEPTED");
+        await sessionsApi.updateStatus(session.id, "ACCEPTED");
         toast.success("Session accepted!");
       } else if (action === "reject") {
-        await sessionsApi.updateStatus(session.id, user.id, "REJECTED");
+        await sessionsApi.updateStatus(session.id, "REJECTED");
         toast.info("Session rejected.");
       } else if (action === "complete") {
         const updatedSession = await sessionsApi.complete(session.id);
