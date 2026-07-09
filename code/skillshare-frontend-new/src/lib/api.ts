@@ -238,7 +238,8 @@ export interface AuthResponse {
     credits: number;       // 👈 Add this
     level?: number;        // 👈 Add this
     xp?: number;           // 👈 Add this
-    reputationScore?: number; // 👈 Add this
+    reputationScore?: number;
+    profilePictureUrl?: string;// 👈 Add this
 }
 
 export interface Skill {
