@@ -51,10 +51,9 @@ public class ChatController {
             chatMessageDto.setTimestamp(savedMsg.getTimestamp());
 
             // 4. Instantly push the message to the receiver's active WebSocket connection
-            String destination = "/user/" + chatMessageDto.getReceiverId() + "/queue/messages";
-            messagingTemplate.convertAndSend(destination, chatMessageDto);
+            messagingTemplate.convertAndSendToUser(receiver.getEmail(), "/queue/messages", chatMessageDto);
 
-            System.out.println("✅ Message routed to destination: " + destination + "\n");
+            System.out.println("✅ Message routed to user email: " + receiver.getEmail() + " at /queue/messages\n");
 
         } catch (Exception e) {
             // IF ANYTHING FAILS, WE CATCH IT AND PRINT IT HERE INSTEAD OF FAILING SILENTLY
@@ -66,8 +65,15 @@ public class ChatController {
     @MessageMapping("/chat/typing")
     public void processTyping(@Payload TypingStatusDto typingStatus) {
         // We do not save this to the database!
-        // We just instantly route it to the receiver's dedicated typing queue.
-        String destination = "/user/" + typingStatus.getReceiverId() + "/queue/typing";
-        messagingTemplate.convertAndSend(destination, typingStatus);
+        try {
+            User receiver = userRepository.findById(typingStatus.getReceiverId())
+                    .orElseThrow(() -> new IllegalArgumentException("Receiver not found for typing status! UUID: " + typingStatus.getReceiverId()));
+            
+            // We instantly route it to the receiver's dedicated typing queue using their email
+            messagingTemplate.convertAndSendToUser(receiver.getEmail(), "/queue/typing", typingStatus);
+        } catch (Exception e) {
+            System.err.println("❌ ERROR PROCESSING TYPING STATUS:");
+            e.printStackTrace();
+        }
     }
 }
