@@ -14,12 +14,14 @@ import { useAuth } from "@/context/AuthContext";
 import { chatSocketService } from "@/services/chatSocketService";
 
 function getInitials(name: string) {
-  return name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) ?? "?";
+  return (
+    name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) ?? "?"
+  );
 }
 
 function formatMsgTime(iso: string): string {
@@ -93,12 +95,13 @@ export default function ActiveChatPanel() {
 
   if (!activeConversation) return null;
 
-  const { contactName, contactPicture, messages, isLoadingHistory, isTyping } = activeConversation;
+  const { contactName, contactPicture, messages, isLoadingHistory, isTyping } =
+    activeConversation;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 px-3 py-3 border-b border-white/10">
+      <div className="flex items-center gap-3 px-3 py-3 border-b border-white/10 shrink-0">
         <button
           id="chat-back-btn"
           onClick={backToInbox}
@@ -133,8 +136,8 @@ export default function ActiveChatPanel() {
         </div>
       </div>
 
-      {/* Message area */}
-      <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-3 space-y-1.5">
+      {/* Message area - Added overflow-x-hidden here */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 py-3 space-y-1.5 min-h-0">
         {isLoadingHistory ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex gap-1">
@@ -150,7 +153,9 @@ export default function ActiveChatPanel() {
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-white/30 text-xs text-center">
-              No messages yet.<br />Say hello! 👋
+              No messages yet.
+              <br />
+              Say hello! 👋
             </p>
           </div>
         ) : (
@@ -160,11 +165,12 @@ export default function ActiveChatPanel() {
               return (
                 <div
                   key={msg.id}
-                  className={`flex ${isOutgoing ? "justify-end" : "justify-start"}`}
+                  className={`flex w-full ${isOutgoing ? "justify-end" : "justify-start"}`}
                 >
                   <div className="max-w-[75%]">
+                    {/* Added break-words and whitespace-pre-wrap to force text wrapping */}
                     <div
-                      className={`px-3 py-2 rounded-2xl text-[12px] leading-relaxed shadow-sm ${
+                      className={`px-3 py-2 rounded-2xl text-[12px] leading-relaxed shadow-sm break-words whitespace-pre-wrap ${
                         isOutgoing
                           ? "bg-gradient-to-br from-violet-600 to-orange-500 text-white rounded-br-sm"
                           : "bg-white/10 text-white/90 rounded-bl-sm"
@@ -186,7 +192,7 @@ export default function ActiveChatPanel() {
 
             {/* Typing indicator bubble */}
             {isTyping && (
-              <div className="flex justify-start">
+              <div className="flex justify-start w-full">
                 <div className="bg-white/10 px-3 py-2 rounded-2xl rounded-bl-sm flex gap-1 items-center">
                   {[0, 1, 2].map((i) => (
                     <span
@@ -205,7 +211,7 @@ export default function ActiveChatPanel() {
       </div>
 
       {/* Input footer */}
-      <div className="px-3 pb-3 pt-2 border-t border-white/10">
+      <div className="px-3 pb-3 pt-2 border-t border-white/10 shrink-0">
         <div className="flex items-center gap-2 bg-white/8 rounded-xl px-3 py-2 border border-white/10 focus-within:border-violet-500/50 transition-colors">
           <input
             ref={inputRef}
@@ -215,7 +221,7 @@ export default function ActiveChatPanel() {
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Type a message…"
-            className="flex-1 bg-transparent text-[12px] text-white placeholder-white/30 outline-none"
+            className="flex-1 min-w-0 bg-transparent text-[12px] text-white placeholder-white/30 outline-none"
             autoComplete="off"
           />
           <button
