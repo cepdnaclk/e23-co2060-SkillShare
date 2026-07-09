@@ -1,5 +1,6 @@
 package com.zenware.skillsharebackend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -22,11 +23,17 @@ public class ChatMessage {
     // The user who typed the message
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "authorities",
+            "accountNonExpired", "accountNonLocked", "credentialsNonExpired", "enabled",
+            "userSkills", "sessions", "feedbacks"})
     private User sender;
 
     // The user receiving the message
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "authorities",
+            "accountNonExpired", "accountNonLocked", "credentialsNonExpired", "enabled",
+            "userSkills", "sessions", "feedbacks"})
     private User receiver;
 
     // Using columnDefinition = "TEXT" allows for long messages

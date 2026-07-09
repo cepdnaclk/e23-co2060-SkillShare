@@ -81,6 +81,11 @@ public class User implements UserDetails {
     @Builder.Default
     private Boolean isActive = true;
 
+    // ADD THIS: Idempotency Flag
+    @Column(name = "is_profile_completed")
+    @Builder.Default
+    private Boolean isProfileCompleted = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

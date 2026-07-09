@@ -35,7 +35,13 @@ public class UserService {
     public User updateMyBio(String bio) {
         User me = getAuthenticatedUser();
         me.setBio(bio);
-        gamificationService.awardProfileCompletionXp(me);
+        
+        // Idempotency Check
+        if (me.getIsProfileCompleted() == null || !me.getIsProfileCompleted()) {
+            gamificationService.awardProfileCompletionXp(me);
+            me.setIsProfileCompleted(true);
+        }
+        
         return userRepository.save(me);
     }
 }

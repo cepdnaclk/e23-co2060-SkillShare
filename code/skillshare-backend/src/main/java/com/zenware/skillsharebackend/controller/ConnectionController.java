@@ -1,6 +1,9 @@
 package com.zenware.skillsharebackend.controller;
 
+import com.zenware.skillsharebackend.dto.ConnectionDto;
+import com.zenware.skillsharebackend.dto.UserPublicDto;
 import com.zenware.skillsharebackend.entity.Connection;
+import com.zenware.skillsharebackend.entity.User;
 import com.zenware.skillsharebackend.service.ConnectionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/connections")
@@ -49,16 +53,40 @@ public class ConnectionController {
 
     // 4. Get Pending Requests (To populate the notification bell / pending tab)
     @GetMapping("/pending")
-    public ResponseEntity<List<Connection>> getPendingRequests() {
-        // NOTE: If you get an infinite JSON recursion error here, you will need to
-        // add @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-        // to your User entity, or map this to a specific ConnectionDto!
-        return ResponseEntity.ok(connectionService.getMyPendingRequests());
+    public ResponseEntity<List<ConnectionDto>> getPendingRequests() {
+        List<ConnectionDto> dtos = connectionService.getMyPendingRequests().stream()
+                .map(this::mapToConnectionDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
     // 5. Get All Friends (To populate the chat sidebar or network page)
     @GetMapping("/friends")
-    public ResponseEntity<List<Connection>> getMyFriends() {
-        return ResponseEntity.ok(connectionService.getMyFriends());
+    public ResponseEntity<List<ConnectionDto>> getMyFriends() {
+        List<ConnectionDto> dtos = connectionService.getMyFriends().stream()
+                .map(this::mapToConnectionDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
+    }
+
+    private ConnectionDto mapToConnectionDto(Connection connection) {
+        return ConnectionDto.builder()
+                .id(connection.getId())
+                .status(connection.getStatus().name())
+                .sender(mapToPublicDto(connection.getSender()))
+                .receiver(mapToPublicDto(connection.getReceiver()))
+                .build();
+    }
+
+    private UserPublicDto mapToPublicDto(User user) {
+        return UserPublicDto.builder()
+                .id(user.getId())
+                .fullName(user.getFullName())
+                .bio(user.getBio())
+                .profilePictureUrl(user.getProfilePictureUrl())
+                .xp(user.getXp() != null ? user.getXp() : 0)
+                .level(user.getLevel() != null ? user.getLevel() : 1)
+                .reputationScore(user.getReputationScore() != null ? user.getReputationScore() : 0)
+                .build();
     }
 }
