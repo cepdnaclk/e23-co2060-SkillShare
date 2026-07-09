@@ -141,10 +141,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 🔥 THE HYDRATION MERGE: Combine profile data with initial auth payload fields
       const completeUser: User = {
         ...fullProfile,
-        credits: fullProfile.credits ?? response.credits ?? 100, // Safe fallback to 100 if both are empty
-        level: fullProfile.level ?? response.level ?? 1,
-        xp: fullProfile.xp ?? response.xp ?? 0,
-        reputationScore: fullProfile.reputationScore ?? response.reputationScore ?? 0
+        credits: fullProfile.credits ?? response.credits, // Safe fallback to 100 if both are empty
+        level: fullProfile.level ?? response.level,
+        xp: fullProfile.xp ?? response.xp,
+        reputationScore: fullProfile.reputationScore ?? response.reputationScore
       };
 
       setUser(completeUser);
@@ -197,15 +197,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       //  FIX: Use functional state update to preserve existing gamified scores
       setUser((prevUser) => {
         if (!prevUser) return freshUser;
-        const completeUser: User = {
+        return {
           ...freshUser,
-          id: freshUser.id ?? prevUser.id, // Ensure ID isn't lost if backend uses different naming
-          credits: freshUser.credits ?? prevUser.credits ?? 0, // 🌟 Preserves your credits!
-          level: freshUser.level ?? prevUser.level ?? 1,
-          xp: freshUser.xp ?? prevUser.xp ?? 0,
+          // Always pick the new incoming database total first.
+          // Only fallback to prevUser if the field is missing from the payload.
+          credits: freshUser.credits !== undefined ? freshUser.credits : prevUser.credits,
+          level: freshUser.level !== undefined ? freshUser.level : prevUser.level,
+          xp: freshUser.xp !== undefined ? freshUser.xp : prevUser.xp,
         };
-        setStoredUser(completeUser); // Persist the fully hydrated user back to localStorage
-        return completeUser;
       });
     } catch {
       // silent — don't log out on a profile refresh failure
