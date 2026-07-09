@@ -21,16 +21,21 @@ class ChatSocketService {
         Authorization: `Bearer ${token}`,
       },
       reconnectDelay: 5000,
+      debug: (str) => {
+        console.warn(`[STOMP Debug] ${str}`);
+      },
       onConnect: () => {
         this.connected = true;
         console.log("[ChatSocket] Connected to STOMP broker.");
 
         this.client!.subscribe("/user/queue/messages", (frame: IMessage) => {
           try {
+            console.warn("🔔 [ChatSocket] RAW MESSAGE RECEIVED:", frame.body);
             const msg: ChatMessageDto = JSON.parse(frame.body);
+            console.warn("🔔 [ChatSocket] PARSED MESSAGE:", msg);
             this.messageHandlers.forEach((h) => h(msg));
-          } catch {
-            console.warn("[ChatSocket] Failed to parse incoming message", frame.body);
+          } catch (e) {
+            console.warn("[ChatSocket] Failed to parse incoming message", frame.body, e);
           }
         });
 

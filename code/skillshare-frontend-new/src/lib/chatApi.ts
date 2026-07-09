@@ -49,7 +49,7 @@ export interface ChatMessageDto {
 export interface TypingStatusDto {
   senderId: string;
   receiverId: string;
-  typing: boolean;
+  isTyping: boolean;
 }
 
 // ─── Internal fetch helper ────────────────────────────────────────────────────

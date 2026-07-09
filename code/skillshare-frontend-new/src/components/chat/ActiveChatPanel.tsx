@@ -74,7 +74,7 @@ export default function ActiveChatPanel() {
       chatSocketService.sendTyping({
         senderId: user.id,
         receiverId: activeConversation.contactId,
-        typing: true,
+        isTyping: true,
       });
 
       // Debounce "isTyping: false"
@@ -84,7 +84,7 @@ export default function ActiveChatPanel() {
           chatSocketService.sendTyping({
             senderId: user.id,
             receiverId: activeConversation.contactId,
-            typing: false,
+            isTyping: false,
           });
         }
       }, TYPING_DEBOUNCE);
