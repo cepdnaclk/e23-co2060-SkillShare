@@ -11,13 +11,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
+import com.zenware.skillsharebackend.service.JwtService;
 
 @Component
 @RequiredArgsConstructor
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
-    // Inject your existing JWT validation service here!
-    // private final JwtService jwtService;
+    private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
     @Override
@@ -35,20 +35,25 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                 String token = authHeader.substring(7);
 
                 // 1. Extract email/username from your JWT
-                // String userEmail = jwtService.extractUsername(token);
-                String userEmail = "placeholder@test.com"; // Replace with actual JWT extraction
+                String userEmail = jwtService.extractUsername(token);
 
                 // 2. Validate token and load user
-                // if (jwtService.isTokenValid(token, userDetails)) {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+                if (userEmail != null) {
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+                    if (jwtService.isTokenValid(token, userDetails)) {
+                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.getAuthorities()
+                        );
 
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities()
-                );
-
-                // 3. Attach the authenticated user to the WebSocket session!
-                accessor.setUser(authentication);
-                // }
+                        // 3. Attach the authenticated user to the WebSocket session!
+                        accessor.setUser(authentication);
+                        System.out.println("✅ STOMP Auth Successful for User: " + userEmail);
+                    } else {
+                         System.out.println("❌ STOMP Auth Failed: Invalid Token for User: " + userEmail);
+                    }
+                }
+            } else {
+                 System.out.println("❌ STOMP Auth Failed: Missing or invalid Authorization header");
             }
         }
         return message;
