@@ -29,6 +29,7 @@ const OAuth2RedirectHandler = () => {
     handled.current = true;
 
     const token = searchParams.get("token");
+    const needsProfileCompletion = searchParams.get("needsProfileCompletion") === "true";
 
     if (!token) {
       navigate("/signup?error=OAuth2_Authentication_Failed", { replace: true });
@@ -37,7 +38,11 @@ const OAuth2RedirectHandler = () => {
 
     loginWithToken(token)
       .then(() => {
-        navigate("/dashboard", { replace: true });
+        if (needsProfileCompletion) {
+          navigate("/create-profile", { replace: true });
+        } else {
+          navigate("/dashboard", { replace: true });
+        }
       })
       .catch(() => {
         navigate("/signup?error=OAuth2_Authentication_Failed", { replace: true });

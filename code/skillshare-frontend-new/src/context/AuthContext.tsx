@@ -180,8 +180,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setTokenState(jwt);
 
       const fullUser = await usersApi.getById(userId);
-      setUser(fullUser);
-      setStoredUser(fullUser);
+      
+      const completeUser: User = {
+        ...fullUser,
+        // For OAuth2, fullUser (from UserPublicDto) is missing credits, so we read it from the JWT payload
+        credits: payload.credits ?? fullUser.credits ?? 0,
+      };
+
+      setUser(completeUser);
+      setStoredUser(completeUser);
     } catch (err) {
       const apiErr = err as ApiError;
       setError(apiErr.message ?? "OAuth2 authentication failed.");
