@@ -14,6 +14,8 @@ import com.zenware.skillsharebackend.dto.TypingStatusDto;
 
 import java.time.LocalDateTime;
 
+import org.springframework.messaging.simp.user.SimpUserRegistry;
+
 @Controller // Notice this is @Controller, not @RestController!
 @RequiredArgsConstructor
 public class ChatController {
@@ -21,6 +23,7 @@ public class ChatController {
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
+    private final SimpUserRegistry simpUserRegistry;
 
     @MessageMapping("/chat")
     public void processMessage(@Payload ChatMessageDto chatMessageDto) {
@@ -28,6 +31,10 @@ public class ChatController {
         System.out.println("Sender ID: " + chatMessageDto.getSenderId());
         System.out.println("Receiver ID: " + chatMessageDto.getReceiverId());
         System.out.println("Content: " + chatMessageDto.getContent());
+        System.out.println("Total STOMP Connected Users: " + simpUserRegistry.getUserCount());
+        simpUserRegistry.getUsers().forEach(user -> 
+            System.out.println(" - Connected STOMP User: " + user.getName() + " (Sessions: " + user.getSessions().size() + ")")
+        );
 
         try {
             // 1. Find the sender and receiver in the database
