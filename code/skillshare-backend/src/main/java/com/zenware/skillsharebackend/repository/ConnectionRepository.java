@@ -39,6 +39,7 @@ public interface ConnectionRepository extends JpaRepository<Connection, UUID> {
      */
     @Query("SELECT c FROM Connection c " +
             "JOIN FETCH c.sender " +
+            "JOIN FETCH c.receiver " +
             "WHERE c.receiver.id = :receiverId AND c.status = :status")
     List<Connection> findByReceiverIdAndStatus(@Param("receiverId") UUID receiverId, @Param("status") ConnectionStatus status);
 }
