@@ -67,8 +67,15 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         // Generate the custom JWT using your JwtService
         String token = jwtService.generateToken(user);
 
+        // Check if the user needs to complete their profile
+        boolean needsProfileCompletion = !Boolean.TRUE.equals(user.getIsProfileCompleted());
+
         // Redirect to the frontend with the token attached to the URL
         String frontendRedirectUrl = redirectUrl + "?token=" + token;
+        if (needsProfileCompletion) {
+            frontendRedirectUrl += "&needsProfileCompletion=true";
+        }
+        
         getRedirectStrategy().sendRedirect(request, response, frontendRedirectUrl);
     }
 }
