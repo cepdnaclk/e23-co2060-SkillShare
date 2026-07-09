@@ -220,6 +220,8 @@ export interface User {
   bio?: string;
   credits?: number;
   reputationScore?: number;
+  level?: number;
+  xp?: number;
   ratingAvg?: number;
   role: string;
   isActive?: boolean;
@@ -228,11 +230,15 @@ export interface User {
 
 
 export interface AuthResponse {
-  token: string;
-  userId: string;
-  fullName: string;
-  email: string;
-  role: string;
+    token: string;
+    userId: string;
+    fullName: string;
+    email: string;
+    role: string;
+    credits: number;       // 👈 Add this
+    level?: number;        // 👈 Add this
+    xp?: number;           // 👈 Add this
+    reputationScore?: number; // 👈 Add this
 }
 
 export interface Skill {
