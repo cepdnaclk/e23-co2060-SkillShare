@@ -20,8 +20,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // This is the URL the React frontend will use to open the connection.
         // setAllowedOriginPatterns("*") prevents CORS blocks during local development.
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
-                .withSockJS(); // Fallback for older browsers
+                .setAllowedOriginPatterns("*");
+                //.withSockJS(); // Fallback for older browsers
     }
 
     @Override
