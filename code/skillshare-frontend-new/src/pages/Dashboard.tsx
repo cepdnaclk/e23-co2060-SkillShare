@@ -142,7 +142,7 @@ const Dashboard = () => {
 
   const upcomingLearner = learnerSessions.filter(s => ["PENDING", "ACCEPTED"].includes(s.status));
   const upcomingMentor = mentorSessions.filter(s => s.status === "PENDING");
-  const teachSkills = skills.filter(s => s.id?.skillType === "TEACH");
+  const teachSkills = skills.filter(s => s.skillType === "TEACH");
 
   const stats = [
     { icon: BookOpen, label: "Booked Sessions",  value: upcomingLearner.length, grad: "from-violet-500 to-purple-600", href: "/sessions" },
@@ -367,12 +367,12 @@ const Dashboard = () => {
                 <div className="flex flex-wrap gap-2">
                   {teachSkills.map((us, i) => (
                       <Badge
-                          key={`${us.id?.skillId}-${us.id?.skillType}`}
+                          key={`${us.skillId}-${us.skillType}`}
                           className={`text-white border-0 px-3 py-1 ${
                               ["bg-fuchsia-500", "bg-violet-500", "bg-orange-500", "bg-purple-500"][i % 4]
                           }`}
                       >
-                        {us.skill?.name ?? "Unnamed Skill"}
+                        {us.skillName ?? "Unnamed Skill"}
                       </Badge>
                   ))}
                 </div>
