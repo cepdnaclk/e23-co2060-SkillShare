@@ -50,17 +50,19 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         // Check if user exists in database
         Optional<User> userOptional = userRepository.findByEmail(email);
         User user;
+        boolean isNewRegistration = false;
 
         if (userOptional.isPresent()) {
             user = userOptional.get();
         } else {
+            isNewRegistration = true;
             // Create new user
             user = new User();
             user.setEmail(email);
             // We use fullName as defined in your User entity
             user.setFullName(name);
             user.setAuthProvider(AuthProvider.GITHUB);
-            user.setCredits(50); // Start them off with some Escrow credits!
+            user.setCredits(100); // Start them off with some Escrow credits!
             user = userRepository.save(user);
         }
 
@@ -69,6 +71,12 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         // Redirect to the frontend with the token attached to the URL
         String frontendRedirectUrl = redirectUrl + "?token=" + token;
+        
+        // Only force profile completion if this is their very first time registering via GitHub
+        if (isNewRegistration) {
+            frontendRedirectUrl += "&needsProfileCompletion=true";
+        }
+        
         getRedirectStrategy().sendRedirect(request, response, frontendRedirectUrl);
     }
 }
