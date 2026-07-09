@@ -4,7 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
+import { ChatProvider } from "@/context/ChatContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import FloatingChatWidget from "@/components/chat/FloatingChatWidget";
 
 import Landing from "./pages/Landing";
 import SignUp from "./pages/SignUp";
@@ -17,6 +19,7 @@ import Notifications from "./pages/Notifications";
 import Sessions from "./pages/Sessions";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import OAuth2RedirectHandler from "@/components/OAuth2RedirectHandler";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -25,14 +28,19 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner richColors position="top-right" />
-        <BrowserRouter>
+      <ChatProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner richColors position="top-right" />
+          <BrowserRouter>
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Landing />} />
             <Route path="/signup" element={<SignUp />} />
+
+            {/* GitHub OAuth2 redirect handler — must be public (not behind ProtectedRoute)
+                because the JWT arrives here for the first time and auth state is not yet set. */}
+            <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
 
             {/* Protected routes */}
             <Route path="/create-profile" element={
@@ -65,8 +73,10 @@ const App = () => (
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <FloatingChatWidget />
         </BrowserRouter>
       </TooltipProvider>
+    </ChatProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

@@ -1,18 +1,21 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search as SearchIcon, Filter, X, ChevronRight, BookOpen, Star } from "lucide-react";
+import { Search as SearchIcon, X, ChevronRight, BookOpen, Star, Filter, Users, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { publicSkillsApi, userSkillsApi, type Skill, type UserSkill ,type UserSearchResponse } from "@/lib/api";
+import { publicSkillsApi, userSkillsApi, type Skill, type UserSkill, type UserSearchResponse } from "@/lib/api";
 import { SkeletonList } from "@/components/SkeletonCard";
 import ErrorBanner from "@/components/ErrorBanner";
 
-// Debounce timer
 let searchTimer: ReturnType<typeof setTimeout>;
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0 },
+};
 
 const Search = () => {
   const navigate = useNavigate();
@@ -21,13 +24,11 @@ const Search = () => {
   const [matchedUsers, setMatchedUsers] = useState<UserSearchResponse[]>([]);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
   const [mentors, setMentors] = useState<UserSkill[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
   const [nameFilter, setNameFilter] = useState("");
   const [loadingSkills, setLoadingSkills] = useState(false);
   const [loadingMentors, setLoadingMentors] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Search skills by query (debounced)
   const handleQueryChange = useCallback((q: string) => {
     setQuery(q);
     clearTimeout(searchTimer);
@@ -35,7 +36,7 @@ const Search = () => {
     searchTimer = setTimeout(async () => {
       setLoadingSkills(true);
       try {
-        const [skills,users]  = await Promise.all([
+        const [skills, users] = await Promise.all([
           publicSkillsApi.search(q),
           userSkillsApi.searchProfiles(q)
         ]);
@@ -48,10 +49,10 @@ const Search = () => {
     }, 350);
   }, []);
 
-  // When a skill is selected, fetch mentors for it
   const selectSkill = useCallback(async (skill: Skill) => {
     setSelectedSkill(skill);
     setMatchedSkills([]);
+    setMatchedUsers([]);
     setQuery(skill.name);
     setLoadingMentors(true);
     setError(null);
@@ -59,8 +60,7 @@ const Search = () => {
       const result = await userSkillsApi.getMentorsBySkill(String(skill.id));
       setMentors(result);
     } catch (err: unknown) {
-      const e = err as { message?: string };
-      setError(e.message ?? "Failed to load mentors.");
+      setError((err as { message?: string }).message ?? "Failed to load mentors.");
       setMentors([]);
     } finally { setLoadingMentors(false); }
   }, []);
@@ -69,28 +69,28 @@ const Search = () => {
     setQuery(""); setMatchedSkills([]); setSelectedSkill(null); setMentors([]); setError(null); setNameFilter("");
   };
 
-  const getInitials = (name: string) =>
-    name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  const getInitials = (name: string) => name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
   return (
     <AppLayout>
-      <div className="p-6 md:p-8 max-w-4xl mx-auto pb-24 md:pb-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl md:text-3xl font-heading font-bold mb-1">Find a Mentor</h1>
-          <p className="text-muted-foreground text-sm mb-6">Search by skill to discover mentors who can teach you.</p>
-        </motion.div>
+      <div className="p-6 md:p-8 max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 pb-24 md:pb-8">
+        
+        {/* --- LEFT COLUMN: Main Search Content --- */}
+        <div className="flex-1 max-w-3xl w-full">
+          
+          <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-1 mb-6 p-5 rounded-2xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400 text-white shadow-md">
+            <h1 className="text-2xl md:text-3xl font-heading font-bold tracking-tight">Find a Mentor</h1>
+            <p className="text-white/90 text-sm">Discover experts to help you master new skills.</p>
+          </motion.div>
 
-        {/* Search bar */}
-        <div className="relative mb-4">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
+          <div className="relative mb-6">
+            <div className="relative">
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                id="skill-search-input"
-                placeholder="Search for a skill (e.g. Python, React, UI/UX)…"
+                placeholder="Search for a skill (e.g., Python, React)..."
                 value={query}
                 onChange={(e) => handleQueryChange(e.target.value)}
-                className="pl-10 pr-10 bg-secondary border-border h-11"
+                className="pl-10 pr-10 bg-secondary border-2 border-border/80 h-12 rounded-xl focus:border-violet-500 transition-colors"
               />
               {query && (
                 <button onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -98,157 +98,93 @@ const Search = () => {
                 </button>
               )}
             </div>
-            <Button
-              variant={showFilters ? "default" : "outline"}
-              size="icon"
-              className="h-11 w-11"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="w-4 h-4" />
-            </Button>
+
+            {/* Suggestions Dropdown */}
+            <AnimatePresence>
+              {(matchedUsers.length > 0 || matchedSkills.length > 0) && (
+                <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="absolute top-full mt-2 w-full z-50 bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
+                  {matchedUsers.map(u => (
+                    <button key={u.id} onClick={() => navigate(`/profile/${u.id}`)} className="w-full text-left px-4 py-3 text-sm hover:bg-secondary flex items-center justify-between">
+                      <span className="font-medium">{u.fullName}</span>
+                      <Badge variant="outline">User</Badge>
+                    </button>
+                  ))}
+                  {matchedSkills.map(s => (
+                    <button key={s.id} onClick={() => selectSkill(s)} className="w-full text-left px-4 py-3 text-sm hover:bg-secondary flex items-center justify-between transition-colors">
+                      <span className="font-medium">{s.name}</span>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          {/* Skill suggestion dropdown */}
-          <AnimatePresence>
-            {matchedUsers.map(user => (
-                <button
-                    key={user.id}
-                    onClick={() => navigate(`/profile/${user.id}`)}
-                    className="w-full text-left px-4 py-3 text-sm hover:bg-secondary flex items-center justify-between"
+          {selectedSkill && (
+            <div className="mb-6 flex items-center justify-between bg-secondary/50 p-4 rounded-xl border border-border">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Mentors for:</span>
+                <Badge className="bg-violet-500/10 text-violet-600 border-violet-500/20">{selectedSkill.name}</Badge>
+              </div>
+              <Input 
+                placeholder="Filter by name..." 
+                className="w-48 h-9 text-sm" 
+                value={nameFilter} 
+                onChange={(e) => setNameFilter(e.target.value)} 
+              />
+            </div>
+          )}
+
+          <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-4" />
+
+          {loadingMentors ? <SkeletonList count={3} /> : (
+            <div className="space-y-3">
+              {mentors.filter(us => us.user.fullName.toLowerCase().includes(nameFilter.toLowerCase())).map((us, i) => (
+                <motion.div 
+                  key={us.id} 
+                  variants={fadeUp} initial="hidden" animate="show" transition={{ delay: i * 0.05 }}
+                  onClick={() => navigate(`/profile/${us.user.id}`, { state: { skillId: selectedSkill?.id } })}
+                  className="p-5 rounded-2xl border-2 border-border/60 hover:border-violet-500/50 bg-card hover:bg-secondary/20 transition-all cursor-pointer flex items-start gap-4 shadow-sm"
                 >
-                  <div>
-                    <span className="font-medium">{user.fullName}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">User</span>
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 flex items-center justify-center font-bold text-violet-600">
+                    {getInitials(us.user.fullName)}
                   </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                </button>
-            ))}
-            {(matchedSkills.length > 0 || loadingSkills) && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                className="absolute top-full mt-1 left-0 right-12 z-50 bg-card border border-border rounded-xl shadow-elevated overflow-hidden"
-              >
-                {loadingSkills ? (
-                  <div className="px-4 py-3 text-sm text-muted-foreground">Searching skills…</div>
-                ) : (
-                  matchedSkills.slice(0, 8).map(skill => (
-                    <button
-                      key={skill.id}
-                      onClick={() => selectSkill(skill)}
-                      className="w-full text-left px-4 py-3 text-sm hover:bg-secondary transition-colors flex items-center justify-between group"
-                    >
-                      <div>
-                        <span className="font-medium">{skill.name}</span>
-                        {skill.category && (
-                          <span className="ml-2 text-xs text-muted-foreground">{skill.category}</span>
-                        )}
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-semibold">{us.user.fullName}</h3>
+                      <div className="flex items-center gap-1 text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md text-xs font-bold">
+                        <Star className="w-3 h-3 fill-amber-500" /> {us.user.ratingAvg?.toFixed(1) ?? "New"}
                       </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </button>
-                  ))
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{us.user.bio || "No bio available."}</p>
+                    <div className="mt-3 flex gap-2">
+                      <Badge variant="secondary">Rep: {us.user.reputationScore}</Badge>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Selected skill header */}
-        <AnimatePresence>
-          {selectedSkill && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mb-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Showing mentors for:</span>
-                <Badge className="bg-primary/15 text-primary border-primary/20 gap-1">
-                  <BookOpen className="w-3 h-3" /> {selectedSkill.name}
-                  <button onClick={clearSearch}><X className="w-3 h-3 ml-1" /></button>
-                </Badge>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Name filter – only visible when mentors are loaded */}
-        {selectedSkill && mentors.length > 0 && (
-          <div className="relative mb-4">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              id="name-filter-input"
-              placeholder="Filter results by mentor name…"
-              value={nameFilter}
-              onChange={(e) => setNameFilter(e.target.value)}
-              className="pl-10 pr-10 bg-secondary border-border h-10 text-sm"
-            />
-            {nameFilter && (
-              <button onClick={() => setNameFilter("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                <X className="w-4 h-4" />
-              </button>
-            )}
+        {/* --- RIGHT COLUMN: Analytics Sidebar --- */}
+        <div className="hidden lg:flex flex-col w-80 shrink-0 space-y-6">
+          <div className="p-6 rounded-2xl bg-card border-2 border-border/80 shadow-lg relative overflow-hidden">
+             <h4 className="font-heading font-extrabold text-base mb-5 flex items-center gap-2.5">
+               <Sparkles className="w-5 h-5 text-violet-500" /> Mentor Stats
+             </h4>
+             <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Active Mentors</span>
+                  <span className="font-bold">{mentors.length}</span>
+                </div>
+                <div className="bg-secondary/50 p-4 rounded-xl text-center">
+                  <Users className="w-8 h-8 mx-auto text-violet-500 mb-2" />
+                  <p className="text-xs text-muted-foreground">Ready to help you grow your skills today.</p>
+                </div>
+             </div>
           </div>
-        )}
-
-        <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-4" />
-
-        {/* Results */}
-        {loadingMentors ? (
-          <SkeletonList count={4} />
-        ) : selectedSkill && mentors.length === 0 && !loadingMentors ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16 text-muted-foreground">
-            <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-20" />
-            <p className="font-medium">No mentors found for "{selectedSkill.name}"</p>
-            <p className="text-sm mt-1">Try a different skill or check back later.</p>
-          </motion.div>
-        ) : !selectedSkill && !query ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16 text-muted-foreground">
-            <SearchIcon className="w-12 h-12 mx-auto mb-4 opacity-20" />
-            <p className="font-medium">Search for a skill to find mentors</p>
-            <p className="text-sm mt-1">Type a skill name above and select from the suggestions.</p>
-          </motion.div>
-        ) : (
-          <div className="space-y-3">
-            {mentors
-              .filter(us => !nameFilter || us.user.fullName.toLowerCase().includes(nameFilter.toLowerCase()))
-              .map((us, i) => {
-              const u = us.user;
-              const initials = getInitials(u.fullName);
-              return (
-                <motion.div
-                  key={`${u.id}-${us.id.skillType}`}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  onClick={() => navigate(`/profile/${u.id}`, { state: { skillId: selectedSkill?.id } })}                  className="p-5 rounded-2xl bg-card border border-border glow-border cursor-pointer flex items-start gap-4"
-                >
-                  {/* Avatar */}
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-heading font-bold text-sm flex-shrink-0">
-                    {initials}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <h3 className="font-heading font-semibold">{u.fullName}</h3>
-                      <div className="flex items-center gap-1 text-yellow-400">
-                        <Star className="w-3.5 h-3.5 fill-yellow-400" />
-                        <span className="text-xs font-medium">{u.ratingAvg?.toFixed(1) ?? "New"}</span>
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">{u.email}</p>
-                    {u.bio && <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{u.bio}</p>}
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Star className="w-3 h-3" /> Rep: {u.reputationScore}
-                      </span>
-                      <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">
-                        Teaches {selectedSkill?.name}
-                      </Badge>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
+        </div>
       </div>
     </AppLayout>
   );
