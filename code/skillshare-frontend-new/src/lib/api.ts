@@ -240,9 +240,46 @@ export const notificationsApi = {
       apiFetch<string>(`/api/notifications/${notificationId}/read`, { method: "PUT" }),
 };
 
+export const connectionsApi = {
+  getStatus: (userId: string) =>
+      apiFetch<{ status: string; connectionId: string | null }>(`/api/connections/status/${userId}`),
+
+  sendRequest: (userId: string) =>
+      apiFetch<{ status: string; message: string }>(`/api/connections/request/${userId}`, { method: "POST" }),
+
+  acceptRequest: (connectionId: string) =>
+      apiFetch<{ status: string; message: string }>(`/api/connections/accept/${connectionId}`, { method: "PUT" }),
+
+  rejectRequest: (connectionId: string) =>
+      apiFetch<{ status: string; message: string }>(`/api/connections/reject/${connectionId}`, { method: "DELETE" }),
+
+  getFriends: () =>
+      apiFetch<ConnectionDto[]>("/api/connections/friends"),
+
+  getPending: () =>
+      apiFetch<ConnectionDto[]>("/api/connections/pending"),
+};
+
 // ============================================================
 // TypeScript types matching backend entities/DTOs
 // ============================================================
+export interface ConnectionUserDto {
+  id: string;
+  fullName: string;
+  bio?: string;
+  profilePictureUrl?: string;
+  xp: number;
+  level: number;
+  reputationScore: number;
+}
+
+export interface ConnectionDto {
+  id: string;
+  status: string;
+  sender: ConnectionUserDto;
+  receiver: ConnectionUserDto;
+}
+
 export interface User {
   id: string; //This must be userId
   fullName: string;
@@ -256,7 +293,7 @@ export interface User {
   role: string;
   isActive?: boolean;
   createdAt?: string;
-    profilePictureUrl?: string;// 👈 Add this
+  profilePictureUrl?: string;
 }
 
 

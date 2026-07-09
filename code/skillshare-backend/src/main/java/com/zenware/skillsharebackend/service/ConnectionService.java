@@ -155,4 +155,41 @@ public class ConnectionService {
         User currentUser = getAuthenticatedUser();
         return connectionRepository.findAllAcceptedConnectionsForUser(currentUser.getId());
     }
+
+    // 6. GET CONNECTION STATUS (For dynamic UI rendering on profile pages)
+    public com.zenware.skillsharebackend.dto.ConnectionStatusDto getConnectionStatus(UUID targetUserId) {
+        User currentUser = getAuthenticatedUser();
+        
+        if (currentUser.getId().equals(targetUserId)) {
+            return com.zenware.skillsharebackend.dto.ConnectionStatusDto.builder().status("NONE").build();
+        }
+
+        Optional<Connection> existingConnectionOpt = connectionRepository.findExistingConnection(currentUser.getId(), targetUserId);
+
+        if (existingConnectionOpt.isEmpty()) {
+            return com.zenware.skillsharebackend.dto.ConnectionStatusDto.builder().status("NONE").build();
+        }
+
+        Connection connection = existingConnectionOpt.get();
+
+        if (connection.getStatus() == ConnectionStatus.ACCEPTED) {
+            return com.zenware.skillsharebackend.dto.ConnectionStatusDto.builder()
+                    .status("FRIENDS")
+                    .connectionId(connection.getId())
+                    .build();
+        }
+
+        // If it's pending, check who sent it
+        if (connection.getSender().getId().equals(currentUser.getId())) {
+            return com.zenware.skillsharebackend.dto.ConnectionStatusDto.builder()
+                    .status("PENDING_SENT")
+                    .connectionId(connection.getId())
+                    .build();
+        } else {
+            return com.zenware.skillsharebackend.dto.ConnectionStatusDto.builder()
+                    .status("PENDING_RECEIVED")
+                    .connectionId(connection.getId())
+                    .build();
+        }
+    }
 }
