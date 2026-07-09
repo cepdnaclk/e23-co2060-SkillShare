@@ -57,9 +57,12 @@ public class GamificationService {
         // 2. Fetch the newly updated user record with the fresh XP.
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        
+        // Ensure the in-memory object has the correct XP since addXpAtomically bypasses the L1 cache.
+        user.setXp((user.getXp() != null ? user.getXp() : 0) + xpToAdd);
 
         // 3. Check for a Level Up!
-        int currentXp = user.getXp() != null ? user.getXp() : 0;
+        int currentXp = user.getXp();
         int expectedLevel = calculateLevel(currentXp);
 
         int currentLevel = user.getLevel() != null ? user.getLevel() : 1;

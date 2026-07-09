@@ -143,8 +143,25 @@ public class FeedbackService {
                 .build();
     }
 
-    public List<Feedback> getUserFeedback(UUID userId) {
-        return feedbackRepository.findByReceiverId(userId);
+    @Transactional
+    public List<FeedbackResponse> getUserFeedback(UUID userId) {
+        return feedbackRepository.findByReceiverId(userId).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    private FeedbackResponse toDto(Feedback feedback) {
+        return FeedbackResponse.builder()
+                .id(feedback.getId())
+                .sessionId(feedback.getSession().getId())
+                .giverId(feedback.getGiver().getId())
+                .giverName(feedback.getGiver().getFullName())
+                .receiverId(feedback.getReceiver().getId())
+                .receiverName(feedback.getReceiver().getFullName())
+                .feedbackTag(feedback.getFeedbackTag())
+                .weight(feedback.getWeight())
+                .createdAt(feedback.getCreatedAt())
+                .build();
     }
 
     public List<FeedbackTagDto> getAllAvailableTags() {
