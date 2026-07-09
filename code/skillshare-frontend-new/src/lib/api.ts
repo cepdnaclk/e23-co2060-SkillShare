@@ -102,7 +102,7 @@ export const usersApi = {
       }),
 };
 
-/**
+    /**
  * Uploads a new profile picture binary stream to the backend
  * @param file The image file from the input element
  */
@@ -129,7 +129,7 @@ export const usersApi = {
     }
 
     return response.json();
-},
+}
 };
 
 export const skillsApi = {
@@ -341,3 +341,9 @@ export interface UserSearchResponse {
     ratingAvg?: number;
     reputationScore?: number;
 }
+
+export interface ProfilePictureResponse {
+    imageUrl: string;
+}
+
+
