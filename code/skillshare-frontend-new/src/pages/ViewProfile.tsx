@@ -34,6 +34,7 @@ import {
   type ApiError,
 } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useChat } from "@/context/ChatContext";
 import SkeletonCard from "@/components/SkeletonCard";
 import ErrorBanner from "@/components/ErrorBanner";
 import {
@@ -59,6 +60,7 @@ const ViewProfile = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user: me } = useAuth();
+  const { openWidget, openChat } = useChat();
   const location = useLocation();
   const preselectedSkillId = location.state?.skillId;
 
@@ -689,6 +691,17 @@ const ViewProfile = () => {
                     <Button
                         variant="outline"
                         className="flex-1 h-12 gap-2 border-border/80 hover:bg-secondary text-foreground font-extrabold text-sm uppercase tracking-wider rounded-2xl shadow-sm transition-colors"
+                        onClick={() => {
+                          openWidget();
+                          openChat({
+                            contactId: mentor.id,
+                            contactName: mentor.fullName,
+                            contactProfilePicture: null,
+                            lastMessage: "",
+                            lastMessageTime: null,
+                            unreadCount: 0,
+                          });
+                        }}
                     >
                       <MessageSquare className="w-4 h-4 text-fuchsia-400 shrink-0" /> Launch Chat
                     </Button>
