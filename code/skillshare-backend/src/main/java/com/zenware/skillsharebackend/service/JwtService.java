@@ -25,8 +25,10 @@ public class JwtService {
     // 1. GENERATE TOKEN (For when a user logs in)
     public String generateToken(UserDetails userDetails) {
         if (userDetails instanceof com.zenware.skillsharebackend.entity.User) {
+            com.zenware.skillsharebackend.entity.User user = (com.zenware.skillsharebackend.entity.User) userDetails;
             Map<String, Object> extraClaims = new HashMap<>();
-            extraClaims.put("userId", ((com.zenware.skillsharebackend.entity.User) userDetails).getId().toString());
+            extraClaims.put("userId", user.getId().toString());
+            extraClaims.put("credits", user.getCredits());
             return generateToken(extraClaims, userDetails);
         }
         return generateToken(new HashMap<>(), userDetails);
