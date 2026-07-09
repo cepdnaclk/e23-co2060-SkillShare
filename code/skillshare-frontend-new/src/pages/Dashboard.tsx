@@ -138,7 +138,7 @@ const Dashboard = () => {
           setError(err.message ?? "Failed to load dashboard data.");
         })
         .finally(() => setLoading(false));
-  }, [user?.id]);
+  }, [user?.id, refreshUser]);
 
   const upcomingLearner = learnerSessions.filter(s => ["PENDING", "ACCEPTED"].includes(s.status));
   const upcomingMentor = mentorSessions.filter(s => s.status === "PENDING");
