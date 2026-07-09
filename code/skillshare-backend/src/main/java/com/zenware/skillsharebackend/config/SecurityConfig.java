@@ -40,7 +40,7 @@ public class SecurityConfig {
                         .authorizeHttpRequests(auth -> auth
                                 // WHITELIST: Anyone can access the login, register, and public skills endpoints
                                 // --- NEW: ADD OAUTH2 ENDPOINTS TO WHITELIST ---
-                                .requestMatchers("/api/auth/**", "/login/oauth2/**", "/oauth2/**").permitAll()
+                                .requestMatchers("/api/auth/**", "/login/oauth2/**", "/oauth2/**", "/ws/**").permitAll()
                                 .requestMatchers("/api/skills/**").permitAll()
 
                                 // BLACKLIST: Every other single endpoint requires a valid JWT Token!
