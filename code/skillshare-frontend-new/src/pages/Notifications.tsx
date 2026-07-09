@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Bell, Check, Clock, RefreshCw } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Bell, Check, Clock, RefreshCw, Sparkles, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AppLayout from "@/components/AppLayout";
 import { notificationsApi, type Notification, type ApiError } from "@/lib/api";
@@ -9,12 +9,12 @@ import ErrorBanner from "@/components/ErrorBanner";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
-const typeConfig: Record<string, { bg: string; color: string }> = {
-  SESSION_BOOKED:   { bg: "bg-primary/10",  color: "text-primary" },
-  SESSION_ACCEPTED: { bg: "bg-emerald-500/10", color: "text-emerald-400" },
-  SESSION_REJECTED: { bg: "bg-red-500/10",   color: "text-red-400" },
-  SYSTEM_ALERT:     { bg: "bg-muted",        color: "text-muted-foreground" },
-  FEEDBACK_RECEIVED:{ bg: "bg-accent/10",    color: "text-accent" },
+const typeConfig: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
+  SESSION_BOOKED:    { bg: "bg-primary/10",    color: "text-primary", icon: <Bell className="w-4 h-4" /> },
+  SESSION_ACCEPTED:  { bg: "bg-emerald-500/10", color: "text-emerald-500", icon: <Check className="w-4 h-4" /> },
+  SESSION_REJECTED:  { bg: "bg-red-500/10",     color: "text-red-500", icon: <Bell className="w-4 h-4" /> },
+  SYSTEM_ALERT:      { bg: "bg-amber-500/10",   color: "text-amber-500", icon: <Bell className="w-4 h-4" /> },
+  FEEDBACK_RECEIVED: { bg: "bg-violet-500/10",  color: "text-violet-500", icon: <Sparkles className="w-4 h-4" /> },
 };
 
 const fmtTime = (iso: string) => {
@@ -39,8 +39,7 @@ const Notifications = () => {
       const data = await notificationsApi.getInbox();
       setNotifications(data);
     } catch (err: unknown) {
-      const e = err as ApiError;
-      setError(e.message ?? "Failed to load notifications.");
+      setError((err as ApiError).message ?? "Failed to load notifications.");
     } finally { setLoading(false); }
   };
 
@@ -50,9 +49,7 @@ const Notifications = () => {
     try {
       await notificationsApi.markAsRead(id);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-    } catch {
-      toast.error("Could not mark as read.");
-    }
+    } catch { toast.error("Could not mark as read."); }
   };
 
   const markAllRead = async () => {
@@ -66,110 +63,86 @@ const Notifications = () => {
 
   return (
     <AppLayout>
-      <div className="p-6 md:p-8 max-w-2xl mx-auto pb-24 md:pb-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-6"
-        >
-          <div>
-            <h1 className="text-2xl md:text-3xl font-heading font-bold mb-1">Notifications</h1>
-            <p className="text-muted-foreground text-sm">
-              {unreadCount > 0 ? `${unreadCount} unread message${unreadCount > 1 ? "s" : ""}` : "All caught up!"}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="icon" onClick={load} title="Refresh">
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-            {unreadCount > 0 && (
-              <Button variant="outline" size="sm" onClick={markAllRead} className="gap-2">
-                <Check className="w-4 h-4" /> Mark all read
-              </Button>
-            )}
-          </div>
-        </motion.div>
+      <div className="p-6 md:p-8 max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 pb-24 md:pb-8">
+        
+        {/* --- LEFT COLUMN: Main List --- */}
+        <div className="flex-1 max-w-3xl w-full">
+          <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} 
+            className="flex flex-col gap-1 mb-6 p-5 rounded-2xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400 text-white shadow-md"
+          >
+            <h1 className="text-2xl md:text-3xl font-heading font-bold tracking-tight">Notifications</h1>
+            <p className="text-white/90 text-sm">Stay updated with your latest sessions and alerts.</p>
+          </motion.div>
 
-        <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-4" />
+          <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-4" />
 
-        {loading ? (
-          <SkeletonList count={4} />
-        ) : notifications.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <Bell className="w-12 h-12 mx-auto mb-4 opacity-20" />
-            <p className="font-medium">No notifications yet</p>
-            <p className="text-sm mt-1">We'll notify you when something happens.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {notifications.map((n, i) => {
-              const cfg = typeConfig[n.type] ?? typeConfig.SYSTEM_ALERT;
-              return (
-                <motion.div
-                  key={n.id}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                  onClick={async () => {
-                    if (!n.isRead) {
-                      await markAsRead(n.id);
-                    }
-                    console.log("notification type:", n.type, "message:", n.message);
-                    const message = n.message.toLowerCase();
-
-                    const isMentorNotification =
-                        message.includes("booked") ||
-                        message.includes("requested") ||
-                        message.includes("wants to learn") ||
-                        message.includes("learn from you") ||
-                        message.includes("your mentoring");
-
-                    const isLearnerNotification =
-                        message.includes("accepted") ||
-                        message.includes("rejected") ||
-                        message.includes("completed") ||
-                        message.includes("link") ||
-                        message.includes("your session request");
-
-                    const tab = isMentorNotification
-                        ? "mentor"
-                        : isLearnerNotification
-                            ? "learner"
-                            : null;
-
-                    if (tab) {
+          {loading ? <SkeletonList count={4} /> : notifications.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground rounded-2xl border-2 border-dashed border-border/60 bg-card">
+              <Bell className="w-12 h-12 mx-auto mb-4 opacity-20" />
+              <p className="font-medium text-foreground">All caught up!</p>
+              <p className="text-sm">No new notifications right now.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {notifications.map((n, i) => {
+                const cfg = typeConfig[n.type] ?? typeConfig.SYSTEM_ALERT;
+                return (
+                  <motion.div
+                    key={n.id}
+                    initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                    onClick={async () => {
+                      if (!n.isRead) await markAsRead(n.id);
+                      const msg = n.message.toLowerCase();
+                      const tab = msg.includes("booked") || msg.includes("requested") || msg.includes("learn") ? "mentor" : "learner";
                       navigate("/sessions", { state: { tab } });
-                    } else {
-                      return; // do not navigate
-                    }
-                  }}
-                  className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                    n.isRead
-                      ? "bg-card border-border"
-                      : "bg-primary/5 border-primary/20 shadow-sm"
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className={`w-9 h-9 rounded-lg ${cfg.bg} flex items-center justify-center flex-shrink-0`}>
-                      <Bell className={`w-4 h-4 ${cfg.color}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-0.5">
+                    }}
+                    className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
+                      n.isRead ? "bg-card border-border hover:border-violet-500/30" : "bg-card border-violet-500/40 shadow-sm"
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`w-10 h-10 rounded-xl ${cfg.bg} ${cfg.color} flex items-center justify-center flex-shrink-0`}>
+                        {cfg.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
                         <p className={`text-sm ${n.isRead ? "text-muted-foreground" : "font-semibold text-foreground"}`}>
                           {n.message}
                         </p>
-                        {!n.isRead && (
-                          <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1" />
-                        )}
+                        <span className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5" /> {fmtTime(n.createdAt)}
+                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {fmtTime(n.createdAt)}
-                      </span>
                     </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* --- RIGHT COLUMN: Sidebar --- */}
+        <div className="hidden lg:flex flex-col w-80 shrink-0 space-y-6">
+          <div className="p-6 rounded-2xl bg-card border-2 border-border/80 shadow-lg">
+            <h4 className="font-heading font-bold mb-4 flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-violet-500" /> Quick Actions
+            </h4>
+            <div className="space-y-3">
+              <Button variant="outline" className="w-full justify-start gap-2" onClick={load}>
+                <RefreshCw className="w-4 h-4" /> Refresh Inbox
+              </Button>
+              {unreadCount > 0 && (
+                <Button className="w-full justify-start gap-2 bg-gradient-to-r from-violet-500 to-purple-600 border-0 text-white" onClick={markAllRead}>
+                  <Check className="w-4 h-4" /> Mark All Read
+                </Button>
+              )}
+            </div>
+            <div className="mt-6 pt-6 border-t border-border text-center">
+              <p className="text-sm font-semibold">{unreadCount} Unread</p>
+              <p className="text-xs text-muted-foreground">Stay on top of your sessions</p>
+            </div>
           </div>
-        )}
+        </div>
+
       </div>
     </AppLayout>
   );
