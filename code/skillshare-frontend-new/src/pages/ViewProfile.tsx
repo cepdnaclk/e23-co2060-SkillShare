@@ -312,7 +312,7 @@ const ViewProfile = () => {
 
   const mentorLevel = mentor.level ?? 1;
   const mentorXp = mentor.xp ?? 0;
-  const xpNeededForNextLevel = 35;
+  const xpNeededForNextLevel = 100 - mentorXp;
 
   if (isOwnProfile) {
     return (
@@ -368,7 +368,7 @@ const ViewProfile = () => {
                 <h1 className="text-2xl font-heading font-black tracking-tight text-slate-800 capitalize mb-1">
                   {mentor.fullName}
                 </h1>
-                <p className="text-slate-400 text-xs font-medium truncate mb-4">{mentor.email || `${mentor.fullName.toLowerCase().replace(/\s+/g, '_')}@skillshare.com`}</p>
+                <p className="text-slate-400 text-xs font-medium truncate mb-4">{mentor.bio}</p>
 
                 {/* Balance Block Component */}
                 <div className="w-full bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-3 flex items-center justify-between text-left">
