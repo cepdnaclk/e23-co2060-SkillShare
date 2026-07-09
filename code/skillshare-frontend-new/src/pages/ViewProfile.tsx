@@ -15,6 +15,9 @@ import {
   Zap,
   Users,
   MessageSquare,
+  UserPlus,
+  UserCheck,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,10 +29,12 @@ import {
   userSkillsApi,
   availabilityApi,
   sessionsApi,
+  connectionsApi,
   type User,
   type UserSkill,
   type Availability,
   type ApiError,
+  type ConnectionDto,
 } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";
@@ -42,33 +47,6 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
-
-interface ConnectionUserDto {
-  id: string;
-  fullName: string;
-  bio?: string;
-  profilePictureUrl?: string;
-  xp: number;
-  level: number;
-  reputationScore: number;
-}
-
-interface ConnectionDto {
-  id: string;
-  status: string;
-  sender: ConnectionUserDto;
-  receiver: ConnectionUserDto;
-}
-
-const connectionsApi = {
-  getFriends: async (): Promise<ConnectionDto[]> => {
-    const res = await fetch("/api/connections/friends", {
-      headers: { "Content-Type": "application/json" },
-    });
-    if (!res.ok) throw new Error("Failed to load friend connections.");
-    return res.json();
-  }
-};
 
 const fmt = (iso: string) =>
     new Date(iso).toLocaleString("en-US", {
@@ -91,6 +69,8 @@ const ViewProfile = () => {
   const [skills, setSkills] = useState<UserSkill[]>([]);
   const [slots, setSlots] = useState<Availability[]>([]);
   const [friends, setFriends] = useState<ConnectionDto[]>([]);
+  const [connectionStatus, setConnectionStatus] = useState<{ status: string; connectionId: string | null }>({ status: "NONE", connectionId: null });
+  const [connLoading, setConnLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -119,12 +99,14 @@ const ViewProfile = () => {
       userSkillsApi.getByUser(id).catch(() => [] as UserSkill[]),
       availabilityApi.getMentorSlots(id).catch(() => [] as Availability[]),
       connectionsApi.getFriends().catch(() => [] as ConnectionDto[]),
+      connectionsApi.getStatus(id).catch(() => ({ status: "NONE", connectionId: null })),
     ])
-        .then(([u, sk, av, fr]) => {
-          setMentor(u);
-          setSkills(sk);
-          setSlots(av);
-          setFriends(fr);
+        .then(([u, sk, av, fr, statusData]) => {
+          setMentor(u as User);
+          setSkills(sk as UserSkill[]);
+          setSlots(av as Availability[]);
+          setFriends(fr as ConnectionDto[]);
+          setConnectionStatus(statusData as { status: string; connectionId: string | null });
         })
         .catch((err: ApiError) => {
           setError(err.message ?? "Could not load profile dashboard.");
@@ -676,6 +658,90 @@ const ViewProfile = () => {
               >
                 <MessageSquare className="w-4 h-4 mr-2" /> Send Message
               </Button>
+
+              {/* FRIEND REQUEST BUTTON — dynamic based on connection status */}
+              <div className="w-full mt-2">
+                {connectionStatus.status === "NONE" && (
+                    <Button
+                        disabled={connLoading}
+                        onClick={async () => {
+                          setConnLoading(true);
+                          try {
+                            await connectionsApi.sendRequest(mentor.id);
+                            setConnectionStatus({ status: "PENDING_SENT", connectionId: null });
+                            toast.success("Friend request sent!");
+                          } catch (e: any) {
+                            toast.error(e.message || "Failed to send request.");
+                          } finally {
+                            setConnLoading(false);
+                          }
+                        }}
+                        className="w-full bg-blue-500 text-white rounded-2xl font-bold text-xs h-11 shadow-md hover:bg-blue-600 transition-colors border-0"
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      {connLoading ? "Sending..." : "Add Friend"}
+                    </Button>
+                )}
+                {connectionStatus.status === "PENDING_SENT" && (
+                    <Button
+                        disabled
+                        className="w-full bg-slate-100 text-slate-400 rounded-2xl font-bold text-xs h-11 border border-slate-200 cursor-not-allowed"
+                    >
+                      <AlertCircle className="w-4 h-4 mr-2" /> Request Sent
+                    </Button>
+                )}
+                {connectionStatus.status === "FRIENDS" && (
+                    <Button
+                        disabled
+                        className="w-full bg-emerald-50 text-emerald-600 rounded-2xl font-bold text-xs h-11 border border-emerald-200 cursor-not-allowed"
+                    >
+                      <UserCheck className="w-4 h-4 mr-2" /> Friends
+                    </Button>
+                )}
+                {connectionStatus.status === "PENDING_RECEIVED" && (
+                    <div className="flex gap-2">
+                      <Button
+                          disabled={connLoading}
+                          onClick={async () => {
+                            if (!connectionStatus.connectionId) return;
+                            setConnLoading(true);
+                            try {
+                              await connectionsApi.acceptRequest(connectionStatus.connectionId);
+                              setConnectionStatus({ status: "FRIENDS", connectionId: connectionStatus.connectionId });
+                              toast.success("You are now friends!");
+                            } catch (e: any) {
+                              toast.error("Failed to accept request.");
+                            } finally {
+                              setConnLoading(false);
+                            }
+                          }}
+                          className="flex-1 bg-emerald-500 text-white rounded-2xl font-bold text-xs h-11 shadow-md hover:bg-emerald-600 border-0"
+                      >
+                        Accept
+                      </Button>
+                      <Button
+                          disabled={connLoading}
+                          onClick={async () => {
+                            if (!connectionStatus.connectionId) return;
+                            setConnLoading(true);
+                            try {
+                              await connectionsApi.rejectRequest(connectionStatus.connectionId);
+                              setConnectionStatus({ status: "NONE", connectionId: null });
+                              toast.success("Request declined.");
+                            } catch (e: any) {
+                              toast.error("Failed to decline request.");
+                            } finally {
+                              setConnLoading(false);
+                            }
+                          }}
+                          variant="outline"
+                          className="flex-1 rounded-2xl font-bold text-xs h-11 text-rose-500 border border-rose-200 hover:bg-rose-50"
+                      >
+                        Decline
+                      </Button>
+                    </div>
+                )}
+              </div>
             </div>
 
             <div className="lg:col-span-9 space-y-6">

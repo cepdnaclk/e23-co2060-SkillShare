@@ -13,5 +13,5 @@ public class TypingStatusDto {
     private UUID receiverId;
     
     @com.fasterxml.jackson.annotation.JsonProperty("isTyping")
-    private boolean isTyping;
+    private Boolean typing;
 }
