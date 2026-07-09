@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -41,7 +41,6 @@ import {
 import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
 
-// Extended connection models matching your backend controller structure
 interface ConnectionUserDto {
   id: string;
   fullName: string;
@@ -59,7 +58,6 @@ interface ConnectionDto {
   receiver: ConnectionUserDto;
 }
 
-// Inline API addition for Connections endpoints
 const connectionsApi = {
   getFriends: async (): Promise<ConnectionDto[]> => {
     const res = await fetch("/api/connections/friends", {
@@ -101,6 +99,9 @@ const ViewProfile = () => {
   const [booking, setBooking] = useState(false);
   const [deletingSkill, setDeletingSkill] = useState<string | null>(null);
 
+  // File Upload State Control
+  const [uploadingPic, setUploadingPic] = useState(false);
+
   useEffect(() => {
     if (!id || id === "undefined") {
       setLoading(false);
@@ -140,6 +141,41 @@ const ViewProfile = () => {
       }
     }
   }, [preselectedSkillId, skills]);
+
+  const handleProfilePictureUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !mentor) return;
+
+    // Fast local file size check (4MB limit)
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error("Image file size must be less than 4MB");
+      return;
+    }
+
+    setUploadingPic(true);
+    try {
+      // 1. Invoke your centralized API service method
+      const data = await usersApi.uploadProfilePicture(file);
+
+      // 2. Extract imageUrl from ProfilePictureResponse interface definitions
+      const updatedUrl = data.imageUrl;
+
+      if (updatedUrl) {
+        setMentor((prev) => prev ? { ...prev, profilePictureUrl: updatedUrl } : null);
+        toast.success("Profile picture updated successfully!");
+      } else {
+        // Fallback re-fetch just in case
+        const refreshedUser = await usersApi.getById(mentor.id);
+        setMentor(refreshedUser);
+        toast.success("Profile picture updated!");
+      }
+    } catch (err) {
+      console.error("Upload error context:", err);
+      toast.error(err.message || "Failed to upload profile picture. Please try again.");
+    } finally {
+      setUploadingPic(false);
+    }
+  };
 
   const handleDeleteSkill = async (us: UserSkill) => {
     const key = `${us.id.skillId}-${us.id.skillType}`;
@@ -289,34 +325,48 @@ const ViewProfile = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   className="lg:col-span-3 p-6 rounded-3xl bg-gradient-to-b from-[#E3F2FD]/50 via-[#FFF3E0]/30 to-white border border-white shadow-[0_4px_24px_rgba(0,0,0,0.02)] flex flex-col items-center text-center lg:sticky lg:top-24"
               >
-                {/* Profile Halo Image Frame */}
-                <div className="relative mb-4 group">
-                  <div className="w-24 h-24 rounded-full bg-white p-1 shadow-[0_0_16px_rgba(56,189,248,0.15)] flex items-center justify-center border-2 border-[#4FC3F7] overflow-hidden relative">
+                {/* Profile Image / Initials Container with Float Pencil UI Element */}
+                <div className="relative inline-block mb-4 w-24 h-24 mx-auto">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-orange-500/15 via-fuchsia-500/10 to-transparent text-orange-400 border-2 border-orange-500/30 flex items-center justify-center font-heading font-black text-3xl shadow-[0_0_25px_rgba(249,115,22,0.15)] overflow-hidden">
                     {mentor.profilePictureUrl ? (
                         <img
                             src={mentor.profilePictureUrl}
                             alt={mentor.fullName}
-                            className="w-full h-full rounded-full object-cover"
+                            className="w-full h-full object-cover"
                         />
                     ) : (
-                        <div className="w-full h-full rounded-full bg-[#FFE0B2] text-[#E65100] flex items-center justify-center font-bold text-2xl font-sans">
-                          {getInitials(mentor.fullName)}
-                        </div>
+                        getInitials(mentor.fullName)
                     )}
-
-                    {/* Contextual Pencil Button Overlay on Hover/Focus */}
-                    <button
-                        onClick={() => navigate("/create-profile", { state: { startStep: 1 } })}
-                        className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                        aria-label="Change profile picture"
-                    >
-                      <Edit3 className="w-5 h-5 text-white" />
-                    </button>
                   </div>
 
-                  {/* Active Status Indicator dot */}
-                  <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-[#4CAF50] border-4 border-white z-10" />
+                  {/* Dedicated Floating Bottom-Right Pencil Action Button */}
+                  <label
+                      className={`absolute bottom-[-4px] right-[-4px] w-8 h-8 rounded-xl bg-white border border-orange-500/30 shadow-[0_4px_12px_rgba(249,115,22,0.2)] flex items-center justify-center cursor-pointer hover:border-orange-500/60 hover:bg-orange-500/5 transition-all duration-200 group/pencil ${uploadingPic ? 'opacity-50 pointer-events-none' : ''}`}
+                      title="Upload profile picture"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-orange-400 group-hover/pencil:scale-110 transition-transform" />
+                    <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleProfilePictureUpload}
+                        disabled={uploadingPic}
+                    />
+                  </label>
+
+                  {/* Local Upload Loading Shimmer Overlay */}
+                  {uploadingPic && (
+                      <div className="absolute inset-0 rounded-full bg-white/80 flex items-center justify-center backdrop-blur-[2px]">
+                        <span className="w-5 h-5 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                  )}
                 </div>
+
+                <h1 className="text-2xl font-heading font-black tracking-tight text-slate-800 capitalize mb-1">
+                  {mentor.fullName}
+                </h1>
+                <p className="text-slate-400 text-xs font-medium truncate mb-4">{mentor.email || `${mentor.fullName.toLowerCase().replace(/\s+/g, '_')}@skillshare.com`}</p>
+
                 {/* Balance Block Component */}
                 <div className="w-full bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-3 flex items-center justify-between text-left">
                   <div>
@@ -326,20 +376,36 @@ const ViewProfile = () => {
                   <Coins className="w-8 h-8 text-[#FFB74D]/80 stroke-[1.5]" />
                 </div>
 
-                {/* Reputation Block Component */}
+                {/* REPUTATION BLOCK COMPONENT */}
                 <div className="w-full bg-white rounded-2xl border border-slate-100 p-4 shadow-sm mb-6 text-left">
-                  <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Reputation</span>
+  <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
+    Reputation
+  </span>
+
                   <div className="flex items-baseline gap-1.5 mt-0.5">
-                    <span className="text-xl font-black text-slate-800">{mentor.reputationScore}</span>
+                    {/* 1. Dynamic Reputation Score Display */}
+                    <span className="text-xl font-black text-slate-800">
+      {mentor.reputationScore ?? 0}
+    </span>
                     <span className="text-xs font-medium text-slate-500">Points</span>
                   </div>
+
+                  {/* Visual Star Rating representation based on their score hierarchy */}
                   <div className="flex gap-0.5 mt-2">
                     {[...Array(5)].map((_, i) => (
                         <Star key={i} className="w-3.5 h-3.5 fill-[#FFB74D] text-[#FFB74D]" />
                     ))}
                   </div>
+
+                  {/* 2. Fully Dynamic Progress Logic Bar */}
                   <div className="w-full h-1.5 bg-slate-100 rounded-full mt-3 overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-purple-500 to-orange-400 w-3/4 rounded-full" />
+                    <div
+                        className="h-full bg-gradient-to-r from-purple-500 to-orange-400 rounded-full transition-all duration-500 ease-out"
+                        style={{
+                          // Logic: Calculate how close they are to the next 100-point milestone tier
+                          width: `${(mentor.reputationScore ?? 0) % 100}%`
+                        }}
+                    />
                   </div>
                 </div>
 
@@ -347,7 +413,7 @@ const ViewProfile = () => {
                     onClick={() => navigate("/create-profile", { state: { startStep: 1 } })}
                     className="w-full bg-gradient-to-r from-[#7E57C2] to-[#FF7043] text-white rounded-2xl font-bold text-xs h-11 shadow-md hover:opacity-95 transition-opacity"
                 >
-                  <Edit3 className="w-3.5 h-3.5 mr-2" /> Edit Profile
+                  <Edit3 className="w-3.5 h-3.5 mr-2" /> Edit Profile Description
                 </Button>
               </motion.div>
 
