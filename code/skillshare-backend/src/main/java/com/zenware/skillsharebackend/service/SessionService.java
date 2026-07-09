@@ -72,9 +72,13 @@ public class SessionService {
         Skill skill = skillRepository.findById(request.getSkillId())
                 .orElseThrow(() -> new IllegalArgumentException("Skill not found"));
 
-        // 3. Fetch the Availability (This gives us the Mentor and the Times!)
+        // 3. Fetch the Availability (This gives us the Mentor ID and the Times!)
         Availability availability = availabilityRepository.findById(request.getAvailabilityId())
                 .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
+                
+        // Fetch the full Mentor user to avoid lazy initialization proxy errors later
+        User mentor = userRepository.findById(availability.getUser().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Mentor not found"));
 
         // 4. Validation Rule: Is it already booked?
         if (availability.getIsBooked()) {
@@ -93,16 +97,17 @@ public class SessionService {
         }
 
         // ESCROW: Deduct credits immediately so they cannot double-spend
+        userRepository.addCreditsAtomically(learner.getId(), -sessionCost);
         learner.setCredits(learner.getCredits() - sessionCost);
-        userRepository.save(learner);
 
-        // 6. Build the Session
+        // Build the Session Entity
         Session session = new Session();
         session.setLearner(learner);
-        session.setMentor(availability.getUser());
+        session.setMentor(mentor);
         session.setSkill(skill);
         session.setStartTime(availability.getStartTime());
         session.setEndTime(availability.getEndTime());
+        session.setAvailabilityId(availability.getId());
         session.setStatus(SessionStatus.PENDING);
 
         // 7. Update the Availability to show it is now taken
@@ -145,13 +150,11 @@ public class SessionService {
                     NotificationType.SESSION_UPDATE
             );
         } else if (newStatus == SessionStatus.REJECTED) {
-            Availability availability = availabilityRepository.findByUserIdAndStartTime(
-                    authenticatedMentor.getId(), session.getStartTime()
-            ).orElseThrow(() -> new IllegalStateException("Original time slot missing"));
+            Availability availability = availabilityRepository.findById(session.getAvailabilityId())
+                    .orElseThrow(() -> new IllegalStateException("Original time slot missing"));
 
-            User learner = session.getLearner();
-            learner.setCredits(learner.getCredits() + 10);
-            userRepository.save(learner);
+            userRepository.addCreditsAtomically(session.getLearner().getId(), 10);
+            session.getLearner().setCredits(session.getLearner().getCredits() + 10);
 
             availability.setIsBooked(false);
             availabilityRepository.save(availability);
@@ -190,11 +193,14 @@ public class SessionService {
         if (cancelingUser.getId().equals(learner.getId())) {
             // Learner Cancels Logic
             if (session.getStatus() == SessionStatus.PENDING) {
+                userRepository.addCreditsAtomically(learner.getId(), originalCost);
                 learner.setCredits(learner.getCredits() + originalCost);
                 notificationService.sendNotification(mentor, "The learner cancelled their session request.", NotificationType.SESSION_UPDATE);
                 notificationService.sendNotification(learner, "You cancelled your session request. You were refunded your full 10 credits.", NotificationType.SESSION_UPDATE);
             } else {
-                learner.setCredits(learner.getCredits() + (originalCost - penaltyAmount));
+                userRepository.addCreditsAtomically(learner.getId(), originalCost - penaltyAmount);
+                learner.setCredits(learner.getCredits() + originalCost - penaltyAmount);
+                userRepository.addCreditsAtomically(mentor.getId(), penaltyAmount);
                 mentor.setCredits(mentor.getCredits() + penaltyAmount);
                 notificationService.sendNotification(mentor, "The learner cancelled the session. You received " + penaltyAmount + " credits as compensation.", NotificationType.SESSION_UPDATE);
                 notificationService.sendNotification(learner, "You cancelled the session. You were refunded 5 credits (Penalty applied).", NotificationType.SESSION_UPDATE);
@@ -203,11 +209,14 @@ public class SessionService {
         } else if (cancelingUser.getId().equals(mentor.getId())) {
             // Mentor Cancels Logic
             if (session.getStatus() == SessionStatus.PENDING) {
+                userRepository.addCreditsAtomically(learner.getId(), originalCost);
                 learner.setCredits(learner.getCredits() + originalCost);
                 notificationService.sendNotification(learner, "The mentor cancelled the session request. You received a full refund.", NotificationType.SESSION_UPDATE);
                 notificationService.sendNotification(mentor, "You cancelled the pending session request. No penalty was applied.", NotificationType.SESSION_UPDATE);
             } else {
+                userRepository.addCreditsAtomically(learner.getId(), originalCost + penaltyAmount);
                 learner.setCredits(learner.getCredits() + originalCost + penaltyAmount);
+                userRepository.addCreditsAtomically(mentor.getId(), -penaltyAmount);
                 mentor.setCredits(mentor.getCredits() - penaltyAmount);
                 notificationService.sendNotification(learner, "The mentor cancelled the session. You received a full refund PLUS " + penaltyAmount + " credits compensation.", NotificationType.SESSION_UPDATE);
                 notificationService.sendNotification(mentor, "You cancelled the session. A penalty of " + penaltyAmount + " credits was applied.", NotificationType.SESSION_UPDATE);
@@ -217,13 +226,15 @@ public class SessionService {
             throw new IllegalArgumentException("Security Violation: You are not part of this session!");
         }
 
-        userRepository.save(learner);
-        userRepository.save(mentor);
+        // userRepository.save(learner);
+        // userRepository.save(mentor);
 
-        Availability availability = availabilityRepository.findByUserIdAndStartTime(mentor.getId(), session.getStartTime())
-                .orElseThrow(() -> new IllegalStateException("Original time slot missing"));
-        availability.setIsBooked(false);
-        availabilityRepository.save(availability);
+        if (session.getAvailabilityId() != null) {
+            Availability availability = availabilityRepository.findById(session.getAvailabilityId())
+                    .orElseThrow(() -> new IllegalStateException("Original time slot missing"));
+            availability.setIsBooked(false);
+            availabilityRepository.save(availability);
+        }
 
         session.setStatus(SessionStatus.CANCELLED);
         Session saved = sessionRepository.save(session);
@@ -238,6 +249,10 @@ public class SessionService {
         if (session.getStatus() != SessionStatus.ACCEPTED) {
             throw new IllegalStateException("Only ACCEPTED sessions can be marked as COMPLETED!");
         }
+
+//        if (LocalDateTime.now().isBefore(session.getEndTime())) {
+//            throw new IllegalStateException("Cannot complete session before its end time.");
+//        }
 
         // SECURITY GUARD: Only the learner can mark it complete
         User authenticatedUser = getAuthenticatedUser();
@@ -254,10 +269,10 @@ public class SessionService {
         gamificationService.awardSessionCompletionXp(session.getMentor());
         gamificationService.awardSessionCompletionXp(session.getLearner());
 
+        userRepository.addCreditsAtomically(mentor.getId(), 10);
         mentor.setCredits(mentor.getCredits() + 10);
         session.setStatus(SessionStatus.COMPLETED);
 
-        userRepository.save(mentor);
         Session saved = sessionRepository.save(session);
         return toDto(saved);
     }
@@ -298,14 +313,13 @@ public class SessionService {
                 Arrays.asList(SessionStatus.PENDING), now);
 
         for (Session session : expiredPending) {
-            User learner = session.getLearner();
-            learner.setCredits(learner.getCredits() + 10);
-            userRepository.save(learner);
+            userRepository.addCreditsAtomically(session.getLearner().getId(), 10);
+            session.getLearner().setCredits(session.getLearner().getCredits() + 10);
 
             session.setStatus(SessionStatus.EXPIRED);
             sessionRepository.save(session);
 
-            notificationService.sendNotification(learner, "Your session request expired. Your 10 credits have been refunded.", NotificationType.SYSTEM_ALERT);
+            notificationService.sendNotification(session.getLearner(), "Your session request expired. Your 10 credits have been refunded.", NotificationType.SYSTEM_ALERT);
         }
 
         // 2. Handle Forgotten ACCEPTED Sessions (Auto-Pay the Mentor)
@@ -313,15 +327,14 @@ public class SessionService {
                 Arrays.asList(SessionStatus.ACCEPTED), now);
 
         for (Session session : forgottenAccepted) {
-            User mentor = session.getMentor();
             // The learner forgot to click complete, so we auto-release the escrow to the mentor
-            mentor.setCredits(mentor.getCredits() + 10);
-            userRepository.save(mentor);
+            userRepository.addCreditsAtomically(session.getMentor().getId(), 10);
+            session.getMentor().setCredits(session.getMentor().getCredits() + 10);
 
             session.setStatus(SessionStatus.COMPLETED); // Auto-completed!
             sessionRepository.save(session);
 
-            notificationService.sendNotification(mentor, "The session time passed and was auto-completed. You received 10 credits.", NotificationType.SYSTEM_ALERT);
+            notificationService.sendNotification(session.getMentor(), "The session time passed and was auto-completed. You received 10 credits.", NotificationType.SYSTEM_ALERT);
         }
 
         return expiredPending.size() + forgottenAccepted.size();

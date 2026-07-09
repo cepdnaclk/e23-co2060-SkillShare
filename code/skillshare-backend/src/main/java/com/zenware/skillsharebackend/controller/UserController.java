@@ -1,6 +1,7 @@
 package com.zenware.skillsharebackend.controller;
 
 import com.zenware.skillsharebackend.dto.UserPublicDto;
+import com.zenware.skillsharebackend.dto.UserPrivateDto;
 import com.zenware.skillsharebackend.entity.User;
 import com.zenware.skillsharebackend.service.FileUploadService;
 import com.zenware.skillsharebackend.service.UserService;
@@ -20,6 +21,14 @@ public class UserController {
 
     private final UserService userService;
     private final FileUploadService fileUploadService;
+
+    // GET: /api/users/me
+    // LOGIC: Private endpoint for the authenticated user to get their full profile including credits
+    @GetMapping("/me")
+    public ResponseEntity<UserPrivateDto> getMyProfile() {
+        User user = userService.getAuthenticatedUser();
+        return ResponseEntity.ok(mapToPrivateDto(user));
+    }
 
     // GET: /api/users/{id}
     // LOGIC: Publicly visible endpoint so learners can view a mentor's profile
@@ -85,6 +94,21 @@ public class UserController {
                 .xp(user.getXp() != null ? user.getXp() : 0)
                 .level(user.getLevel() != null ? user.getLevel() : 1)
                 .reputationScore(user.getReputationScore() != null ? user.getReputationScore() : 0)
+                .build();
+    }
+
+    private UserPrivateDto mapToPrivateDto(User user) {
+        return UserPrivateDto.builder()
+                .id(user.getId())
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+                .bio(user.getBio())
+                .profilePictureUrl(user.getProfilePictureUrl())
+                .credits(user.getCredits() != null ? user.getCredits() : 0)
+                .xp(user.getXp() != null ? user.getXp() : 0)
+                .level(user.getLevel() != null ? user.getLevel() : 1)
+                .reputationScore(user.getReputationScore() != null ? user.getReputationScore() : 0)
+                .isProfileCompleted(user.getIsProfileCompleted() != null ? user.getIsProfileCompleted() : false)
                 .build();
     }
 }

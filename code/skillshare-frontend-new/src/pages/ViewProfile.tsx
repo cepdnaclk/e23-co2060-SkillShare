@@ -82,7 +82,7 @@ const fmt = (iso: string) =>
 const ViewProfile = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user: me } = useAuth();
+  const { user: me, refreshUser } = useAuth();
   const { openWidget, openChat } = useChat();
   const location = useLocation();
   const preselectedSkillId = location.state?.skillId;
@@ -136,7 +136,7 @@ const ViewProfile = () => {
     if (preselectedSkillId && skills.length > 0) {
       const matched = skills.find(
           (s) =>
-              s.id.skillId === preselectedSkillId && s.id.skillType === "TEACH",
+              s.skillId === preselectedSkillId && s.skillType === "TEACH",
       );
 
       if (matched) {
@@ -181,21 +181,21 @@ const ViewProfile = () => {
   };
 
   const handleDeleteSkill = async (us: UserSkill) => {
-    const key = `${us.id.skillId}-${us.id.skillType}`;
+    const key = `${us.skillId}-${us.skillType}`;
     if (deletingSkill === key) return;
     setDeletingSkill(key);
     try {
-      await userSkillsApi.remove(String(us.id.skillId), us.id.skillType);
+      await userSkillsApi.remove(String(us.skillId), us.skillType);
       setSkills((prev) =>
           prev.filter(
               (s) =>
                   !(
-                      s.id.skillId === us.id.skillId &&
-                      s.id.skillType === us.id.skillType
+                      s.skillId === us.skillId &&
+                      s.skillType === us.skillType
                   ),
           ),
       );
-      toast.success(`"${us.skill.name}" removed.`);
+      toast.success(`"${us.skillName}" removed.`);
     } catch (err: unknown) {
       const e = err as ApiError;
       toast.error(e.message ?? "Failed to remove skill.");
@@ -208,8 +208,9 @@ const ViewProfile = () => {
     if (!selectedSlot || !selectedSkill || !me?.id) return;
     setBooking(true);
     try {
-      await sessionsApi.book(String(selectedSkill.skill.id), String(selectedSlot.id));
+      await sessionsApi.book(String(selectedSkill.skillId), String(selectedSlot.id));
       toast.success("Session booked! Waiting for confirmation.");
+      refreshUser(me.id); // Deduct credits instantly in UI
       setBookingOpen(false);
       if (id)
         availabilityApi
@@ -306,8 +307,8 @@ const ViewProfile = () => {
     );
   }
 
-  const teachSkills = skills.filter((s) => s.id.skillType === "TEACH");
-  const learnSkills = skills.filter((s) => s.id.skillType === "LEARN");
+  const teachSkills = skills.filter((s) => s.skillType === "TEACH");
+  const learnSkills = skills.filter((s) => s.skillType === "LEARN");
   const isOwnProfile = me?.id === mentor.id;
 
   const mentorLevel = mentor.level ?? 1;
@@ -442,8 +443,8 @@ const ViewProfile = () => {
                     ) : (
                         <div className="flex flex-wrap gap-2">
                           {teachSkills.map((us) => (
-                              <Badge key={us.id.skillId} className="bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0 px-3 py-1 rounded-xl text-xs font-medium capitalize flex items-center gap-2">
-                                {us.skill.name}
+                              <Badge key={us.skillId} className="bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0 px-3 py-1 rounded-xl text-xs font-medium capitalize flex items-center gap-2">
+                                {us.skillName}
                                 <X className="w-3 h-3 cursor-pointer opacity-80 hover:opacity-100" onClick={() => handleDeleteSkill(us)} />
                               </Badge>
                           ))}
@@ -472,8 +473,8 @@ const ViewProfile = () => {
                     ) : (
                         <div className="flex flex-wrap gap-2">
                           {learnSkills.map((us) => (
-                              <Badge key={us.id.skillId} className="bg-slate-100 text-slate-700 hover:bg-slate-200 border-0 px-3 py-1 rounded-xl text-xs font-medium capitalize flex items-center gap-2">
-                                {us.skill.name}
+                              <Badge key={us.skillId} className="bg-slate-100 text-slate-700 hover:bg-slate-200 border-0 px-3 py-1 rounded-xl text-xs font-medium capitalize flex items-center gap-2">
+                                {us.skillName}
                                 <X className="w-3 h-3 cursor-pointer opacity-60 hover:opacity-100" onClick={() => handleDeleteSkill(us)} />
                               </Badge>
                           ))}
@@ -670,8 +671,8 @@ const ViewProfile = () => {
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {teachSkills.map((us) => (
-                          <Badge key={us.id.skillId} className="px-3 py-1.5 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl font-medium text-xs capitalize">
-                            {us.skill.name}
+                          <Badge key={us.skillId} className="px-3 py-1.5 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl font-medium text-xs capitalize">
+                            {us.skillName}
                           </Badge>
                       ))}
                     </div>
@@ -733,10 +734,10 @@ const ViewProfile = () => {
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Choose Topic</label>
               <div className="grid grid-cols-1 gap-1.5 max-h-[120px] overflow-y-auto custom-scrollbar">
                 {teachSkills.map((us) => {
-                  const isSelected = selectedSkill?.skill.id === us.skill.id;
+                  const isSelected = selectedSkill?.skillId === us.skillId;
                   return (
-                      <div
-                          key={us.skill.id}
+                      <Badge
+                          key={us.skillId}
                           onClick={() => setSelectedSkill(us)}
                           className={`p-2.5 rounded-xl border text-xs font-semibold capitalize cursor-pointer transition-all ${
                               isSelected
@@ -744,8 +745,8 @@ const ViewProfile = () => {
                                   : "bg-slate-50/50 border-slate-100 text-slate-600 hover:bg-slate-50"
                           }`}
                       >
-                        {us.skill.name}
-                      </div>
+                        {us.skillName}
+                      </Badge>
                   );
                 })}
               </div>

@@ -35,7 +35,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             "ORDER BY u.reputationScore DESC, u.id ASC")
     List<User> findTopMentorsByCategory(@Param("category") String category, Pageable pageable);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query("UPDATE User u SET u.xp = u.xp + :amount WHERE u.id = :userId")
     void addXpAtomically(@Param("userId") UUID userId, @Param("amount") int amount);
+
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE User u SET u.credits = u.credits + :amount WHERE u.id = :userId")
+    void addCreditsAtomically(@Param("userId") UUID userId, @Param("amount") int amount);
 }
