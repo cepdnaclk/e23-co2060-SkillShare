@@ -44,6 +44,8 @@ const ChatContext = createContext<ChatContextType | null>(null);
 export function ChatProvider({ children }: { children: ReactNode }) {
   const { user, token } = useAuth();
 
+  console.warn("[ChatProvider] Rendered. User present:", !!user, "Token present:", !!token);
+
   const [isOpen, setIsOpen] = useState(false);
   const [view, setView] = useState<"inbox" | "chat">("inbox");
   const [inbox, setInbox] = useState<RecentChat[]>([]);
@@ -52,11 +54,19 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [activeConversation, setActiveConversation] = useState<ActiveConversation | null>(null);
 
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Use a ref for the user object to avoid triggering reconnect cleanup cycles when user profile updates
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   // ── Connect WebSocket when user is logged in ─────────────────────────────
   useEffect(() => {
-    if (!token || !user) return;
+    console.warn("[ChatProvider] useEffect triggered. Token:", token ? "Exists" : "Null");
+    if (!token || !userRef.current) return;
 
+    console.warn("[ChatProvider] Initiating WebSocket connection...");
     chatSocketService.connect(token);
 
     const unsubMsg = chatSocketService.onMessage((dto: ChatMessageDto) => {
@@ -83,7 +93,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const unsubTyping = chatSocketService.onTyping((status) => {
       setActiveConversation((prev) => {
         if (!prev || prev.contactId !== (status.senderId as string)) return prev;
-        return { ...prev, isTyping: status.typing };
+        return { ...prev, isTyping: status.isTyping };
       });
 
       // Auto-clear typing indicator after 3 s as a safety net
@@ -94,11 +104,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
+      console.warn("[ChatProvider] Cleaning up WebSocket connection...");
       unsubMsg();
       unsubTyping();
       chatSocketService.disconnect();
     };
-  }, [token, user]);
+  }, [token]);
 
   // ── Fetch inbox on mount ─────────────────────────────────────────────────
   const refreshInbox = useCallback(async () => {

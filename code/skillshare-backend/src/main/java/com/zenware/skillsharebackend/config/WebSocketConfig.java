@@ -27,7 +27,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         // Messages sent FROM the server TO the client will start with this prefix
-        registry.enableSimpleBroker("/user", "/queue");
+        registry.enableSimpleBroker("/topic", "/queue");
 
         // Messages sent FROM the client TO the server must start with this prefix
         registry.setApplicationDestinationPrefixes("/app");
@@ -39,5 +39,16 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(authInterceptor);
+    }
+
+    @Override
+    public void configureClientOutboundChannel(ChannelRegistration registration) {
+        registration.interceptors(new org.springframework.messaging.support.ChannelInterceptor() {
+            @Override
+            public org.springframework.messaging.Message<?> preSend(org.springframework.messaging.Message<?> message, org.springframework.messaging.MessageChannel channel) {
+                System.out.println("🚀 STOMP OUTBOUND: " + message);
+                return message;
+            }
+        });
     }
 }
