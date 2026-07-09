@@ -211,6 +211,39 @@ export const notificationsApi = {
 };
 
 // ============================================================
+// Trending & Discovery Endpoints (Frontend Fixed to Match Backend)
+// ============================================================
+export const trendingApi = {
+  /**
+   * Hits: GET /api/trending/learners
+   * Used by Leaderboard component to fetch cached top active users (by XP)
+   */
+  getTopActiveUsers: () =>
+      apiFetch<UserPublicDto[]>("/api/trending/learners"),
+
+  /**
+   * Hits: GET /api/trending/mentors/category/{category}
+   * Used by Search component to fetch dynamic trending mentors matching a skill category
+   */
+  getTopMentorsByCategory: (category: string) =>
+      apiFetch<UserPublicDto[]>(`/api/trending/mentors/category/${encodeURIComponent(category)}`),
+
+  /**
+   * Hits: GET /api/trending/skills
+   * Fetches top trending sharing skills
+   */
+  getTopSharingSkills: () =>
+      apiFetch<TrendingSkillDto[]>("/api/trending/skills"),
+
+  /**
+   * Hits: GET /api/trending/mentors
+   * Fetches the top mentors globally by reputation score
+   */
+  getTopMentors: () =>
+      apiFetch<UserPublicDto[]>("/api/trending/mentors"),
+};
+
+// ============================================================
 // TypeScript types matching backend entities/DTOs
 // ============================================================
 export interface User {
@@ -309,4 +342,21 @@ export interface UserSearchResponse {
     email: string;
     ratingAvg?: number;
     reputationScore?: number;
+}
+
+export interface UserPublicDto {
+  id: string;
+  fullName: string;
+  bio?: string;
+  xp: number;
+  level: number;
+  reputationScore: number;
+  ratingAvg?: number; // Safe optional handling for Star metric evaluation
+}
+
+export interface TrendingSkillDto {
+  skillId: number;
+  name: string;
+  category?: string;
+  sessionCount: number;
 }
