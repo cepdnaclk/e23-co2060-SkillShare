@@ -98,9 +98,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("userId is missing");
       }
 
-      const fullUser = await usersApi.getById(response.userId);
-      setUser(fullUser);
-      setStoredUser(fullUser);
+      const fullProfile = await usersApi.getById(response.userId);
+
+      // 🔥 THE HYDRATION MERGE: Blend backend profile with auth numbers!
+      const completeUser: User = {
+        ...fullProfile,
+        credits: fullProfile.credits ?? response.credits ?? 0,
+        level: fullProfile.level ?? response.level ?? 1,
+        xp: fullProfile.xp ?? response.xp ?? 0,
+        reputationScore: fullProfile.reputationScore ?? response.reputationScore ?? 0
+      };
+
+      setUser(completeUser);
+      setStoredUser(completeUser);
     } catch (err) {
       const apiErr = err as ApiError;
       setError(apiErr.message ?? "Login failed. Please try again.");
@@ -116,27 +126,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const response = await authApi.register(fullName, email, password);
-
+      console.log("REGISTER AUTH RESPONSE:", response);
       const jwt = response.token;
-
-      /**const user: User = {
-        id: response.userId,
-        fullName: response.fullName,
-        email: response.email,
-        role: response.role,
-        credits: 100, // backend sets this initially
-        reputationScore: 0,
-        ratingAvg: 0,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-      };*/
 
       setToken(jwt);
       setTokenState(jwt);
-      const fullUser = await usersApi.getById(response.userId);
+      if (!response.userId) {
+        throw new Error("userId is missing after registration");
+      }
 
-      setUser(fullUser);
-      setStoredUser(fullUser);
+      // Fetch the newly created profile snapshot
+      const fullProfile = await usersApi.getById(response.userId);
+
+      // 🔥 THE HYDRATION MERGE: Combine profile data with initial auth payload fields
+      const completeUser: User = {
+        ...fullProfile,
+        credits: fullProfile.credits ?? response.credits, // Safe fallback to 100 if both are empty
+        level: fullProfile.level ?? response.level,
+        xp: fullProfile.xp ?? response.xp,
+        reputationScore: fullProfile.reputationScore ?? response.reputationScore
+      };
+
+      setUser(completeUser);
+      setStoredUser(completeUser);
 
     } catch (err) {
       const apiErr = err as ApiError;
@@ -182,8 +194,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = useCallback(async (userId: string) => {
     try {
       const freshUser = await usersApi.getById(userId);
-      setUser(freshUser);
-      setStoredUser(freshUser);
+      //  FIX: Use functional state update to preserve existing gamified scores
+      setUser((prevUser) => {
+        if (!prevUser) return freshUser;
+        return {
+          ...freshUser,
+          // Always pick the new incoming database total first.
+          // Only fallback to prevUser if the field is missing from the payload.
+          credits: freshUser.credits !== undefined ? freshUser.credits : prevUser.credits,
+          level: freshUser.level !== undefined ? freshUser.level : prevUser.level,
+          xp: freshUser.xp !== undefined ? freshUser.xp : prevUser.xp,
+        };
+      });
     } catch {
       // silent — don't log out on a profile refresh failure
     }
