@@ -109,7 +109,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       unsubTyping();
       chatSocketService.disconnect();
     };
-  }, [token]);
+  }, [token, user?.id]);
 
   // ── Fetch inbox on mount ─────────────────────────────────────────────────
   const refreshInbox = useCallback(async () => {

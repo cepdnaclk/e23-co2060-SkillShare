@@ -55,6 +55,8 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
             } else {
                  System.out.println("❌ STOMP Auth Failed: Missing or invalid Authorization header");
             }
+            // Create and return a new message so the mutated accessor headers are propagated to the session
+            return org.springframework.messaging.support.MessageBuilder.createMessage(message.getPayload(), accessor.getMessageHeaders());
         }
         return message;
     }
