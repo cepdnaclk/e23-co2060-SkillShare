@@ -60,29 +60,85 @@ The platform is engineered to solve a specific campus problem: the "hidden" skil
 
 ## Software Designs
 
-Our software design centers on empowering the user rather than forcing automated matches. We originally designed a "Skill-Cycle" algorithm, but identified critical edge cases: unacceptable wait times, infinite relationship loops, and the restriction that a user must both teach and learn.
-To resolve this, we pivoted to a decentralized Credit and Reputation Economy.
+Our software design centers on empowering the user rather than forcing automated matches. We originally designed a "Skill-Cycle" algorithm, but identified critical edge cases: unacceptable wait times, infinite relationship loops, and the restriction that a user must both teach and learn. To resolve this, we pivoted to a decentralized Credit and Reputation Economy.
 
-Core Mechanics: Users manage their own availability and book individual sessions.
+* **Core Mechanics:** Users manage their own availability and book individual sessions.
+* **The Economy:** To learn a skill, users spend credits. To earn credits, they are incentivized to teach others. This gamifies the peer-to-peer process and completely eliminates the bottleneck of waiting for a perfect "match cycle."
+* **Two-Way Feedback:** Completed sessions use a dual-feedback submission design to calculate a reliable user reputation score.
 
-The Economy: To learn a skill, users spend credits. To earn credits, they are incentivized to teach others. This gamifies the peer-to-peer process and completely eliminates the bottleneck of waiting for a perfect "match cycle."
+### System Use Case Diagram
+<img width="508" height="606" alt="Screenshot 2026-07-22 110720" src="https://github.com/user-attachments/assets/115b953f-cd20-4af0-8f51-a6e5254b1ff4" />
 
-Two-Way Feedback: Completed sessions use a dual-feedback submission design to calculate a reliable user reputation score.
+### System Class Diagram
+<img width="1907" height="670" alt="Screenshot 2026-07-22 110657" src="https://github.com/user-attachments/assets/ff3a2f81-3c35-46f8-b7c6-5e1bbaef344c" />
 
-## Testing
+## Testing 
+### 1. Phase - 1
 
 Testing focused heavily on our core custom logic and security. We executed comprehensive unit and integration tests to ensure that our JWT security filters, real-time Notification system, and complex Credit Score economy (ensuring credits are correctly deducted or awarded during bookings) functioned flawlessly under various edge cases.
 
 <img width="762" height="837" alt="Screenshot 2026-05-01 221729" src="https://github.com/user-attachments/assets/2f291361-5384-40e3-83cb-77671e641d42" /> 
 <img width="760" height="486" alt="Screenshot 2026-05-02 002009" src="https://github.com/user-attachments/assets/d2f676b9-d23f-4ddb-b578-1d6be3239b98" />
 
+### 2. Phase - 2
+This section summarizes the automated testing that has been implemented and executed within the **SkillShare** system. The project is divided into a Java Spring Boot backend (`skillshare-backend`) and a React TypeScript frontend (`skillshare-frontend-new`). Both systems contain foundational test setups, with focused unit tests on critical business logic for the backend and API interaction mocks for the frontend.
+
+### 1. Backend Testing (`skillshare-backend`)
+The backend testing utilizes **JUnit 5** and **Mockito** for unit and integration testing.
+
+#### Existing Tests
+1. **`SessionServiceTest.java`**: 
+   * A dedicated unit test for the `SessionService` business logic.
+   * **Mocks Used**: `SessionRepository`, `UserRepository`, `SkillRepository`, `AvailabilityRepository`, `NotificationService`, and `SecurityContextHolder`.
+   * **Test Cases Covered**:
+     * `testBookSession_Success`: Validates that a session is successfully booked, user credits are deducted (-10), availability is marked as booked, and a notification is sent to the mentor.
+     * `testBookSession_InsufficientCredits`: Asserts that an `IllegalStateException` is thrown if a learner tries to book a session with insufficient credits (e.g., 5 credits).
+     * `testCompleteSession_BeforeEndTime`: Asserts that a session cannot be completed prematurely before its scheduled end time.
+
+2. **`SkillshareBackendApplicationTests.java`**:
+   * A standard Spring Boot integration test that verifies the application context loads successfully without dependency injection failures.
+
+### 2. Frontend Testing (`skillshare-frontend-new`)
+The frontend testing is powered by **Vitest**, an extremely fast unit-testing framework tailored for Vite-based projects.
+
+#### Existing Tests
+1. **`api.test.ts`** (`src/lib/api.test.ts`):
+   * Tests the `usersApi.getMe()` function.
+   * **Mocks Used**: Global `fetch` API is mocked using `vi.fn()` to prevent real network requests. `localStorage` is mocked to simulate JWT token retrieval.
+   * **Test Cases Covered**:
+     * *Success Path*: Verifies that the `/api/users/me` endpoint is called with the correct `Authorization` and `Content-Type` headers, successfully parsing and returning the mock user object.
+     * *Error Path*: Verifies that the function correctly throws an `ApiError` when the server responds with a `401 Unauthorized` status.
+
+2. **`example.test.ts`** (`src/test/example.test.ts`):
+   * A foundational boilerplate test ensuring the Vitest environment is correctly configured and operational.
+
+#### Test Execution Results
+The frontend test suite was executed successfully with the following results:
+```
+ ✓ src/test/example.test.ts (1 test) 2ms
+ ✓ src/lib/api.test.ts (2 tests) 4ms
+
+ Test Files  2 passed (2)
+      Tests  3 passed (3)
+   Duration  1.48s
+```
+### 3. Recommendations & Next Steps
+
+**Backend Next Steps:**
+* Expand test coverage to other core services like `UserService` and `GamificationService`.
+* Add integration/controller tests (e.g., `MockMvc`) for `FeedbackController` and `SessionController` to ensure API endpoints return correct HTTP statuses.
+
+**Frontend Next Steps:**
+* Introduce **React Testing Library** to test UI components. Currently, components like `CreateProfile.tsx` and `ViewProfile.tsx` lack render and interaction tests.
+* Add E2E (End-to-End) testing using **Playwright** or **Cypress** to test the entire user flow from authentication to session booking.
+
 ## Conclusion
 
-We successfully achieved our MVP goal: providing a functional, trustworthy platform to unlock hidden campus skills.
+Having successfully delivered our MVP, we have aggressively expanded Skill-Share into a feature-rich, production-ready architecture. 
 
-Achieved: We delivered a fully functioning system complete with secure login/signup, user dashboards, live skill searching, individual session booking, credit/reputation scoring, and a two-way feedback system. We also successfully navigated our biggest technical hurdle by pivoting from a flawed matching algorithm to a robust credit economy.
-
-Future Developments (Semester 4 Plan): We plan to expand the platform's commercial and community value by introducing Group Sessions, a Course Pool, and a Real-time Chat system. We will also heavily gamify the experience (Experience badges, Newsfeed celebrations, Online store) and improve accessibility via Google integrations (Signup & Calendar), cross-platform web-app capabilities, and a dedicated Admin authorization tier.
+* **Core Foundation Achieved:** We established a secure, robust platform featuring standard authentication, user dashboards, live skill searching, individual session booking, a custom credit/reputation economy, and a dual-feedback system. 
+* **Final Product Capabilities (Milestone 3):** Moving beyond the MVP, we successfully engineered and integrated advanced systems, including a real-time STOMP WebSocket Chat infrastructure, an atomic Gamification Engine (XP, Leveling, and Trending Leaderboards), a peer-to-peer Friend Request network, secure profile picture uploads with Zero-Trust validation, and seamless OAuth2 integration.
+* **Future Roadmap & Deployment:** As we finalize the product, our immediate focus shifts towards deploying the full-stack architecture to live cloud environments. Further ecosystem expansions will include Group Sessions, a Course Pool, deeper Google Workspace integrations (e.g., Calendar syncing), and a dedicated Admin authorization tier to manage the platform at scale.
 
 ## Links
 
