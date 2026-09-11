@@ -3,11 +3,9 @@ layout: home
 permalink: index.html
 
 # Please update this with your repository name and project title
-repository-name: eYY-co2060-project-template
-title: Project Template
+repository-name: e23-co2060-SkillShare
+title: SkillShare by Zenware
 ---
-
-[comment]: # "This is the standard layout for the project, but you can clean this and use your own template, and add more information required for your own project"
 
 <!-- Once you fill the index.json file inside /docs/data, please make sure the syntax is correct. (You can use this tool to identify syntax errors)
 
