@@ -26,20 +26,18 @@ public class ChatController {
     private final SimpUserRegistry simpUserRegistry;
 
     @MessageMapping("/chat")
-    public void processMessage(@Payload ChatMessageDto chatMessageDto) {
-        System.out.println("\n🚀 --- NEW WEBSOCKET MESSAGE RECEIVED ---");
-        System.out.println("Sender ID: " + chatMessageDto.getSenderId());
-        System.out.println("Receiver ID: " + chatMessageDto.getReceiverId());
-        System.out.println("Content: " + chatMessageDto.getContent());
-        System.out.println("Total STOMP Connected Users: " + simpUserRegistry.getUserCount());
-        simpUserRegistry.getUsers().forEach(user -> 
-            System.out.println(" - Connected STOMP User: " + user.getName() + " (Sessions: " + user.getSessions().size() + ")")
-        );
+    public void processMessage(@Payload ChatMessageDto chatMessageDto, java.security.Principal principal) {
+        if (principal == null) {
+            throw new IllegalArgumentException("Unauthenticated WebSocket connection!");
+        }
 
         try {
-            // 1. Find the sender and receiver in the database
-            User sender = userRepository.findById(chatMessageDto.getSenderId())
-                    .orElseThrow(() -> new IllegalArgumentException("Sender not found in DB! UUID: " + chatMessageDto.getSenderId()));
+            // 1. Find the true sender by authenticated email
+            User sender = userRepository.findByEmail(principal.getName())
+                    .orElseThrow(() -> new IllegalArgumentException("Sender not found in DB! Email: " + principal.getName()));
+            
+            // Secure the DTO by forcing the senderId to the authenticated user's ID
+            chatMessageDto.setSenderId(sender.getId());
 
             User receiver = userRepository.findById(chatMessageDto.getReceiverId())
                     .orElseThrow(() -> new IllegalArgumentException("Receiver not found in DB! UUID: " + chatMessageDto.getReceiverId()));
@@ -70,9 +68,19 @@ public class ChatController {
     }
 
     @MessageMapping("/chat/typing")
-    public void processTyping(@Payload TypingStatusDto typingStatus) {
-        // We do not save this to the database!
+    public void processTyping(@Payload TypingStatusDto typingStatus, java.security.Principal principal) {
+        if (principal == null) {
+            throw new IllegalArgumentException("Unauthenticated WebSocket connection!");
+        }
+
         try {
+            // Find the true sender by authenticated email
+            User sender = userRepository.findByEmail(principal.getName())
+                    .orElseThrow(() -> new IllegalArgumentException("Sender not found in DB! Email: " + principal.getName()));
+
+            // Secure the DTO by forcing the senderId to the authenticated user's ID
+            typingStatus.setSenderId(sender.getId());
+
             User receiver = userRepository.findById(typingStatus.getReceiverId())
                     .orElseThrow(() -> new IllegalArgumentException("Receiver not found for typing status! UUID: " + typingStatus.getReceiverId()));
             

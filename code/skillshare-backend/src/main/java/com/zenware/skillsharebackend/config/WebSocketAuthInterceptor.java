@@ -11,6 +11,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
+import org.springframework.messaging.MessageDeliveryException;
+import org.springframework.messaging.support.MessageBuilder;
 import com.zenware.skillsharebackend.service.JwtService;
 
 @Component
@@ -28,35 +30,42 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             String authHeader = accessor.getFirstNativeHeader("Authorization");
 
-            // ADD THIS TO DEBUG:
-            System.out.println("STOMP Connect Attempt. Auth Header: " + authHeader);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                throw new MessageDeliveryException("WebSocket authentication failed");
+            }
 
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                String token = authHeader.substring(7);
+            String token = authHeader.substring(7);
+            if (token.trim().isEmpty()) {
+                throw new MessageDeliveryException("WebSocket authentication failed");
+            }
 
+            try {
                 // 1. Extract email/username from your JWT
                 String userEmail = jwtService.extractUsername(token);
 
-                // 2. Validate token and load user
-                if (userEmail != null) {
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
-                    if (jwtService.isTokenValid(token, userDetails)) {
-                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities()
-                        );
-
-                        // 3. Attach the authenticated user to the WebSocket session!
-                        accessor.setUser(authentication);
-                        System.out.println("✅ STOMP Auth Successful for User: " + userEmail);
-                    } else {
-                         System.out.println("❌ STOMP Auth Failed: Invalid Token for User: " + userEmail);
-                    }
+                if (userEmail == null) {
+                    throw new MessageDeliveryException("WebSocket authentication failed");
                 }
-            } else {
-                 System.out.println("❌ STOMP Auth Failed: Missing or invalid Authorization header");
+
+                // 2. Validate token and load user
+                UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+                if (!jwtService.isTokenValid(token, userDetails)) {
+                    throw new MessageDeliveryException("WebSocket authentication failed");
+                }
+
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities()
+                );
+
+                // 3. Attach the authenticated user to the WebSocket session!
+                accessor.setUser(authentication);
+                return MessageBuilder.createMessage(message.getPayload(), accessor.getMessageHeaders());
+
+            } catch (io.jsonwebtoken.JwtException | org.springframework.security.core.userdetails.UsernameNotFoundException e) {
+                // Explicitly catch JWT parsing errors (malformed, expired, signature) and missing users.
+                // Do not catch other unexpected exceptions (e.g. database down), let them propagate.
+                throw new MessageDeliveryException("WebSocket authentication failed");
             }
-            // Create and return a new message so the mutated accessor headers are propagated to the session
-            return org.springframework.messaging.support.MessageBuilder.createMessage(message.getPayload(), accessor.getMessageHeaders());
         }
         return message;
     }
