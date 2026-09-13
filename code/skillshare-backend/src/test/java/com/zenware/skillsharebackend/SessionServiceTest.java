@@ -81,6 +81,8 @@ public class SessionServiceTest {
         Authentication authentication = mock(Authentication.class);
         lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
         SecurityContextHolder.setContext(securityContext);
+        
+        lenient().when(userRepository.findById(mockMentor.getId())).thenReturn(Optional.of(mockMentor));
     }
 
     @Test
