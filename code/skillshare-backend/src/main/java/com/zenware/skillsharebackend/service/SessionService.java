@@ -203,6 +203,12 @@ public class SessionService {
             throw new IllegalStateException("You can only cancel upcoming sessions!");
         }
 
+        if (session.getStatus() == SessionStatus.ACCEPTED) {
+            if (session.getStartTime() == null || !LocalDateTime.now().isBefore(session.getStartTime())) {
+                throw new IllegalStateException("Cannot cancel an ACCEPTED session after its scheduled start time.");
+            }
+        }
+
         int updated = sessionRepository.transitionSessionStatusAtomically(
                 session.getId(),
                 SessionStatus.CANCELLED,

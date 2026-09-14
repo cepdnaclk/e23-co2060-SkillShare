@@ -305,6 +305,7 @@ public class SessionServiceTest {
         session.setMentor(mockMentor);
         session.setSkill(mockSkill);
         session.setStatus(SessionStatus.ACCEPTED);
+        session.setStartTime(LocalDateTime.now().plusHours(1));
         session.setAvailabilityId(mockAvailability.getId());
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
@@ -368,6 +369,7 @@ public class SessionServiceTest {
         session.setMentor(mockMentor);
         session.setSkill(mockSkill);
         session.setStatus(SessionStatus.ACCEPTED);
+        session.setStartTime(LocalDateTime.now().plusHours(1));
         session.setAvailabilityId(mockAvailability.getId());
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
@@ -390,6 +392,70 @@ public class SessionServiceTest {
         verify(userRepository).addCreditsAtomically(mockLearner.getId(), 15);
         verify(userRepository).addCreditsAtomically(mockMentor.getId(), -5);
         verify(availabilityRepository).releaseAvailabilityAtomically(eq(mockAvailability.getId()), eq(session.getId()));
+    }
+
+    @Test
+    void testCancelSession_LearnerCancelsAccepted_AfterStartTime() {
+        Session session = new Session();
+        session.setId(UUID.randomUUID());
+        session.setStatus(SessionStatus.ACCEPTED);
+        session.setStartTime(LocalDateTime.now().minusHours(1));
+
+        when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            sessionService.cancelSession(session.getId());
+        });
+        assertTrue(exception.getMessage().contains("Cannot cancel an ACCEPTED session after its scheduled start time"));
+
+        verify(sessionRepository, never()).transitionSessionStatusAtomically(any(UUID.class), any(SessionStatus.class), anyList());
+        verify(userRepository, never()).addCreditsAtomically(any(UUID.class), anyInt());
+        verify(availabilityRepository, never()).releaseAvailabilityAtomically(any(UUID.class), any(UUID.class));
+    }
+
+    @Test
+    void testCancelSession_MentorCancelsAccepted_AfterStartTime() {
+        Session session = new Session();
+        session.setId(UUID.randomUUID());
+        session.setStatus(SessionStatus.ACCEPTED);
+        session.setStartTime(LocalDateTime.now().minusHours(1));
+
+        when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            sessionService.cancelSession(session.getId());
+        });
+        assertTrue(exception.getMessage().contains("Cannot cancel an ACCEPTED session after its scheduled start time"));
+    }
+
+    @Test
+    void testCancelSession_Accepted_NullStartTime() {
+        Session session = new Session();
+        session.setId(UUID.randomUUID());
+        session.setStatus(SessionStatus.ACCEPTED);
+        session.setStartTime(null);
+
+        when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            sessionService.cancelSession(session.getId());
+        });
+        assertTrue(exception.getMessage().contains("Cannot cancel an ACCEPTED session after its scheduled start time"));
+    }
+
+    @Test
+    void testCancelSession_Accepted_ExactlyAtStartTime() {
+        Session session = new Session();
+        session.setId(UUID.randomUUID());
+        session.setStatus(SessionStatus.ACCEPTED);
+        session.setStartTime(LocalDateTime.now()); // Exactly now is NOT before now
+
+        when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            sessionService.cancelSession(session.getId());
+        });
+        assertTrue(exception.getMessage().contains("Cannot cancel an ACCEPTED session after its scheduled start time"));
     }
 
     @Test
