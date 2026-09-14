@@ -27,11 +27,24 @@ public interface AvailabilityRepository extends JpaRepository<Availability, UUID
     @Modifying(flushAutomatically = true)
     @Query("""
         UPDATE Availability a
-        SET a.isBooked = true
+        SET a.isBooked = true, a.activeSessionId = :sessionId
         WHERE a.id = :availabilityId
           AND a.isBooked = false
     """)
     int reserveAvailabilityAtomically(
-            @Param("availabilityId") UUID availabilityId
+            @Param("availabilityId") UUID availabilityId,
+            @Param("sessionId") UUID sessionId
+    );
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+        UPDATE Availability a
+        SET a.isBooked = false, a.activeSessionId = null
+        WHERE a.id = :availabilityId
+          AND a.activeSessionId = :sessionId
+    """)
+    int releaseAvailabilityAtomically(
+            @Param("availabilityId") UUID availabilityId,
+            @Param("sessionId") UUID sessionId
     );
 }

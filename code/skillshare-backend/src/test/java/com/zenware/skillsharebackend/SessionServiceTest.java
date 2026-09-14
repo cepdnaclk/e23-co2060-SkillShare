@@ -98,14 +98,14 @@ public class SessionServiceTest {
         when(skillRepository.findById(mockSkill.getId())).thenReturn(Optional.of(mockSkill));
         when(availabilityRepository.findById(mockAvailability.getId())).thenReturn(Optional.of(mockAvailability));
         when(userRepository.deductCreditsIfSufficient(mockLearner.getId(), 10)).thenReturn(1);
-        when(availabilityRepository.reserveAvailabilityAtomically(mockAvailability.getId())).thenReturn(1);
-
         Session mockSavedSession = new Session();
         mockSavedSession.setId(UUID.randomUUID());
         mockSavedSession.setLearner(mockLearner);
         mockSavedSession.setMentor(mockMentor);
         mockSavedSession.setSkill(mockSkill);
         mockSavedSession.setStatus(SessionStatus.PENDING);
+
+        when(availabilityRepository.reserveAvailabilityAtomically(eq(mockAvailability.getId()), eq(mockSavedSession.getId()))).thenReturn(1);
 
         when(sessionRepository.save(any(Session.class))).thenReturn(mockSavedSession);
 
@@ -154,14 +154,18 @@ public class SessionServiceTest {
         when(availabilityRepository.findById(mockAvailability.getId())).thenReturn(Optional.of(mockAvailability));
         when(userRepository.deductCreditsIfSufficient(mockLearner.getId(), 10)).thenReturn(1);
 
-        when(availabilityRepository.reserveAvailabilityAtomically(mockAvailability.getId())).thenReturn(0);
+        Session mockSavedSession = new Session();
+        mockSavedSession.setId(UUID.randomUUID());
+        when(sessionRepository.save(any(Session.class))).thenReturn(mockSavedSession);
+
+        when(availabilityRepository.reserveAvailabilityAtomically(eq(mockAvailability.getId()), eq(mockSavedSession.getId()))).thenReturn(0);
 
         // Act & Assert
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             sessionService.bookSession(request);
         });
         assertEquals("Sorry, this time slot is already booked!", exception.getMessage());
-        verify(sessionRepository, never()).save(any(Session.class));
+        verify(sessionRepository).save(any(Session.class));
     }
 
     @Test
@@ -228,15 +232,14 @@ public class SessionServiceTest {
                 List.of(SessionStatus.PENDING)
         )).thenReturn(1);
 
-        when(availabilityRepository.findById(mockAvailability.getId())).thenReturn(Optional.of(mockAvailability));
         when(sessionRepository.save(any(Session.class))).thenReturn(session);
+        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), session.getId())).thenReturn(1);
 
         SessionResponse response = sessionService.updateSessionStatus(session.getId(), SessionStatus.REJECTED);
 
         assertEquals(SessionStatus.REJECTED, response.getStatus());
         verify(userRepository).addCreditsAtomically(mockLearner.getId(), 10);
-        verify(availabilityRepository).save(mockAvailability);
-        assertFalse(mockAvailability.getIsBooked());
+        verify(availabilityRepository).releaseAvailabilityAtomically(eq(mockAvailability.getId()), eq(session.getId()));
     }
 
     @Test
@@ -284,15 +287,14 @@ public class SessionServiceTest {
         when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("learner@test.com");
         when(userRepository.findByEmail("learner@test.com")).thenReturn(Optional.of(mockLearner));
 
-        when(availabilityRepository.findById(mockAvailability.getId())).thenReturn(Optional.of(mockAvailability));
         when(sessionRepository.save(any(Session.class))).thenReturn(session);
+        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), session.getId())).thenReturn(1);
 
         SessionResponse response = sessionService.cancelSession(session.getId());
 
         assertEquals(SessionStatus.CANCELLED, response.getStatus());
         verify(userRepository).addCreditsAtomically(mockLearner.getId(), 10);
-        verify(availabilityRepository).save(mockAvailability);
-        assertFalse(mockAvailability.getIsBooked());
+        verify(availabilityRepository).releaseAvailabilityAtomically(eq(mockAvailability.getId()), eq(session.getId()));
     }
 
     @Test
@@ -316,14 +318,15 @@ public class SessionServiceTest {
         when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("learner@test.com");
         when(userRepository.findByEmail("learner@test.com")).thenReturn(Optional.of(mockLearner));
 
-        when(availabilityRepository.findById(mockAvailability.getId())).thenReturn(Optional.of(mockAvailability));
         when(sessionRepository.save(any(Session.class))).thenReturn(session);
+        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), session.getId())).thenReturn(1);
 
         SessionResponse response = sessionService.cancelSession(session.getId());
 
         assertEquals(SessionStatus.CANCELLED, response.getStatus());
         verify(userRepository).addCreditsAtomically(mockLearner.getId(), 5);
         verify(userRepository).addCreditsAtomically(mockMentor.getId(), 5);
+        verify(availabilityRepository).releaseAvailabilityAtomically(eq(mockAvailability.getId()), eq(session.getId()));
     }
 
     @Test
@@ -347,13 +350,14 @@ public class SessionServiceTest {
         when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("mentor@test.com");
         when(userRepository.findByEmail("mentor@test.com")).thenReturn(Optional.of(mockMentor));
 
-        when(availabilityRepository.findById(mockAvailability.getId())).thenReturn(Optional.of(mockAvailability));
         when(sessionRepository.save(any(Session.class))).thenReturn(session);
+        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), session.getId())).thenReturn(1);
 
         SessionResponse response = sessionService.cancelSession(session.getId());
 
         assertEquals(SessionStatus.CANCELLED, response.getStatus());
         verify(userRepository).addCreditsAtomically(mockLearner.getId(), 10);
+        verify(availabilityRepository).releaseAvailabilityAtomically(eq(mockAvailability.getId()), eq(session.getId()));
     }
 
     @Test
@@ -377,14 +381,15 @@ public class SessionServiceTest {
         when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("mentor@test.com");
         when(userRepository.findByEmail("mentor@test.com")).thenReturn(Optional.of(mockMentor));
 
-        when(availabilityRepository.findById(mockAvailability.getId())).thenReturn(Optional.of(mockAvailability));
         when(sessionRepository.save(any(Session.class))).thenReturn(session);
+        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), session.getId())).thenReturn(1);
 
         SessionResponse response = sessionService.cancelSession(session.getId());
 
         assertEquals(SessionStatus.CANCELLED, response.getStatus());
         verify(userRepository).addCreditsAtomically(mockLearner.getId(), 15);
         verify(userRepository).addCreditsAtomically(mockMentor.getId(), -5);
+        verify(availabilityRepository).releaseAvailabilityAtomically(eq(mockAvailability.getId()), eq(session.getId()));
     }
 
     @Test
@@ -467,6 +472,7 @@ public class SessionServiceTest {
         pendingSession.setId(UUID.randomUUID());
         pendingSession.setLearner(mockLearner);
         pendingSession.setMentor(mockMentor);
+        pendingSession.setAvailabilityId(mockAvailability.getId());
 
         Session acceptedSession = new Session();
         acceptedSession.setId(UUID.randomUUID());
@@ -489,12 +495,15 @@ public class SessionServiceTest {
                 SessionStatus.COMPLETED,
                 List.of(SessionStatus.ACCEPTED)
         )).thenReturn(1);
+        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), pendingSession.getId())).thenReturn(1);
+        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), pendingSession.getId())).thenReturn(1);
 
         int processed = sessionService.expireOverdueSessions();
 
         assertEquals(2, processed);
         verify(userRepository).addCreditsAtomically(mockLearner.getId(), 10);
         verify(userRepository).addCreditsAtomically(mockMentor.getId(), 10);
+        verify(availabilityRepository).releaseAvailabilityAtomically(eq(mockAvailability.getId()), eq(pendingSession.getId()));
     }
 
     @Test

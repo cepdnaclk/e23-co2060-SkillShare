@@ -107,10 +107,16 @@ public class SessionService {
         session.setAvailabilityId(availability.getId());
         session.setStatus(SessionStatus.PENDING);
 
+        // CRITICAL FIX: Map to DTO *inside* the @Transactional boundary.
+        // This resolves all lazy proxies (Session -> Skill, -> User) before the
+        // Hibernate session closes, preventing "no session" serialization crashes.
+        Session saved = sessionRepository.save(session);
+
         // 7. Atomically reserve the Availability to show it is now taken
         int reservedRows =
                 availabilityRepository.reserveAvailabilityAtomically(
-                        availability.getId()
+                        availability.getId(),
+                        saved.getId()
                 );
 
         if (reservedRows != 1) {
@@ -126,10 +132,6 @@ public class SessionService {
                 NotificationType.SESSION_UPDATE
         );
 
-        // CRITICAL FIX: Map to DTO *inside* the @Transactional boundary.
-        // This resolves all lazy proxies (Session -> Skill, -> User) before the
-        // Hibernate session closes, preventing "no session" serialization crashes.
-        Session saved = sessionRepository.save(session);
         return toDto(saved);
     }
 
@@ -169,13 +171,14 @@ public class SessionService {
                     NotificationType.SESSION_UPDATE
             );
         } else if (newStatus == SessionStatus.REJECTED) {
-            Availability availability = availabilityRepository.findById(session.getAvailabilityId())
-                    .orElseThrow(() -> new IllegalStateException("Original time slot missing"));
-
             userRepository.addCreditsAtomically(session.getLearner().getId(), 10);
 
-            availability.setIsBooked(false);
-            availabilityRepository.save(availability);
+            if (session.getAvailabilityId() != null) {
+                int released = availabilityRepository.releaseAvailabilityAtomically(session.getAvailabilityId(), session.getId());
+                if (released != 1) {
+                    throw new IllegalStateException("Failed to release availability: ownership mismatch or already released");
+                }
+            }
 
             notificationService.sendNotification(
                     session.getLearner(),
@@ -252,10 +255,10 @@ public class SessionService {
         // userRepository.save(mentor);
 
         if (session.getAvailabilityId() != null) {
-            Availability availability = availabilityRepository.findById(session.getAvailabilityId())
-                    .orElseThrow(() -> new IllegalStateException("Original time slot missing"));
-            availability.setIsBooked(false);
-            availabilityRepository.save(availability);
+            int released = availabilityRepository.releaseAvailabilityAtomically(session.getAvailabilityId(), session.getId());
+            if (released != 1) {
+                throw new IllegalStateException("Failed to release availability: ownership mismatch or already released");
+            }
         }
 
         session.setStatus(SessionStatus.CANCELLED);
@@ -352,6 +355,14 @@ public class SessionService {
 
             if (updated == 1) {
                 userRepository.addCreditsAtomically(session.getLearner().getId(), 10);
+
+                if (session.getAvailabilityId() != null) {
+                    int released = availabilityRepository.releaseAvailabilityAtomically(session.getAvailabilityId(), session.getId());
+                    if (released != 1) {
+                        throw new IllegalStateException("Failed to release availability: ownership mismatch or already released");
+                    }
+                }
+
                 notificationService.sendNotification(session.getLearner(), "Your session request expired. Your 10 credits have been refunded.", NotificationType.SYSTEM_ALERT);
             }
         }

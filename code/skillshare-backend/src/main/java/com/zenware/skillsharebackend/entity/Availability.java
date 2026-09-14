@@ -31,4 +31,7 @@ public class Availability {
     @Column(name = "is_booked")
     @Builder.Default
     private Boolean isBooked = false;
+
+    @Column(name = "active_session_id")
+    private UUID activeSessionId;
 }
