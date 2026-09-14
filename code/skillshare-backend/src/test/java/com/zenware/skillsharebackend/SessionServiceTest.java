@@ -96,6 +96,7 @@ public class SessionServiceTest {
         when(userRepository.findByEmail("learner@test.com")).thenReturn(Optional.of(mockLearner));
         when(skillRepository.findById(mockSkill.getId())).thenReturn(Optional.of(mockSkill));
         when(availabilityRepository.findById(mockAvailability.getId())).thenReturn(Optional.of(mockAvailability));
+        when(userRepository.deductCreditsIfSufficient(mockLearner.getId(), 10)).thenReturn(1);
         
         Session mockSavedSession = new Session();
         mockSavedSession.setId(UUID.randomUUID());
@@ -112,7 +113,7 @@ public class SessionServiceTest {
         // Assert
         assertNotNull(response);
         assertEquals(SessionStatus.PENDING, response.getStatus());
-        verify(userRepository).addCreditsAtomically(mockLearner.getId(), -10);
+        verify(userRepository).deductCreditsIfSufficient(mockLearner.getId(), 10);
         assertTrue(mockAvailability.getIsBooked());
         verify(notificationService).sendNotification(eq(mockMentor), anyString(), any());
     }
@@ -120,7 +121,6 @@ public class SessionServiceTest {
     @Test
     void testBookSession_InsufficientCredits() {
         // Arrange
-        mockLearner.setCredits(5);
         SessionRequest request = new SessionRequest();
         request.setSkillId(mockSkill.getId());
         request.setAvailabilityId(mockAvailability.getId());
@@ -130,11 +130,14 @@ public class SessionServiceTest {
         when(skillRepository.findById(mockSkill.getId())).thenReturn(Optional.of(mockSkill));
         when(availabilityRepository.findById(mockAvailability.getId())).thenReturn(Optional.of(mockAvailability));
 
+        when(userRepository.deductCreditsIfSufficient(mockLearner.getId(), 10)).thenReturn(0);
+
         // Act & Assert
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             sessionService.bookSession(request);
         });
         assertTrue(exception.getMessage().contains("not have enough credits"));
+        verify(sessionRepository, never()).save(any(Session.class));
     }
 
     @Test
