@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -24,6 +25,9 @@ public class SessionService {
     private final AvailabilityRepository availabilityRepository;
     private final NotificationService notificationService;
     private final GamificationService gamificationService;
+
+    @Value("${app.session.pending-response-timeout-hours:24}")
+    private int responseTimeoutHours;
 
     // --- THE SECURITY ENGINE ---
     // LOGIC: This helper method grabs the exact user currently making the API request
@@ -150,6 +154,15 @@ public class SessionService {
 
         if (newStatus != SessionStatus.ACCEPTED && newStatus != SessionStatus.REJECTED) {
             throw new IllegalArgumentException("Invalid target status");
+        }
+
+        if (newStatus == SessionStatus.ACCEPTED) {
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime timeoutThreshold = now.minusHours(responseTimeoutHours);
+            if (!now.isBefore(session.getStartTime()) ||
+                (session.getCreatedAt() != null && !timeoutThreshold.isBefore(session.getCreatedAt()))) {
+                throw new IllegalStateException("Session request has expired and cannot be accepted.");
+            }
         }
 
         int updated = sessionRepository.transitionSessionStatusAtomically(
@@ -347,10 +360,11 @@ public class SessionService {
     @Transactional
     public int expireOverdueSessions() {
         LocalDateTime now = LocalDateTime.now();
+        LocalDateTime timeoutThreshold = now.minusHours(responseTimeoutHours);
 
         // 1. Handle Expired PENDING Sessions (Refund the Learner)
-        List<Session> expiredPending = sessionRepository.findByStatusInAndEndTimeBefore(
-                Arrays.asList(SessionStatus.PENDING), now);
+        List<Session> expiredPending = sessionRepository.findPendingSessionsForExpiration(
+                SessionStatus.PENDING, now, timeoutThreshold);
 
         for (Session session : expiredPending) {
             int updated = sessionRepository.transitionSessionStatusAtomically(

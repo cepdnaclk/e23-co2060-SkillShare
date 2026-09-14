@@ -29,6 +29,14 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
     // Counts how many sessions are awaiting the mentor's approval
     long countByMentorIdAndStatus(UUID mentorId, com.zenware.skillsharebackend.entity.SessionStatus status);
 
+    @Query("SELECT s FROM Session s WHERE s.status = :status AND (" +
+           "s.startTime <= :now OR " +
+           "(s.createdAt IS NOT NULL AND s.createdAt <= :timeoutThreshold))")
+    List<Session> findPendingSessionsForExpiration(
+        @Param("status") SessionStatus status,
+        @Param("now") LocalDateTime now,
+        @Param("timeoutThreshold") LocalDateTime timeoutThreshold);
+
     // Counts upcoming sessions for the learner
     long countByLearnerIdAndStatus(UUID learnerId, com.zenware.skillsharebackend.entity.SessionStatus status);
 
