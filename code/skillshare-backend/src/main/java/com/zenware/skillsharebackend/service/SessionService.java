@@ -107,9 +107,17 @@ public class SessionService {
         session.setAvailabilityId(availability.getId());
         session.setStatus(SessionStatus.PENDING);
 
-        // 7. Update the Availability to show it is now taken
-        availability.setIsBooked(true);
-        availabilityRepository.save(availability);
+        // 7. Atomically reserve the Availability to show it is now taken
+        int reservedRows =
+                availabilityRepository.reserveAvailabilityAtomically(
+                        availability.getId()
+                );
+
+        if (reservedRows != 1) {
+            throw new IllegalStateException(
+                    "Sorry, this time slot is already booked!"
+            );
+        }
 
         // 8. Notification
         notificationService.sendNotification(

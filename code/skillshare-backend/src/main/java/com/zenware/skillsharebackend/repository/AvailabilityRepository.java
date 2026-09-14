@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 @Repository
 // LOGIC: Upgraded from Long to UUID to match your new Entity structure!
 public interface AvailabilityRepository extends JpaRepository<Availability, UUID> {
@@ -19,4 +23,15 @@ public interface AvailabilityRepository extends JpaRepository<Availability, UUID
     Optional<Availability> findByUserIdAndStartTime(UUID userId, LocalDateTime startTime);
 
     List<Availability> findByUserId(UUID mentorId);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+        UPDATE Availability a
+        SET a.isBooked = true
+        WHERE a.id = :availabilityId
+          AND a.isBooked = false
+    """)
+    int reserveAvailabilityAtomically(
+            @Param("availabilityId") UUID availabilityId
+    );
 }

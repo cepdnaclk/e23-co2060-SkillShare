@@ -97,6 +97,7 @@ public class SessionServiceTest {
         when(skillRepository.findById(mockSkill.getId())).thenReturn(Optional.of(mockSkill));
         when(availabilityRepository.findById(mockAvailability.getId())).thenReturn(Optional.of(mockAvailability));
         when(userRepository.deductCreditsIfSufficient(mockLearner.getId(), 10)).thenReturn(1);
+        when(availabilityRepository.reserveAvailabilityAtomically(mockAvailability.getId())).thenReturn(1);
         
         Session mockSavedSession = new Session();
         mockSavedSession.setId(UUID.randomUUID());
@@ -114,7 +115,6 @@ public class SessionServiceTest {
         assertNotNull(response);
         assertEquals(SessionStatus.PENDING, response.getStatus());
         verify(userRepository).deductCreditsIfSufficient(mockLearner.getId(), 10);
-        assertTrue(mockAvailability.getIsBooked());
         verify(notificationService).sendNotification(eq(mockMentor), anyString(), any());
     }
 
@@ -137,6 +137,29 @@ public class SessionServiceTest {
             sessionService.bookSession(request);
         });
         assertTrue(exception.getMessage().contains("not have enough credits"));
+        verify(sessionRepository, never()).save(any(Session.class));
+    }
+
+    @Test
+    void testBookSession_ReservationFailure() {
+        // Arrange
+        SessionRequest request = new SessionRequest();
+        request.setSkillId(mockSkill.getId());
+        request.setAvailabilityId(mockAvailability.getId());
+
+        when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("learner@test.com");
+        when(userRepository.findByEmail("learner@test.com")).thenReturn(Optional.of(mockLearner));
+        when(skillRepository.findById(mockSkill.getId())).thenReturn(Optional.of(mockSkill));
+        when(availabilityRepository.findById(mockAvailability.getId())).thenReturn(Optional.of(mockAvailability));
+        when(userRepository.deductCreditsIfSufficient(mockLearner.getId(), 10)).thenReturn(1);
+
+        when(availabilityRepository.reserveAvailabilityAtomically(mockAvailability.getId())).thenReturn(0);
+
+        // Act & Assert
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            sessionService.bookSession(request);
+        });
+        assertEquals("Sorry, this time slot is already booked!", exception.getMessage());
         verify(sessionRepository, never()).save(any(Session.class));
     }
 
