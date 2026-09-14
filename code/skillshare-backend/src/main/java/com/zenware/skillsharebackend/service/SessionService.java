@@ -146,6 +146,20 @@ public class SessionService {
             throw new IllegalStateException("Security Violation: Only the assigned mentor can update this session!");
         }
 
+        if (newStatus != SessionStatus.ACCEPTED && newStatus != SessionStatus.REJECTED) {
+            throw new IllegalArgumentException("Invalid target status");
+        }
+
+        int updated = sessionRepository.transitionSessionStatusAtomically(
+                session.getId(),
+                newStatus,
+                List.of(SessionStatus.PENDING)
+        );
+
+        if (updated == 0) {
+            throw new IllegalStateException("Session is not in PENDING state or was already processed.");
+        }
+
         session.setStatus(newStatus);
 
         if (newStatus == SessionStatus.ACCEPTED) {
@@ -184,6 +198,16 @@ public class SessionService {
 
         if (session.getStatus() != SessionStatus.ACCEPTED && session.getStatus() != SessionStatus.PENDING) {
             throw new IllegalStateException("You can only cancel upcoming sessions!");
+        }
+
+        int updated = sessionRepository.transitionSessionStatusAtomically(
+                session.getId(),
+                SessionStatus.CANCELLED,
+                List.of(session.getStatus())
+        );
+
+        if (updated == 0) {
+            throw new IllegalStateException("Session was already cancelled or processed.");
         }
 
         // SECURITY GUARD: Fetch canceling user from JWT
@@ -258,6 +282,16 @@ public class SessionService {
             throw new IllegalStateException("Security Violation: Only the Learner can complete the session!");
         }
 
+        int updated = sessionRepository.transitionSessionStatusAtomically(
+                session.getId(),
+                SessionStatus.COMPLETED,
+                List.of(SessionStatus.ACCEPTED)
+        );
+
+        if (updated == 0) {
+            throw new IllegalStateException("Session is not in ACCEPTED state or was already completed.");
+        }
+
         User mentor = session.getMentor();
         User learner = session.getLearner();
 
@@ -310,12 +344,16 @@ public class SessionService {
                 Arrays.asList(SessionStatus.PENDING), now);
 
         for (Session session : expiredPending) {
-            userRepository.addCreditsAtomically(session.getLearner().getId(), 10);
+            int updated = sessionRepository.transitionSessionStatusAtomically(
+                    session.getId(),
+                    SessionStatus.EXPIRED,
+                    List.of(SessionStatus.PENDING)
+            );
 
-            session.setStatus(SessionStatus.EXPIRED);
-            sessionRepository.save(session);
-
-            notificationService.sendNotification(session.getLearner(), "Your session request expired. Your 10 credits have been refunded.", NotificationType.SYSTEM_ALERT);
+            if (updated == 1) {
+                userRepository.addCreditsAtomically(session.getLearner().getId(), 10);
+                notificationService.sendNotification(session.getLearner(), "Your session request expired. Your 10 credits have been refunded.", NotificationType.SYSTEM_ALERT);
+            }
         }
 
         // 2. Handle Forgotten ACCEPTED Sessions (Auto-Pay the Mentor)
@@ -323,13 +361,17 @@ public class SessionService {
                 Arrays.asList(SessionStatus.ACCEPTED), now);
 
         for (Session session : forgottenAccepted) {
-            // The learner forgot to click complete, so we auto-release the escrow to the mentor
-            userRepository.addCreditsAtomically(session.getMentor().getId(), 10);
+            int updated = sessionRepository.transitionSessionStatusAtomically(
+                    session.getId(),
+                    SessionStatus.COMPLETED,
+                    List.of(SessionStatus.ACCEPTED)
+            );
 
-            session.setStatus(SessionStatus.COMPLETED); // Auto-completed!
-            sessionRepository.save(session);
-
-            notificationService.sendNotification(session.getMentor(), "The session time passed and was auto-completed. You received 10 credits.", NotificationType.SYSTEM_ALERT);
+            if (updated == 1) {
+                // The learner forgot to click complete, so we auto-release the escrow to the mentor
+                userRepository.addCreditsAtomically(session.getMentor().getId(), 10);
+                notificationService.sendNotification(session.getMentor(), "The session time passed and was auto-completed. You received 10 credits.", NotificationType.SYSTEM_ALERT);
+            }
         }
 
         return expiredPending.size() + forgottenAccepted.size();

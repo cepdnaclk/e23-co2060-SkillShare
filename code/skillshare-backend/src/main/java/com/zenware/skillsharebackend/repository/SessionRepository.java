@@ -4,6 +4,7 @@ import com.zenware.skillsharebackend.dto.TrendingSkillDto;
 import com.zenware.skillsharebackend.entity.Session;
 import com.zenware.skillsharebackend.entity.SessionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -40,4 +41,17 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
             "GROUP BY s.skill.name " +
             "ORDER BY totalSessions DESC LIMIT :limit")
     List<TrendingSkillDto> findTopTrendingSkills(@Param("limit") int limit);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+        UPDATE Session s
+        SET s.status = :newStatus
+        WHERE s.id = :sessionId
+          AND s.status IN :expectedCurrentStatuses
+    """)
+    int transitionSessionStatusAtomically(
+        @Param("sessionId") UUID sessionId,
+        @Param("newStatus") SessionStatus newStatus,
+        @Param("expectedCurrentStatuses") List<SessionStatus> expectedCurrentStatuses
+    );
 }
