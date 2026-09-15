@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 
 @Repository
 public interface SessionRepository extends JpaRepository<Session, UUID> {
@@ -24,7 +25,7 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
 
     // LOGIC: Finds sessions matching specific statuses where the time has passed!
     // This is the query that powers the Expiration Engine
-    List<Session> findByStatusInAndEndTimeBefore(List<SessionStatus> statuses, LocalDateTime endTime);
+    List<Session> findByStatusInAndEndTimeBefore(List<SessionStatus> statuses, LocalDateTime endTime, Pageable pageable);
 
     // Counts how many sessions are awaiting the mentor's approval
     long countByMentorIdAndStatus(UUID mentorId, com.zenware.skillsharebackend.entity.SessionStatus status);
@@ -35,7 +36,8 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
     List<Session> findPendingSessionsForExpiration(
         @Param("status") SessionStatus status,
         @Param("now") LocalDateTime now,
-        @Param("timeoutThreshold") LocalDateTime timeoutThreshold);
+        @Param("timeoutThreshold") LocalDateTime timeoutThreshold,
+        Pageable pageable);
 
     // Counts upcoming sessions for the learner
     long countByLearnerIdAndStatus(UUID learnerId, com.zenware.skillsharebackend.entity.SessionStatus status);

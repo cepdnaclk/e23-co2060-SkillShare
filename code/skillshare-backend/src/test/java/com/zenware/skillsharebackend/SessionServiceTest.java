@@ -26,6 +26,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -554,10 +558,12 @@ public class SessionServiceTest {
         Session acceptedSession = new Session();
         acceptedSession.setId(UUID.randomUUID());
 
-        when(sessionRepository.findPendingSessionsForExpiration(eq(SessionStatus.PENDING), any(LocalDateTime.class), any(LocalDateTime.class)))
+        ArgumentCaptor<Pageable> pendingPageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        when(sessionRepository.findPendingSessionsForExpiration(eq(SessionStatus.PENDING), any(LocalDateTime.class), any(LocalDateTime.class), pendingPageableCaptor.capture()))
                 .thenReturn(List.of(pendingSession1, pendingSession2, pendingSession3)); // Three pending
 
-        when(sessionRepository.findByStatusInAndEndTimeBefore(eq(List.of(SessionStatus.ACCEPTED)), any(LocalDateTime.class)))
+        ArgumentCaptor<Pageable> acceptedPageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        when(sessionRepository.findByStatusInAndEndTimeBefore(eq(List.of(SessionStatus.ACCEPTED)), any(LocalDateTime.class), acceptedPageableCaptor.capture()))
                 .thenReturn(List.of(acceptedSession)); // One accepted
 
         // Processor succeeds for first pending, fails (exception) for second, returns false (ineligible) for third
@@ -581,6 +587,16 @@ public class SessionServiceTest {
         verify(sessionExpirationProcessor, times(1)).processPendingExpiration(pendingSession2.getId());
         verify(sessionExpirationProcessor, times(1)).processPendingExpiration(pendingSession3.getId());
         verify(sessionExpirationProcessor, times(1)).processAcceptedCompletion(acceptedSession.getId());
+
+        Pageable pendingPageable = pendingPageableCaptor.getValue();
+        assertEquals(100, pendingPageable.getPageSize());
+        assertEquals(0, pendingPageable.getPageNumber());
+        assertEquals(Sort.by("createdAt").ascending(), pendingPageable.getSort());
+
+        Pageable acceptedPageable = acceptedPageableCaptor.getValue();
+        assertEquals(100, acceptedPageable.getPageSize());
+        assertEquals(0, acceptedPageable.getPageNumber());
+        assertEquals(Sort.by("endTime").ascending(), acceptedPageable.getSort());
     }
 
     @Test

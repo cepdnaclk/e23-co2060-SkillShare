@@ -17,11 +17,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class SessionService {
+
+    private static final int EXPIRATION_BATCH_SIZE = 100;
 
     private final SessionRepository sessionRepository;
     private final UserRepository userRepository;
@@ -366,8 +371,9 @@ public class SessionService {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime timeoutThreshold = now.minusHours(responseTimeoutHours);
 
+        Pageable pendingPageable = PageRequest.of(0, EXPIRATION_BATCH_SIZE, Sort.by("createdAt").ascending());
         List<Session> expiredPending = sessionRepository.findPendingSessionsForExpiration(
-                SessionStatus.PENDING, now, timeoutThreshold);
+                SessionStatus.PENDING, now, timeoutThreshold, pendingPageable);
 
         int successfulCount = 0;
 
@@ -382,8 +388,9 @@ public class SessionService {
             }
         }
 
+        Pageable acceptedPageable = PageRequest.of(0, EXPIRATION_BATCH_SIZE, Sort.by("endTime").ascending());
         List<Session> forgottenAccepted = sessionRepository.findByStatusInAndEndTimeBefore(
-                Arrays.asList(SessionStatus.ACCEPTED), now);
+                Arrays.asList(SessionStatus.ACCEPTED), now, acceptedPageable);
 
         for (Session session : forgottenAccepted) {
             try {
