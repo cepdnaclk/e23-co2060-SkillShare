@@ -12,6 +12,7 @@ import com.zenware.skillsharebackend.config.SessionProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +27,7 @@ public class SessionExpirationProcessor {
     private final AvailabilityRepository availabilityRepository;
     private final NotificationService notificationService;
     private final SessionProperties sessionProperties;
+    private final Clock clock;
 
     @Transactional
     public boolean processPendingExpiration(UUID sessionId) {
@@ -36,7 +38,7 @@ public class SessionExpirationProcessor {
             return false;
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         LocalDateTime timeoutThreshold = now.minusHours(sessionProperties.getPendingResponseTimeoutHours());
 
         boolean isTimeExpired = (session.getStartTime() != null && !now.isBefore(session.getStartTime())) ||
@@ -77,7 +79,7 @@ public class SessionExpirationProcessor {
             return false;
         }
 
-        if (session.getEndTime() == null || !LocalDateTime.now().isAfter(session.getEndTime())) {
+        if (session.getEndTime() == null || !LocalDateTime.now(clock).isAfter(session.getEndTime())) {
             return false;
         }
 

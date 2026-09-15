@@ -10,9 +10,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,6 +42,10 @@ class SessionExpirationProcessorTest {
 
     @Mock
     private SessionProperties sessionProperties;
+    @Spy
+    private Clock clock = Clock.fixed(LocalDateTime.of(2026, 1, 1, 12, 0).atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
+
+    private final LocalDateTime referenceTime = LocalDateTime.of(2026, 1, 1, 12, 0);
 
     @InjectMocks
     private SessionExpirationProcessor processor;
@@ -69,14 +76,14 @@ class SessionExpirationProcessorTest {
         pendingSession.setMentor(mockMentor);
         pendingSession.setStatus(SessionStatus.PENDING);
         pendingSession.setAvailabilityId(availabilityId);
-        pendingSession.setCreatedAt(LocalDateTime.now().minusHours(25)); // older than 24h
+        pendingSession.setCreatedAt(referenceTime.minusHours(25)); // older than 24h
 
         acceptedSession = new Session();
         acceptedSession.setId(UUID.randomUUID());
         acceptedSession.setLearner(mockLearner);
         acceptedSession.setMentor(mockMentor);
         acceptedSession.setStatus(SessionStatus.ACCEPTED);
-        acceptedSession.setEndTime(LocalDateTime.now().minusMinutes(10)); // End time passed
+        acceptedSession.setEndTime(referenceTime.minusMinutes(10)); // End time passed
     }
 
     @Test
@@ -121,7 +128,7 @@ class SessionExpirationProcessorTest {
 
     @Test
     void processAcceptedCompletion_NotExpiredYet_ReturnsFalse() {
-        acceptedSession.setEndTime(LocalDateTime.now().plusMinutes(10)); // Not expired yet
+        acceptedSession.setEndTime(referenceTime.plusMinutes(10)); // Not expired yet
         when(sessionRepository.findById(acceptedSession.getId())).thenReturn(Optional.of(acceptedSession));
 
         boolean result = processor.processAcceptedCompletion(acceptedSession.getId());
@@ -132,7 +139,7 @@ class SessionExpirationProcessorTest {
 
     @Test
     void processPendingExpiration_RecentSession_ReturnsFalse() {
-        pendingSession.setCreatedAt(LocalDateTime.now().minusHours(23)); // Less than 24h
+        pendingSession.setCreatedAt(referenceTime.minusHours(23)); // Less than 24h
         when(sessionRepository.findById(pendingSession.getId())).thenReturn(Optional.of(pendingSession));
 
         boolean result = processor.processPendingExpiration(pendingSession.getId());
@@ -143,8 +150,8 @@ class SessionExpirationProcessorTest {
 
     @Test
     void processPendingExpiration_StartTimeReached_ReturnsTrue() {
-        pendingSession.setCreatedAt(LocalDateTime.now().minusHours(2)); // Very recent
-        pendingSession.setStartTime(LocalDateTime.now().minusMinutes(5)); // But start time has passed
+        pendingSession.setCreatedAt(referenceTime.minusHours(2)); // Very recent
+        pendingSession.setStartTime(referenceTime.minusMinutes(5)); // But start time has passed
 
         when(sessionRepository.findById(pendingSession.getId())).thenReturn(Optional.of(pendingSession));
         when(sessionRepository.transitionSessionStatusAtomically(pendingSession.getId(), SessionStatus.EXPIRED, List.of(SessionStatus.PENDING)))
@@ -215,5 +222,31 @@ class SessionExpirationProcessorTest {
 
         assertFalse(result);
         verify(sessionRepository, never()).transitionSessionStatusAtomically(any(), any(), any());
+    }
+
+    @Test
+    void processPendingExpiration_ExactlyAtBoundary_ReturnsTrue() {
+        pendingSession.setCreatedAt(referenceTime.minusHours(24));
+        when(sessionRepository.findById(pendingSession.getId())).thenReturn(Optional.of(pendingSession));
+        when(sessionRepository.transitionSessionStatusAtomically(pendingSession.getId(), SessionStatus.EXPIRED, List.of(SessionStatus.PENDING))).thenReturn(1);
+        when(availabilityRepository.releaseAvailabilityAtomically(availabilityId, pendingSession.getId())).thenReturn(1);
+        boolean result = processor.processPendingExpiration(pendingSession.getId());
+        assertTrue(result);
+    }
+
+    @Test
+    void processPendingExpiration_OneSecondBeforeBoundary_ReturnsFalse() {
+        pendingSession.setCreatedAt(referenceTime.minusHours(24).plusSeconds(1));
+        when(sessionRepository.findById(pendingSession.getId())).thenReturn(Optional.of(pendingSession));
+        boolean result = processor.processPendingExpiration(pendingSession.getId());
+        assertFalse(result);
+    }
+
+    @Test
+    void processAcceptedCompletion_ExactlyAtEndTime_ReturnsFalse() {
+        acceptedSession.setEndTime(referenceTime);
+        when(sessionRepository.findById(acceptedSession.getId())).thenReturn(Optional.of(acceptedSession));
+        boolean result = processor.processAcceptedCompletion(acceptedSession.getId());
+        assertFalse(result);
     }
 }

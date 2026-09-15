@@ -17,13 +17,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -55,6 +58,10 @@ public class SessionServiceTest {
     private SessionExpirationProcessor sessionExpirationProcessor;
     @Mock
     private SessionProperties sessionProperties;
+    @Spy
+    private Clock clock = Clock.fixed(LocalDateTime.of(2026, 1, 1, 12, 0).atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
+
+    private final LocalDateTime referenceTime = LocalDateTime.of(2026, 1, 1, 12, 0);
 
     @InjectMocks
     private SessionService sessionService;
@@ -86,8 +93,8 @@ public class SessionServiceTest {
         mockAvailability.setId(UUID.randomUUID());
         mockAvailability.setUser(mockMentor);
         mockAvailability.setIsBooked(false);
-        mockAvailability.setStartTime(LocalDateTime.now().plusDays(1));
-        mockAvailability.setEndTime(LocalDateTime.now().plusDays(1).plusHours(1));
+        mockAvailability.setStartTime(referenceTime.plusDays(1));
+        mockAvailability.setEndTime(referenceTime.plusDays(1).plusHours(1));
 
         SecurityContext securityContext = mock(SecurityContext.class);
         Authentication authentication = mock(Authentication.class);
@@ -187,7 +194,7 @@ public class SessionServiceTest {
         Session session = new Session();
         session.setId(UUID.randomUUID());
         session.setStatus(SessionStatus.ACCEPTED);
-        session.setEndTime(LocalDateTime.now().plusHours(1)); // Future end time
+        session.setEndTime(referenceTime.plusHours(1)); // Future end time
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
 
@@ -206,7 +213,7 @@ public class SessionServiceTest {
         session.setMentor(mockMentor);
         session.setSkill(mockSkill);
         session.setStatus(SessionStatus.PENDING);
-        session.setStartTime(LocalDateTime.now().plusHours(1));
+        session.setStartTime(referenceTime.plusHours(1));
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
         when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("mentor@test.com");
@@ -263,7 +270,7 @@ public class SessionServiceTest {
         session.setLearner(mockLearner);
         session.setMentor(mockMentor);
         session.setStatus(SessionStatus.PENDING);
-        session.setStartTime(LocalDateTime.now().plusHours(1));
+        session.setStartTime(referenceTime.plusHours(1));
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
         when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("mentor@test.com");
@@ -320,7 +327,7 @@ public class SessionServiceTest {
         session.setMentor(mockMentor);
         session.setSkill(mockSkill);
         session.setStatus(SessionStatus.ACCEPTED);
-        session.setStartTime(LocalDateTime.now().plusHours(1));
+        session.setStartTime(referenceTime.plusHours(1));
         session.setAvailabilityId(mockAvailability.getId());
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
@@ -384,7 +391,7 @@ public class SessionServiceTest {
         session.setMentor(mockMentor);
         session.setSkill(mockSkill);
         session.setStatus(SessionStatus.ACCEPTED);
-        session.setStartTime(LocalDateTime.now().plusHours(1));
+        session.setStartTime(referenceTime.plusHours(1));
         session.setAvailabilityId(mockAvailability.getId());
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
@@ -414,7 +421,7 @@ public class SessionServiceTest {
         Session session = new Session();
         session.setId(UUID.randomUUID());
         session.setStatus(SessionStatus.ACCEPTED);
-        session.setStartTime(LocalDateTime.now().minusHours(1));
+        session.setStartTime(referenceTime.minusHours(1));
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
 
@@ -433,7 +440,7 @@ public class SessionServiceTest {
         Session session = new Session();
         session.setId(UUID.randomUUID());
         session.setStatus(SessionStatus.ACCEPTED);
-        session.setStartTime(LocalDateTime.now().minusHours(1));
+        session.setStartTime(referenceTime.minusHours(1));
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
 
@@ -463,7 +470,7 @@ public class SessionServiceTest {
         Session session = new Session();
         session.setId(UUID.randomUUID());
         session.setStatus(SessionStatus.ACCEPTED);
-        session.setStartTime(LocalDateTime.now()); // Exactly now is NOT before now
+        session.setStartTime(referenceTime); // Exactly now is NOT before now
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
 
@@ -501,7 +508,7 @@ public class SessionServiceTest {
         session.setMentor(mockMentor);
         session.setSkill(mockSkill);
         session.setStatus(SessionStatus.ACCEPTED);
-        session.setEndTime(LocalDateTime.now().minusHours(1));
+        session.setEndTime(referenceTime.minusHours(1));
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
         when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("learner@test.com");
@@ -529,7 +536,7 @@ public class SessionServiceTest {
         session.setId(UUID.randomUUID());
         session.setLearner(mockLearner);
         session.setStatus(SessionStatus.ACCEPTED);
-        session.setEndTime(LocalDateTime.now().minusHours(1));
+        session.setEndTime(referenceTime.minusHours(1));
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
         when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("learner@test.com");
@@ -610,8 +617,8 @@ public class SessionServiceTest {
         session.setMentor(mockMentor);
         session.setSkill(mockSkill);
         session.setStatus(SessionStatus.PENDING);
-        session.setStartTime(LocalDateTime.now().plusHours(5));
-        session.setCreatedAt(LocalDateTime.now().minusHours(10)); // Created 10h ago (< 24)
+        session.setStartTime(referenceTime.plusHours(5));
+        session.setCreatedAt(referenceTime.minusHours(10)); // Created 10h ago (< 24)
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
         when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("mentor@test.com");
@@ -635,8 +642,8 @@ public class SessionServiceTest {
         session.setMentor(mockMentor);
         session.setSkill(mockSkill);
         session.setStatus(SessionStatus.PENDING);
-        session.setStartTime(LocalDateTime.now().plusHours(5));
-        session.setCreatedAt(LocalDateTime.now().minusHours(25)); // Created 25h ago (> 24)
+        session.setStartTime(referenceTime.plusHours(5));
+        session.setCreatedAt(referenceTime.minusHours(25)); // Created 25h ago (> 24)
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
         when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("mentor@test.com");
@@ -657,8 +664,8 @@ public class SessionServiceTest {
         session.setMentor(mockMentor);
         session.setSkill(mockSkill);
         session.setStatus(SessionStatus.PENDING);
-        session.setStartTime(LocalDateTime.now().minusHours(1)); // Start time 1h ago
-        session.setCreatedAt(LocalDateTime.now().minusHours(5));
+        session.setStartTime(referenceTime.minusHours(1)); // Start time 1h ago
+        session.setCreatedAt(referenceTime.minusHours(5));
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
         when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("mentor@test.com");
@@ -679,8 +686,8 @@ public class SessionServiceTest {
         session.setSkill(mockSkill);
         session.setStatus(SessionStatus.PENDING);
         // We set createdAt exactly to 24 hours ago
-        session.setCreatedAt(LocalDateTime.now().minusHours(24));
-        session.setStartTime(LocalDateTime.now().plusHours(1)); // Start time in future
+        session.setCreatedAt(referenceTime.minusHours(24));
+        session.setStartTime(referenceTime.plusHours(1)); // Start time in future
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
         when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("mentor@test.com");
@@ -695,4 +702,42 @@ public class SessionServiceTest {
         assertEquals("Session request has expired and cannot be accepted.", exception.getMessage());
     }
 
+    @Test
+    void cancelSession_ExactlyAtStartTime_ThrowsException() {
+        Session session = new Session();
+        session.setId(UUID.randomUUID());
+        session.setStatus(SessionStatus.ACCEPTED);
+        session.setStartTime(referenceTime);
+
+        when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            sessionService.cancelSession(session.getId());
+        });
+        assertEquals("Cannot cancel an ACCEPTED session after its scheduled start time.", exception.getMessage());
+    }
+
+    @Test
+    void cancelSession_OneSecondBeforeStartTime_Success() {
+        Session session = new Session();
+        session.setId(UUID.randomUUID());
+        session.setLearner(mockLearner);
+        session.setMentor(mockMentor);
+        session.setSkill(mockSkill);
+        session.setStatus(SessionStatus.ACCEPTED);
+        session.setStartTime(referenceTime.plusSeconds(1));
+        session.setAvailabilityId(mockAvailability.getId());
+
+        when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+        when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("learner@test.com");
+        when(userRepository.findByEmail("learner@test.com")).thenReturn(Optional.of(mockLearner));
+        when(sessionRepository.transitionSessionStatusAtomically(session.getId(), SessionStatus.CANCELLED, List.of(SessionStatus.ACCEPTED))).thenReturn(1);
+        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), session.getId())).thenReturn(1);
+        when(sessionRepository.save(any(Session.class))).thenReturn(session);
+
+        SessionResponse response = sessionService.cancelSession(session.getId());
+
+        assertNotNull(response);
+        assertEquals(SessionStatus.CANCELLED, response.getStatus());
+    }
 }

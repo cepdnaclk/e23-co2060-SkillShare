@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.zenware.skillsharebackend.config.SessionProperties;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -36,6 +37,7 @@ public class SessionService {
     private final GamificationService gamificationService;
     private final SessionExpirationProcessor sessionExpirationProcessor;
     private final SessionProperties sessionProperties;
+    private final Clock clock;
 
     // --- THE SECURITY ENGINE ---
     // LOGIC: This helper method grabs the exact user currently making the API request
@@ -165,7 +167,7 @@ public class SessionService {
         }
 
         if (newStatus == SessionStatus.ACCEPTED) {
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now(clock);
             LocalDateTime timeoutThreshold = now.minusHours(sessionProperties.getPendingResponseTimeoutHours());
             if (!now.isBefore(session.getStartTime()) ||
                 (session.getCreatedAt() != null && !timeoutThreshold.isBefore(session.getCreatedAt()))) {
@@ -225,7 +227,7 @@ public class SessionService {
         }
 
         if (session.getStatus() == SessionStatus.ACCEPTED) {
-            if (session.getStartTime() == null || !LocalDateTime.now().isBefore(session.getStartTime())) {
+            if (session.getStartTime() == null || !LocalDateTime.now(clock).isBefore(session.getStartTime())) {
                 throw new IllegalStateException("Cannot cancel an ACCEPTED session after its scheduled start time.");
             }
         }
@@ -302,7 +304,7 @@ public class SessionService {
             throw new IllegalStateException("Only ACCEPTED sessions can be marked as COMPLETED!");
         }
 
-        if (LocalDateTime.now().isBefore(session.getEndTime())) {
+        if (LocalDateTime.now(clock).isBefore(session.getEndTime())) {
             throw new IllegalStateException("Cannot complete session before its end time.");
         }
 
@@ -366,7 +368,7 @@ public class SessionService {
     }
 
     public int expireOverdueSessions() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         LocalDateTime timeoutThreshold = now.minusHours(sessionProperties.getPendingResponseTimeoutHours());
 
         Pageable pendingPageable = PageRequest.of(0, EXPIRATION_BATCH_SIZE, Sort.by("createdAt").ascending());
