@@ -12,6 +12,7 @@ import com.zenware.skillsharebackend.service.NotificationService;
 import com.zenware.skillsharebackend.service.SessionExpirationProcessor;
 import com.zenware.skillsharebackend.service.SessionService;
 import com.zenware.skillsharebackend.config.SessionProperties;
+import com.zenware.skillsharebackend.repository.CreditDebtRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,6 +59,8 @@ public class SessionServiceTest {
     private SessionExpirationProcessor sessionExpirationProcessor;
     @Mock
     private SessionProperties sessionProperties;
+    @Mock
+    private CreditDebtRepository creditDebtRepository;
     @Spy
     private Clock clock = Clock.fixed(LocalDateTime.of(2026, 1, 1, 12, 0).atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
 
@@ -384,39 +387,6 @@ public class SessionServiceTest {
     }
 
     @Test
-    void testCancelSession_MentorCancelsAccepted_Penalty() {
-        Session session = new Session();
-        session.setId(UUID.randomUUID());
-        session.setLearner(mockLearner);
-        session.setMentor(mockMentor);
-        session.setSkill(mockSkill);
-        session.setStatus(SessionStatus.ACCEPTED);
-        session.setStartTime(referenceTime.plusHours(1));
-        session.setAvailabilityId(mockAvailability.getId());
-
-        when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
-
-        when(sessionRepository.transitionSessionStatusAtomically(
-                session.getId(),
-                SessionStatus.CANCELLED,
-                List.of(SessionStatus.ACCEPTED)
-        )).thenReturn(1);
-
-        when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("mentor@test.com");
-        when(userRepository.findByEmail("mentor@test.com")).thenReturn(Optional.of(mockMentor));
-
-        when(sessionRepository.save(any(Session.class))).thenReturn(session);
-        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), session.getId())).thenReturn(1);
-
-        SessionResponse response = sessionService.cancelSession(session.getId());
-
-        assertEquals(SessionStatus.CANCELLED, response.getStatus());
-        verify(userRepository).addCreditsAtomically(mockLearner.getId(), 15);
-        verify(userRepository).addCreditsAtomically(mockMentor.getId(), -5);
-        verify(availabilityRepository).releaseAvailabilityAtomically(eq(mockAvailability.getId()), eq(session.getId()));
-    }
-
-    @Test
     void testCancelSession_LearnerCancelsAccepted_AfterStartTime() {
         Session session = new Session();
         session.setId(UUID.randomUUID());
@@ -739,5 +709,183 @@ public class SessionServiceTest {
 
         assertNotNull(response);
         assertEquals(SessionStatus.CANCELLED, response.getStatus());
+    }
+
+    @Test
+    void cancelSession_MentorHasExcessCredits_FullDeduction() {
+        Session session = new Session();
+        session.setId(UUID.randomUUID());
+        session.setLearner(mockLearner);
+        session.setMentor(mockMentor);
+        session.setSkill(mockSkill);
+        session.setStatus(SessionStatus.ACCEPTED);
+        session.setStartTime(referenceTime.plusHours(1));
+        session.setAvailabilityId(mockAvailability.getId());
+
+        when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+        when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("mentor@test.com");
+        when(userRepository.findByEmail("mentor@test.com")).thenReturn(Optional.of(mockMentor));
+        when(sessionRepository.transitionSessionStatusAtomically(session.getId(), SessionStatus.CANCELLED, List.of(SessionStatus.ACCEPTED))).thenReturn(1);
+        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), session.getId())).thenReturn(1);
+        when(sessionRepository.save(any(Session.class))).thenReturn(session);
+        when(userRepository.deductCreditsIfSufficient(mockMentor.getId(), 5)).thenReturn(1);
+
+        SessionResponse response = sessionService.cancelSession(session.getId());
+
+        assertNotNull(response);
+        assertEquals(SessionStatus.CANCELLED, response.getStatus());
+        verify(userRepository).deductCreditsIfSufficient(mockMentor.getId(), 5);
+        verify(userRepository).addCreditsAtomically(mockLearner.getId(), 15);
+        verify(creditDebtRepository, never()).save(any());
+    }
+
+    @Test
+    void cancelSession_MentorHasFewerThanFiveCredits_GeneratesDebt() {
+        Session session = new Session();
+        session.setId(UUID.randomUUID());
+        session.setLearner(mockLearner);
+        session.setMentor(mockMentor);
+        session.setSkill(mockSkill);
+        session.setStatus(SessionStatus.ACCEPTED);
+        session.setStartTime(referenceTime.plusHours(1));
+        session.setAvailabilityId(mockAvailability.getId());
+
+        when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+        when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("mentor@test.com");
+        when(userRepository.findByEmail("mentor@test.com")).thenReturn(Optional.of(mockMentor));
+        when(sessionRepository.transitionSessionStatusAtomically(session.getId(), SessionStatus.CANCELLED, List.of(SessionStatus.ACCEPTED))).thenReturn(1);
+        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), session.getId())).thenReturn(1);
+        when(sessionRepository.save(any(Session.class))).thenReturn(session);
+        when(userRepository.deductCreditsIfSufficient(mockMentor.getId(), 5)).thenReturn(0);
+
+        SessionResponse response = sessionService.cancelSession(session.getId());
+
+        assertNotNull(response);
+        assertEquals(SessionStatus.CANCELLED, response.getStatus());
+        verify(userRepository).deductCreditsIfSufficient(mockMentor.getId(), 5);
+        verify(userRepository).addCreditsAtomically(mockLearner.getId(), 15);
+
+        ArgumentCaptor<CreditDebt> debtCaptor = ArgumentCaptor.forClass(CreditDebt.class);
+        verify(creditDebtRepository).save(debtCaptor.capture());
+        CreditDebt savedDebt = debtCaptor.getValue();
+        assertEquals(5, savedDebt.getAmount());
+        assertEquals(DebtStatus.UNPAID, savedDebt.getStatus());
+        assertEquals(mockMentor, savedDebt.getMentor());
+        assertEquals(session, savedDebt.getSession());
+    }
+
+    @Test
+    void cancelSession_DebtCreationFails_RollsBack() {
+        Session session = new Session();
+        session.setId(UUID.randomUUID());
+        session.setLearner(mockLearner);
+        session.setMentor(mockMentor);
+        session.setSkill(mockSkill);
+        session.setStatus(SessionStatus.ACCEPTED);
+        session.setStartTime(referenceTime.plusHours(1));
+        session.setAvailabilityId(mockAvailability.getId());
+
+        when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+        when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("mentor@test.com");
+        when(userRepository.findByEmail("mentor@test.com")).thenReturn(Optional.of(mockMentor));
+        when(sessionRepository.transitionSessionStatusAtomically(session.getId(), SessionStatus.CANCELLED, List.of(SessionStatus.ACCEPTED))).thenReturn(1);
+        when(userRepository.deductCreditsIfSufficient(mockMentor.getId(), 5)).thenReturn(0);
+
+        when(creditDebtRepository.save(any())).thenThrow(new org.springframework.dao.DataIntegrityViolationException("Duplicate"));
+
+        assertThrows(org.springframework.dao.DataIntegrityViolationException.class, () -> {
+            sessionService.cancelSession(session.getId());
+        });
+
+        // Ensure availability wasn't released because exception halted execution
+        verify(availabilityRepository, never()).releaseAvailabilityAtomically(any(), any());
+        verify(notificationService, never()).sendNotification(any(), anyString(), any());
+    }
+
+    @Test
+    void cancelSession_MentorHasExactlyFiveCredits_FullDeduction() {
+        Session session = new Session();
+        session.setId(UUID.randomUUID());
+        session.setLearner(mockLearner);
+        session.setMentor(mockMentor);
+        session.setSkill(mockSkill);
+        session.setStatus(SessionStatus.ACCEPTED);
+        session.setStartTime(referenceTime.plusHours(1));
+        session.setAvailabilityId(mockAvailability.getId());
+
+        when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+        when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("mentor@test.com");
+        when(userRepository.findByEmail("mentor@test.com")).thenReturn(Optional.of(mockMentor));
+        when(sessionRepository.transitionSessionStatusAtomically(session.getId(), SessionStatus.CANCELLED, List.of(SessionStatus.ACCEPTED))).thenReturn(1);
+        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), session.getId())).thenReturn(1);
+        when(sessionRepository.save(any(Session.class))).thenReturn(session);
+        when(userRepository.deductCreditsIfSufficient(mockMentor.getId(), 5)).thenReturn(1);
+
+        SessionResponse response = sessionService.cancelSession(session.getId());
+
+        assertNotNull(response);
+        assertEquals(SessionStatus.CANCELLED, response.getStatus());
+        verify(userRepository).deductCreditsIfSufficient(mockMentor.getId(), 5);
+        verify(userRepository).addCreditsAtomically(mockLearner.getId(), 15);
+        verify(creditDebtRepository, never()).save(any(CreditDebt.class));
+    }
+
+    @Test
+    void cancelSession_MentorHasZeroCredits_GeneratesDebt() {
+        Session session = new Session();
+        session.setId(UUID.randomUUID());
+        session.setLearner(mockLearner);
+        session.setMentor(mockMentor);
+        session.setSkill(mockSkill);
+        session.setStatus(SessionStatus.ACCEPTED);
+        session.setStartTime(referenceTime.plusHours(1));
+        session.setAvailabilityId(mockAvailability.getId());
+
+        when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+        when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("mentor@test.com");
+        when(userRepository.findByEmail("mentor@test.com")).thenReturn(Optional.of(mockMentor));
+        when(sessionRepository.transitionSessionStatusAtomically(session.getId(), SessionStatus.CANCELLED, List.of(SessionStatus.ACCEPTED))).thenReturn(1);
+        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), session.getId())).thenReturn(1);
+        when(sessionRepository.save(any(Session.class))).thenReturn(session);
+        when(userRepository.deductCreditsIfSufficient(mockMentor.getId(), 5)).thenReturn(0);
+
+        SessionResponse response = sessionService.cancelSession(session.getId());
+
+        assertNotNull(response);
+        assertEquals(SessionStatus.CANCELLED, response.getStatus());
+        verify(userRepository).deductCreditsIfSufficient(mockMentor.getId(), 5);
+        verify(userRepository).addCreditsAtomically(mockLearner.getId(), 15);
+
+        ArgumentCaptor<CreditDebt> debtCaptor = ArgumentCaptor.forClass(CreditDebt.class);
+        verify(creditDebtRepository).save(debtCaptor.capture());
+        CreditDebt savedDebt = debtCaptor.getValue();
+        assertEquals(5, savedDebt.getAmount());
+        assertEquals(DebtStatus.UNPAID, savedDebt.getStatus());
+    }
+
+    @Test
+    void cancelSession_DeductionThrowsException_RollsBack() {
+        Session session = new Session();
+        session.setId(UUID.randomUUID());
+        session.setLearner(mockLearner);
+        session.setMentor(mockMentor);
+        session.setSkill(mockSkill);
+        session.setStatus(SessionStatus.ACCEPTED);
+        session.setStartTime(referenceTime.plusHours(1));
+        session.setAvailabilityId(mockAvailability.getId());
+
+        when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+        when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("mentor@test.com");
+        when(userRepository.findByEmail("mentor@test.com")).thenReturn(Optional.of(mockMentor));
+        when(sessionRepository.transitionSessionStatusAtomically(session.getId(), SessionStatus.CANCELLED, List.of(SessionStatus.ACCEPTED))).thenReturn(1);
+        when(userRepository.deductCreditsIfSufficient(mockMentor.getId(), 5)).thenThrow(new org.springframework.dao.CannotAcquireLockException("DB Lock failed"));
+
+        assertThrows(org.springframework.dao.CannotAcquireLockException.class, () -> {
+            sessionService.cancelSession(session.getId());
+        });
+
+        verify(creditDebtRepository, never()).save(any());
+        verify(availabilityRepository, never()).releaseAvailabilityAtomically(any(), any());
+        verify(notificationService, never()).sendNotification(any(), anyString(), any());
     }
 }

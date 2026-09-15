@@ -37,6 +37,7 @@ public class SessionService {
     private final GamificationService gamificationService;
     private final SessionExpirationProcessor sessionExpirationProcessor;
     private final SessionProperties sessionProperties;
+    private final CreditDebtRepository creditDebtRepository;
     private final Clock clock;
 
     // --- THE SECURITY ENGINE ---
@@ -271,9 +272,22 @@ public class SessionService {
                 notificationService.sendNotification(mentor, "You cancelled the pending session request. No penalty was applied.", NotificationType.SESSION_UPDATE);
             } else {
                 userRepository.addCreditsAtomically(learner.getId(), originalCost + penaltyAmount);
-                userRepository.addCreditsAtomically(mentor.getId(), -penaltyAmount);
+
+                int deducted = userRepository.deductCreditsIfSufficient(mentor.getId(), penaltyAmount);
+                if (deducted == 1) {
+                    notificationService.sendNotification(mentor, "You cancelled the session. A penalty of " + penaltyAmount + " credits was applied.", NotificationType.SESSION_UPDATE);
+                } else {
+                    CreditDebt debt = CreditDebt.builder()
+                            .mentor(mentor)
+                            .session(session)
+                            .amount(penaltyAmount)
+                            .status(DebtStatus.UNPAID)
+                            .build();
+                    creditDebtRepository.save(debt);
+                    notificationService.sendNotification(mentor, "You cancelled the session. Because your balance was insufficient, an UNPAID debt of " + penaltyAmount + " credits was recorded.", NotificationType.SESSION_UPDATE);
+                }
+
                 notificationService.sendNotification(learner, "The mentor cancelled the session. You received a full refund PLUS " + penaltyAmount + " credits compensation.", NotificationType.SESSION_UPDATE);
-                notificationService.sendNotification(mentor, "You cancelled the session. A penalty of " + penaltyAmount + " credits was applied.", NotificationType.SESSION_UPDATE);
             }
 
         } else {
