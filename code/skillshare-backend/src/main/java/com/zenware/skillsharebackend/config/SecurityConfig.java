@@ -42,6 +42,7 @@ public class SecurityConfig {
                                 // --- NEW: ADD OAUTH2 ENDPOINTS TO WHITELIST ---
                                 .requestMatchers("/api/auth/**", "/login/oauth2/**", "/oauth2/**", "/ws/**").permitAll()
                                 .requestMatchers("/api/skills/**").permitAll()
+                                .requestMatchers("/api/sessions/expire-overdue").hasRole("ADMIN")
 
                                 // BLACKLIST: Every other single endpoint requires a valid JWT Token!
                                 .anyRequest().authenticated())
