@@ -9,6 +9,7 @@ import com.zenware.skillsharebackend.repository.SkillRepository;
 import com.zenware.skillsharebackend.repository.UserRepository;
 import com.zenware.skillsharebackend.service.GamificationService;
 import com.zenware.skillsharebackend.service.NotificationService;
+import com.zenware.skillsharebackend.service.SessionExpirationProcessor;
 import com.zenware.skillsharebackend.service.SessionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,8 @@ public class SessionServiceTest {
     private NotificationService notificationService;
     @Mock
     private GamificationService gamificationService;
+    @Mock
+    private SessionExpirationProcessor sessionExpirationProcessor;
 
     @InjectMocks
     private SessionService sessionService;
@@ -538,285 +541,33 @@ public class SessionServiceTest {
     }
 
     @Test
-    void testExpireOverdueSessions_Success() {
+    void testExpire_CoordinatesWithProcessorAndCountsSuccessfully() {
         Session pendingSession = new Session();
         pendingSession.setId(UUID.randomUUID());
-        pendingSession.setLearner(mockLearner);
-        pendingSession.setMentor(mockMentor);
-        pendingSession.setAvailabilityId(mockAvailability.getId());
 
         Session acceptedSession = new Session();
         acceptedSession.setId(UUID.randomUUID());
-        acceptedSession.setLearner(mockLearner);
-        acceptedSession.setMentor(mockMentor);
 
         when(sessionRepository.findPendingSessionsForExpiration(eq(SessionStatus.PENDING), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.of(pendingSession));
+                .thenReturn(List.of(pendingSession, pendingSession)); // Two pending
+
         when(sessionRepository.findByStatusInAndEndTimeBefore(eq(List.of(SessionStatus.ACCEPTED)), any(LocalDateTime.class)))
-                .thenReturn(List.of(acceptedSession));
+                .thenReturn(List.of(acceptedSession)); // One accepted
 
-        when(sessionRepository.transitionSessionStatusAtomically(
-                pendingSession.getId(),
-                SessionStatus.EXPIRED,
-                List.of(SessionStatus.PENDING)
-        )).thenReturn(1);
+        // Processor succeeds for the first pending, fails for the second pending, and succeeds for the accepted
+        when(sessionExpirationProcessor.processPendingExpiration(pendingSession.getId()))
+                .thenReturn(true)
+                .thenThrow(new RuntimeException("Simulated failure"));
 
-        when(sessionRepository.transitionSessionStatusAtomically(
-                acceptedSession.getId(),
-                SessionStatus.COMPLETED,
-                List.of(SessionStatus.ACCEPTED)
-        )).thenReturn(1);
-        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), pendingSession.getId())).thenReturn(1);
-        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), pendingSession.getId())).thenReturn(1);
+        when(sessionExpirationProcessor.processAcceptedCompletion(acceptedSession.getId()))
+                .thenReturn(true);
 
-        int processed = sessionService.expireOverdueSessions();
+        int processedCount = sessionService.expireOverdueSessions();
 
-        assertEquals(2, processed);
-        verify(userRepository).addCreditsAtomically(mockLearner.getId(), 10);
-        verify(userRepository).addCreditsAtomically(mockMentor.getId(), 10);
-        verify(availabilityRepository).releaseAvailabilityAtomically(eq(mockAvailability.getId()), eq(pendingSession.getId()));
-    }
+        assertEquals(2, processedCount); // 1 pending + 1 accepted succeeded
 
-    @Test
-    void testExpireOverdueSessions_ConcurrencyFailure() {
-        Session pendingSession = new Session();
-        pendingSession.setId(UUID.randomUUID());
-        pendingSession.setLearner(mockLearner);
-        pendingSession.setMentor(mockMentor);
-
-        when(sessionRepository.findPendingSessionsForExpiration(eq(SessionStatus.PENDING), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.of(pendingSession));
-        when(sessionRepository.findByStatusInAndEndTimeBefore(eq(List.of(SessionStatus.ACCEPTED)), any(LocalDateTime.class)))
-                .thenReturn(List.of());
-
-        when(sessionRepository.transitionSessionStatusAtomically(
-                pendingSession.getId(),
-                SessionStatus.EXPIRED,
-                List.of(SessionStatus.PENDING)
-        )).thenReturn(0);
-
-        int processed = sessionService.expireOverdueSessions();
-
-        assertEquals(1, processed);
-        verify(userRepository, never()).addCreditsAtomically(any(UUID.class), anyInt());
-    }
-
-    // ----------------------------------------------------
-    // MISSION 08D: Pending Response Timeout Tests
-    // ----------------------------------------------------
-
-    @Test
-    void testExpire_OldPendingSession_ExpiresByCreatedAt() {
-        Session pendingSession = new Session();
-        pendingSession.setId(UUID.randomUUID());
-        pendingSession.setLearner(mockLearner);
-        pendingSession.setMentor(mockMentor);
-        pendingSession.setStatus(SessionStatus.PENDING);
-        pendingSession.setAvailabilityId(mockAvailability.getId());
-
-        when(sessionRepository.findPendingSessionsForExpiration(eq(SessionStatus.PENDING), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.of(pendingSession));
-        when(sessionRepository.findByStatusInAndEndTimeBefore(eq(List.of(SessionStatus.ACCEPTED)), any(LocalDateTime.class)))
-                .thenReturn(List.of());
-
-        when(sessionRepository.transitionSessionStatusAtomically(
-                pendingSession.getId(), SessionStatus.EXPIRED, List.of(SessionStatus.PENDING)
-        )).thenReturn(1);
-        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), pendingSession.getId())).thenReturn(1);
-
-        int processed = sessionService.expireOverdueSessions();
-
-        assertEquals(1, processed);
-        verify(userRepository).addCreditsAtomically(mockLearner.getId(), 10);
-        verify(availabilityRepository).releaseAvailabilityAtomically(eq(mockAvailability.getId()), eq(pendingSession.getId()));
-    }
-
-    @Test
-    void testExpire_RecentPendingSession_RemainsPending() {
-        when(sessionRepository.findPendingSessionsForExpiration(eq(SessionStatus.PENDING), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.of());
-        when(sessionRepository.findByStatusInAndEndTimeBefore(eq(List.of(SessionStatus.ACCEPTED)), any(LocalDateTime.class)))
-                .thenReturn(List.of());
-
-        int processed = sessionService.expireOverdueSessions();
-
-        assertEquals(0, processed);
-        verify(sessionRepository, never()).transitionSessionStatusAtomically(any(UUID.class), any(), any());
-    }
-
-    @Test
-    void testExpire_FarFuturePendingSession_ExpiresAfterTimeout() {
-        Session pendingSession = new Session();
-        pendingSession.setId(UUID.randomUUID());
-        pendingSession.setLearner(mockLearner);
-        pendingSession.setMentor(mockMentor);
-        pendingSession.setStatus(SessionStatus.PENDING);
-        pendingSession.setAvailabilityId(mockAvailability.getId());
-
-        when(sessionRepository.findPendingSessionsForExpiration(eq(SessionStatus.PENDING), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.of(pendingSession));
-        when(sessionRepository.transitionSessionStatusAtomically(
-                pendingSession.getId(), SessionStatus.EXPIRED, List.of(SessionStatus.PENDING)
-        )).thenReturn(1);
-        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), pendingSession.getId())).thenReturn(1);
-
-        int processed = sessionService.expireOverdueSessions();
-
-        assertEquals(1, processed);
-        verify(userRepository).addCreditsAtomically(mockLearner.getId(), 10);
-    }
-
-    @Test
-    void testExpire_NearTermPendingSession_ExpiresWhenStartTimeReached() {
-        Session pendingSession = new Session();
-        pendingSession.setId(UUID.randomUUID());
-        pendingSession.setLearner(mockLearner);
-        pendingSession.setMentor(mockMentor);
-        pendingSession.setStatus(SessionStatus.PENDING);
-        pendingSession.setAvailabilityId(mockAvailability.getId());
-
-        when(sessionRepository.findPendingSessionsForExpiration(eq(SessionStatus.PENDING), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.of(pendingSession));
-        when(sessionRepository.transitionSessionStatusAtomically(
-                pendingSession.getId(), SessionStatus.EXPIRED, List.of(SessionStatus.PENDING)
-        )).thenReturn(1);
-        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), pendingSession.getId())).thenReturn(1);
-
-        int processed = sessionService.expireOverdueSessions();
-
-        assertEquals(1, processed);
-    }
-
-    @Test
-    void testExpire_AcceptedSession_NotProcessedByPendingTimeout() {
-        Session acceptedSession = new Session();
-        acceptedSession.setId(UUID.randomUUID());
-        acceptedSession.setLearner(mockLearner);
-        acceptedSession.setMentor(mockMentor);
-        acceptedSession.setStatus(SessionStatus.ACCEPTED);
-
-        when(sessionRepository.findPendingSessionsForExpiration(eq(SessionStatus.PENDING), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.of());
-        when(sessionRepository.findByStatusInAndEndTimeBefore(eq(List.of(SessionStatus.ACCEPTED)), any(LocalDateTime.class)))
-                .thenReturn(List.of(acceptedSession));
-
-        when(sessionRepository.transitionSessionStatusAtomically(
-                acceptedSession.getId(), SessionStatus.COMPLETED, List.of(SessionStatus.ACCEPTED)
-        )).thenReturn(1);
-
-        int processed = sessionService.expireOverdueSessions();
-
-        assertEquals(1, processed);
-        verify(userRepository).addCreditsAtomically(mockMentor.getId(), 10); // Escrow release, not refund
-        verify(userRepository, never()).addCreditsAtomically(mockLearner.getId(), 10);
-    }
-
-    @Test
-    void testExpire_Exact10CreditRefund() {
-        Session pendingSession = new Session();
-        pendingSession.setId(UUID.randomUUID());
-        pendingSession.setLearner(mockLearner);
-        pendingSession.setMentor(mockMentor);
-        pendingSession.setStatus(SessionStatus.PENDING);
-
-        when(sessionRepository.findPendingSessionsForExpiration(eq(SessionStatus.PENDING), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.of(pendingSession));
-        when(sessionRepository.transitionSessionStatusAtomically(
-                pendingSession.getId(), SessionStatus.EXPIRED, List.of(SessionStatus.PENDING)
-        )).thenReturn(1);
-
-        sessionService.expireOverdueSessions();
-
-        verify(userRepository).addCreditsAtomically(mockLearner.getId(), 10);
-    }
-
-    @Test
-    void testExpire_OwnershipSafeAvailabilityRelease() {
-        Session pendingSession = new Session();
-        pendingSession.setId(UUID.randomUUID());
-        pendingSession.setLearner(mockLearner);
-        pendingSession.setMentor(mockMentor);
-        pendingSession.setStatus(SessionStatus.PENDING);
-        pendingSession.setAvailabilityId(mockAvailability.getId());
-
-        when(sessionRepository.findPendingSessionsForExpiration(eq(SessionStatus.PENDING), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.of(pendingSession));
-        when(sessionRepository.transitionSessionStatusAtomically(
-                pendingSession.getId(), SessionStatus.EXPIRED, List.of(SessionStatus.PENDING)
-        )).thenReturn(1);
-        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), pendingSession.getId())).thenReturn(1);
-
-        sessionService.expireOverdueSessions();
-
-        verify(availabilityRepository).releaseAvailabilityAtomically(mockAvailability.getId(), pendingSession.getId());
-    }
-
-    @Test
-    void testExpire_AtomicFailureCausesNoSideEffects() {
-        Session pendingSession = new Session();
-        pendingSession.setId(UUID.randomUUID());
-        pendingSession.setLearner(mockLearner);
-        pendingSession.setMentor(mockMentor);
-        pendingSession.setStatus(SessionStatus.PENDING);
-        pendingSession.setAvailabilityId(mockAvailability.getId());
-
-        when(sessionRepository.findPendingSessionsForExpiration(eq(SessionStatus.PENDING), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.of(pendingSession));
-
-        when(sessionRepository.transitionSessionStatusAtomically(
-                pendingSession.getId(), SessionStatus.EXPIRED, List.of(SessionStatus.PENDING)
-        )).thenReturn(0);
-
-        int processed = sessionService.expireOverdueSessions();
-
-        assertEquals(1, processed); // One session processed but transition failed
-        verify(userRepository, never()).addCreditsAtomically(any(UUID.class), anyInt());
-        verify(availabilityRepository, never()).releaseAvailabilityAtomically(any(UUID.class), any(UUID.class));
-    }
-
-    @Test
-    void testExpire_DuplicateCandidateHandling() {
-        Session pendingSession = new Session();
-        pendingSession.setId(UUID.randomUUID());
-        pendingSession.setLearner(mockLearner);
-        pendingSession.setMentor(mockMentor);
-        pendingSession.setStatus(SessionStatus.PENDING);
-        pendingSession.setAvailabilityId(mockAvailability.getId());
-
-        when(sessionRepository.findPendingSessionsForExpiration(eq(SessionStatus.PENDING), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.of(pendingSession, pendingSession)); // Same session twice in result
-        when(sessionRepository.transitionSessionStatusAtomically(
-                pendingSession.getId(), SessionStatus.EXPIRED, List.of(SessionStatus.PENDING)
-        )).thenReturn(1).thenReturn(0); // Succeeds first time, fails second
-
-        when(availabilityRepository.releaseAvailabilityAtomically(mockAvailability.getId(), pendingSession.getId())).thenReturn(1);
-
-        int processed = sessionService.expireOverdueSessions();
-
-        assertEquals(2, processed);
-        verify(userRepository, times(1)).addCreditsAtomically(mockLearner.getId(), 10);
-        verify(availabilityRepository, times(1)).releaseAvailabilityAtomically(mockAvailability.getId(), pendingSession.getId());
-    }
-
-    @Test
-    void testExpire_NullCreatedAtBehavior() {
-        Session pendingSession = new Session();
-        pendingSession.setId(UUID.randomUUID());
-        pendingSession.setLearner(mockLearner);
-        pendingSession.setMentor(mockMentor);
-        pendingSession.setStatus(SessionStatus.PENDING);
-        pendingSession.setCreatedAt(null); // Explicitly null
-
-        when(sessionRepository.findPendingSessionsForExpiration(eq(SessionStatus.PENDING), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.of(pendingSession));
-        when(sessionRepository.transitionSessionStatusAtomically(
-                pendingSession.getId(), SessionStatus.EXPIRED, List.of(SessionStatus.PENDING)
-        )).thenReturn(1);
-
-        int processed = sessionService.expireOverdueSessions();
-
-        assertEquals(1, processed);
-        verify(userRepository).addCreditsAtomically(mockLearner.getId(), 10);
+        verify(sessionExpirationProcessor, times(2)).processPendingExpiration(pendingSession.getId());
+        verify(sessionExpirationProcessor, times(1)).processAcceptedCompletion(acceptedSession.getId());
     }
 
     @Test
@@ -912,30 +663,4 @@ public class SessionServiceTest {
         assertEquals("Session request has expired and cannot be accepted.", exception.getMessage());
     }
 
-    @Test
-    void testRepeatedExpirationIsIdempotent() {
-        Session pendingSession = new Session();
-        pendingSession.setId(UUID.randomUUID());
-        pendingSession.setLearner(mockLearner);
-        pendingSession.setMentor(mockMentor);
-        pendingSession.setStatus(SessionStatus.PENDING);
-
-        when(sessionRepository.findPendingSessionsForExpiration(eq(SessionStatus.PENDING), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.of(pendingSession));
-
-        when(sessionRepository.transitionSessionStatusAtomically(
-                pendingSession.getId(), SessionStatus.EXPIRED, List.of(SessionStatus.PENDING)
-        )).thenReturn(1);
-
-        sessionService.expireOverdueSessions(); // First call
-        verify(userRepository, times(1)).addCreditsAtomically(mockLearner.getId(), 10);
-
-        // Second call simulating concurrent or repeated execution where atomic transition fails
-        when(sessionRepository.transitionSessionStatusAtomically(
-                pendingSession.getId(), SessionStatus.EXPIRED, List.of(SessionStatus.PENDING)
-        )).thenReturn(0);
-        sessionService.expireOverdueSessions(); // Second call
-
-        verify(userRepository, times(1)).addCreditsAtomically(mockLearner.getId(), 10); // Still 1
-    }
 }

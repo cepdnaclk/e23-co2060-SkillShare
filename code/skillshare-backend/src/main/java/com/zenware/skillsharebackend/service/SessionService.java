@@ -5,6 +5,8 @@ import com.zenware.skillsharebackend.dto.SessionResponse;
 import com.zenware.skillsharebackend.entity.*;
 import com.zenware.skillsharebackend.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,9 +16,11 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor // LOGIC: Switched to Constructor Injection for modern Spring Boot!
+@RequiredArgsConstructor
+@Slf4j
 public class SessionService {
 
     private final SessionRepository sessionRepository;
@@ -25,6 +29,7 @@ public class SessionService {
     private final AvailabilityRepository availabilityRepository;
     private final NotificationService notificationService;
     private final GamificationService gamificationService;
+    private final SessionExpirationProcessor sessionExpirationProcessor;
 
     @Value("${app.session.pending-response-timeout-hours:24}")
     private int responseTimeoutHours;
@@ -357,55 +362,41 @@ public class SessionService {
                 .toList();
     }
 
-    @Transactional
     public int expireOverdueSessions() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime timeoutThreshold = now.minusHours(responseTimeoutHours);
 
-        // 1. Handle Expired PENDING Sessions (Refund the Learner)
         List<Session> expiredPending = sessionRepository.findPendingSessionsForExpiration(
                 SessionStatus.PENDING, now, timeoutThreshold);
 
+        int successfulCount = 0;
+
         for (Session session : expiredPending) {
-            int updated = sessionRepository.transitionSessionStatusAtomically(
-                    session.getId(),
-                    SessionStatus.EXPIRED,
-                    List.of(SessionStatus.PENDING)
-            );
-
-            if (updated == 1) {
-                userRepository.addCreditsAtomically(session.getLearner().getId(), 10);
-
-                if (session.getAvailabilityId() != null) {
-                    int released = availabilityRepository.releaseAvailabilityAtomically(session.getAvailabilityId(), session.getId());
-                    if (released != 1) {
-                        throw new IllegalStateException("Failed to release availability: ownership mismatch or already released");
-                    }
+            try {
+                boolean processed = sessionExpirationProcessor.processPendingExpiration(session.getId());
+                if (processed) {
+                    successfulCount++;
                 }
-
-                notificationService.sendNotification(session.getLearner(), "Your session request expired. Your 10 credits have been refunded.", NotificationType.SYSTEM_ALERT);
+            } catch (Exception e) {
+                log.error("Failed to process expiration for session ID: {}", session.getId(), e);
             }
         }
 
-        // 2. Handle Forgotten ACCEPTED Sessions (Auto-Pay the Mentor)
         List<Session> forgottenAccepted = sessionRepository.findByStatusInAndEndTimeBefore(
                 Arrays.asList(SessionStatus.ACCEPTED), now);
 
         for (Session session : forgottenAccepted) {
-            int updated = sessionRepository.transitionSessionStatusAtomically(
-                    session.getId(),
-                    SessionStatus.COMPLETED,
-                    List.of(SessionStatus.ACCEPTED)
-            );
-
-            if (updated == 1) {
-                // The learner forgot to click complete, so we auto-release the escrow to the mentor
-                userRepository.addCreditsAtomically(session.getMentor().getId(), 10);
-                notificationService.sendNotification(session.getMentor(), "The session time passed and was auto-completed. You received 10 credits.", NotificationType.SYSTEM_ALERT);
+            try {
+                boolean processed = sessionExpirationProcessor.processAcceptedCompletion(session.getId());
+                if (processed) {
+                    successfulCount++;
+                }
+            } catch (Exception e) {
+                log.error("Failed to process accepted completion for session ID: {}", session.getId(), e);
             }
         }
 
-        return expiredPending.size() + forgottenAccepted.size();
+        return successfulCount;
     }
 
     @Transactional
