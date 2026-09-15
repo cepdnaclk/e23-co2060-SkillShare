@@ -542,31 +542,44 @@ public class SessionServiceTest {
 
     @Test
     void testExpire_CoordinatesWithProcessorAndCountsSuccessfully() {
-        Session pendingSession = new Session();
-        pendingSession.setId(UUID.randomUUID());
+        Session pendingSession1 = new Session();
+        pendingSession1.setId(UUID.randomUUID());
+
+        Session pendingSession2 = new Session();
+        pendingSession2.setId(UUID.randomUUID());
+
+        Session pendingSession3 = new Session(); // ineligible
+        pendingSession3.setId(UUID.randomUUID());
 
         Session acceptedSession = new Session();
         acceptedSession.setId(UUID.randomUUID());
 
         when(sessionRepository.findPendingSessionsForExpiration(eq(SessionStatus.PENDING), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(List.of(pendingSession, pendingSession)); // Two pending
+                .thenReturn(List.of(pendingSession1, pendingSession2, pendingSession3)); // Three pending
 
         when(sessionRepository.findByStatusInAndEndTimeBefore(eq(List.of(SessionStatus.ACCEPTED)), any(LocalDateTime.class)))
                 .thenReturn(List.of(acceptedSession)); // One accepted
 
-        // Processor succeeds for the first pending, fails for the second pending, and succeeds for the accepted
-        when(sessionExpirationProcessor.processPendingExpiration(pendingSession.getId()))
-                .thenReturn(true)
-                .thenThrow(new RuntimeException("Simulated failure"));
+        // Processor succeeds for first pending, fails (exception) for second, returns false (ineligible) for third
+        when(sessionExpirationProcessor.processPendingExpiration(pendingSession1.getId()))
+                .thenReturn(true);
+        when(sessionExpirationProcessor.processPendingExpiration(pendingSession2.getId()))
+                .thenThrow(new RuntimeException("Simulated poison pill failure"));
+        when(sessionExpirationProcessor.processPendingExpiration(pendingSession3.getId()))
+                .thenReturn(false);
 
+        // Processor succeeds for accepted
         when(sessionExpirationProcessor.processAcceptedCompletion(acceptedSession.getId()))
                 .thenReturn(true);
 
         int processedCount = sessionService.expireOverdueSessions();
 
-        assertEquals(2, processedCount); // 1 pending + 1 accepted succeeded
+        // 1 pending succeeded + 1 accepted succeeded = 2
+        assertEquals(2, processedCount);
 
-        verify(sessionExpirationProcessor, times(2)).processPendingExpiration(pendingSession.getId());
+        verify(sessionExpirationProcessor, times(1)).processPendingExpiration(pendingSession1.getId());
+        verify(sessionExpirationProcessor, times(1)).processPendingExpiration(pendingSession2.getId());
+        verify(sessionExpirationProcessor, times(1)).processPendingExpiration(pendingSession3.getId());
         verify(sessionExpirationProcessor, times(1)).processAcceptedCompletion(acceptedSession.getId());
     }
 
