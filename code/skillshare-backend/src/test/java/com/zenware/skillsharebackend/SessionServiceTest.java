@@ -11,6 +11,7 @@ import com.zenware.skillsharebackend.service.GamificationService;
 import com.zenware.skillsharebackend.service.NotificationService;
 import com.zenware.skillsharebackend.service.SessionExpirationProcessor;
 import com.zenware.skillsharebackend.service.SessionService;
+import com.zenware.skillsharebackend.config.SessionProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,6 +53,8 @@ public class SessionServiceTest {
     private GamificationService gamificationService;
     @Mock
     private SessionExpirationProcessor sessionExpirationProcessor;
+    @Mock
+    private SessionProperties sessionProperties;
 
     @InjectMocks
     private SessionService sessionService;
@@ -93,7 +96,7 @@ public class SessionServiceTest {
 
         lenient().when(userRepository.findById(mockMentor.getId())).thenReturn(Optional.of(mockMentor));
 
-        ReflectionTestUtils.setField(sessionService, "responseTimeoutHours", 24);
+        lenient().when(sessionProperties.getPendingResponseTimeoutHours()).thenReturn(24);
     }
 
     @Test

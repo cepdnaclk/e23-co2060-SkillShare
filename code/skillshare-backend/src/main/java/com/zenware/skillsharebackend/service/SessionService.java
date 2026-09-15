@@ -10,7 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.annotation.Value;
+import com.zenware.skillsharebackend.config.SessionProperties;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -35,9 +35,7 @@ public class SessionService {
     private final NotificationService notificationService;
     private final GamificationService gamificationService;
     private final SessionExpirationProcessor sessionExpirationProcessor;
-
-    @Value("${app.session.pending-response-timeout-hours:24}")
-    private int responseTimeoutHours;
+    private final SessionProperties sessionProperties;
 
     // --- THE SECURITY ENGINE ---
     // LOGIC: This helper method grabs the exact user currently making the API request
@@ -168,7 +166,7 @@ public class SessionService {
 
         if (newStatus == SessionStatus.ACCEPTED) {
             LocalDateTime now = LocalDateTime.now();
-            LocalDateTime timeoutThreshold = now.minusHours(responseTimeoutHours);
+            LocalDateTime timeoutThreshold = now.minusHours(sessionProperties.getPendingResponseTimeoutHours());
             if (!now.isBefore(session.getStartTime()) ||
                 (session.getCreatedAt() != null && !timeoutThreshold.isBefore(session.getCreatedAt()))) {
                 throw new IllegalStateException("Session request has expired and cannot be accepted.");
@@ -369,7 +367,7 @@ public class SessionService {
 
     public int expireOverdueSessions() {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime timeoutThreshold = now.minusHours(responseTimeoutHours);
+        LocalDateTime timeoutThreshold = now.minusHours(sessionProperties.getPendingResponseTimeoutHours());
 
         Pageable pendingPageable = PageRequest.of(0, EXPIRATION_BATCH_SIZE, Sort.by("createdAt").ascending());
         List<Session> expiredPending = sessionRepository.findPendingSessionsForExpiration(

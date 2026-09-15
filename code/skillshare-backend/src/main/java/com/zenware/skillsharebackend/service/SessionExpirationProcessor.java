@@ -8,7 +8,7 @@ import com.zenware.skillsharebackend.repository.SessionRepository;
 import com.zenware.skillsharebackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import com.zenware.skillsharebackend.config.SessionProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,9 +25,7 @@ public class SessionExpirationProcessor {
     private final UserRepository userRepository;
     private final AvailabilityRepository availabilityRepository;
     private final NotificationService notificationService;
-
-    @Value("${app.session.pending-response-timeout-hours:24}")
-    private int responseTimeoutHours;
+    private final SessionProperties sessionProperties;
 
     @Transactional
     public boolean processPendingExpiration(UUID sessionId) {
@@ -39,7 +37,7 @@ public class SessionExpirationProcessor {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime timeoutThreshold = now.minusHours(responseTimeoutHours);
+        LocalDateTime timeoutThreshold = now.minusHours(sessionProperties.getPendingResponseTimeoutHours());
 
         boolean isTimeExpired = (session.getStartTime() != null && !now.isBefore(session.getStartTime())) ||
                                 (session.getCreatedAt() != null && !timeoutThreshold.isBefore(session.getCreatedAt()));

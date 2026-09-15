@@ -1,5 +1,6 @@
 package com.zenware.skillsharebackend.service;
 
+import com.zenware.skillsharebackend.config.SessionProperties;
 import com.zenware.skillsharebackend.entity.*;
 import com.zenware.skillsharebackend.repository.AvailabilityRepository;
 import com.zenware.skillsharebackend.repository.SessionRepository;
@@ -10,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,6 +37,9 @@ class SessionExpirationProcessorTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private SessionProperties sessionProperties;
+
     @InjectMocks
     private SessionExpirationProcessor processor;
 
@@ -48,7 +51,7 @@ class SessionExpirationProcessorTest {
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(processor, "responseTimeoutHours", 24);
+        lenient().when(sessionProperties.getPendingResponseTimeoutHours()).thenReturn(24);
 
         mockLearner = new User();
         mockLearner.setId(UUID.randomUUID());
