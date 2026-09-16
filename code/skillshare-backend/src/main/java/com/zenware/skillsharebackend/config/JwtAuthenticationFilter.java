@@ -53,33 +53,40 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 3. Extract the actual JWT (Removing "Bearer " which is 7 characters long)
         jwt = authHeader.substring(7);
 
-        // 4. Extract the user's email using the JwtService we built in Phase 3
-        userEmail = jwtService.extractUsername(jwt);
+        try {
+            // 4. Extract the user's email using the JwtService we built in Phase 3
+            userEmail = jwtService.extractUsername(jwt);
 
-        // 5. If we have an email, and the user is NOT already authenticated in this specific request cycle...
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            // 5. If we have an email, and the user is NOT already authenticated in this specific request cycle...
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            // 6. Fetch the user details from the database (we will tell Spring how to do)
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+                // 6. Fetch the user details from the database (we will tell Spring how to do)
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
-            // 7. Check if the token is mathematically valid and not expired
-            if (jwtService.isTokenValid(jwt, userDetails)) {
+                // 7. Check if the token is mathematically valid and not expired
+                if (jwtService.isTokenValid(jwt, userDetails)) {
 
-                // 8. Create a Spring Security token to officially "Log In" the user for this single request
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null, // We don't need to pass the password here
-                        userDetails.getAuthorities() // Passes their Role (USER/ADMIN)
-                );
+                    // 8. Create a Spring Security token to officially "Log In" the user for this single request
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null, // We don't need to pass the password here
+                            userDetails.getAuthorities() // Passes their Role (USER/ADMIN)
+                    );
 
-                // 9. Add extra details (like IP address, browser info, etc.)
-                authToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
+                    // 9. Add extra details (like IP address, browser info, etc.)
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
 
-                // 10. Update the Security Context. The user is now officially authenticated.
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    // 10. Update the Security Context. The user is now officially authenticated.
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             }
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            // Token is malformed, expired, or invalid.
+            // Do not throw an exception here, otherwise we bypass the AuthenticationEntryPoint.
+            // Leave SecurityContext unauthenticated, which triggers 401 downstream.
+            SecurityContextHolder.clearContext();
         }
 
         // 11. Pass the request onto the next stage (your Controllers)

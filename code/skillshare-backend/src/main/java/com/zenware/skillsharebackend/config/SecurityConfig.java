@@ -27,6 +27,10 @@ public class SecurityConfig {
         // --- NEW: INJECT OUR CUSTOM SUCCESS HANDLER ---
         private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
+        // --- NEW: INJECT OUR CUSTOM API SECURITY HANDLERS ---
+        private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+        private final RestAccessDeniedHandler restAccessDeniedHandler;
+
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
                 http
@@ -60,7 +64,19 @@ public class SecurityConfig {
                         .authenticationProvider(authenticationProvider)
 
                         // 6. Insert our Custom JWT Bouncer BEFORE the standard password filter
-                        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+
+                        // 7. --- NEW: API SECURITY EXCEPTION HANDLING ---
+                        .exceptionHandling(exceptions -> exceptions
+                                .defaultAuthenticationEntryPointFor(
+                                        restAuthenticationEntryPoint,
+                                        request -> request.getServletPath().startsWith("/api/")
+                                )
+                                .defaultAccessDeniedHandlerFor(
+                                        restAccessDeniedHandler,
+                                        request -> request.getServletPath().startsWith("/api/")
+                                )
+                        );
 
                 return http.build();
         }

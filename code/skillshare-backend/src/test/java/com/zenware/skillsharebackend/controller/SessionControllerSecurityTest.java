@@ -86,8 +86,8 @@ public class SessionControllerSecurityTest {
     }
 
     @Test
-    void expireOverdueSessions_Unauthenticated_ReturnsRedirect() throws Exception {
+    void expireOverdueSessions_Unauthenticated_ReturnsUnauthorized() throws Exception {
         mockMvc.perform(post("/api/sessions/expire-overdue"))
-                .andExpect(status().is3xxRedirection());
+                .andExpect(status().isUnauthorized());
     }
 }
