@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class PostgresIntegrationSmokeTest extends IntegrationTestBase {
+public class PostgresIntegrationSmokeIT extends IntegrationTestBase {
 
     @Autowired
     private EntityManager entityManager;
