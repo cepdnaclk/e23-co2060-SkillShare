@@ -1,6 +1,7 @@
 package com.zenware.skillsharebackend.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -20,6 +21,9 @@ import java.util.List;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+
+        @Value("${cors.allowed.origins}")
+        private List<String> allowedOrigins;
 
         private final JwtAuthenticationFilter jwtAuthFilter;
         private final AuthenticationProvider authenticationProvider;
@@ -87,12 +91,7 @@ public class SecurityConfig {
                 CorsConfiguration configuration = new CorsConfiguration();
 
                 // Let React (3000) or Vite/Vue/Angular (5173, 4200) talk to the backend
-                configuration.setAllowedOrigins(List.of(
-                        "http://localhost:3000",
-                        "http://localhost:5173",
-                        "http://localhost:4200",
-                        "https://skillshare-topaz-delta.vercel.app/",
-                        "http://10.30.6.151:5173"));
+                configuration.setAllowedOrigins(allowedOrigins);
 
                 // Allow all standard HTTP methods
                 configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

@@ -100,14 +100,14 @@ public class ConnectionService {
     // 2. ACCEPT A FRIEND REQUEST
     @Transactional
     public Connection acceptConnectionRequest(UUID connectionId) {
-        User currentUser = getAuthenticatedUser();
+        User authenticatedUser = getAuthenticatedUser();
 
         Connection connection = connectionRepository.findById(connectionId)
                 .orElseThrow(() -> new IllegalArgumentException("Connection request not found!"));
 
         // Zero-Trust Guardrail: Only the intended receiver can accept the request
-        if (!connection.getReceiver().getId().equals(currentUser.getId())) {
-            throw new IllegalArgumentException("Security Violation: You do not have permission to accept this request.");
+        if (!connection.getReceiver().getId().equals(authenticatedUser.getId())) {
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You do not have permission to accept this request.");
         }
 
         if (connection.getStatus() != ConnectionStatus.PENDING) {
@@ -130,14 +130,14 @@ public class ConnectionService {
     // 3. REJECT A FRIEND REQUEST
     @Transactional
     public void rejectConnectionRequest(UUID connectionId) {
-        User currentUser = getAuthenticatedUser();
+        User authenticatedUser = getAuthenticatedUser();
 
         Connection connection = connectionRepository.findById(connectionId)
                 .orElseThrow(() -> new IllegalArgumentException("Connection request not found!"));
 
         // Zero-Trust Guardrail: Only the intended receiver can reject the request
-        if (!connection.getReceiver().getId().equals(currentUser.getId())) {
-            throw new IllegalArgumentException("Security Violation: You do not have permission to reject this request.");
+        if (!connection.getReceiver().getId().equals(authenticatedUser.getId())) {
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You do not have permission to reject this request.");
         }
 
         // Action: For Skill-Connect, deleting the row is usually cleaner so the database doesn't fill up with rejected requests.

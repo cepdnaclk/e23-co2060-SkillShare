@@ -57,7 +57,7 @@ public class AvailabilityService {
 
         // GUARD: You can only delete your own slots!
         if (!availability.getUser().getId().equals(getAuthenticatedUser().getId())) {
-            throw new IllegalStateException("Security Violation: You can only delete your own availability!");
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You can only delete your own availability!");
         }
 
         // GUARD: Cannot delete an actively booked slot

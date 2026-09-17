@@ -59,7 +59,7 @@ public class NotificationService {
                 .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
 
         if (!notification.getRecipient().getId().equals(getAuthenticatedUser().getId())) {
-            throw new IllegalStateException("Security Violation: You cannot read someone else's notifications!");
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You cannot read someone else's notifications!");
         }
 
         notification.setIsRead(true);
