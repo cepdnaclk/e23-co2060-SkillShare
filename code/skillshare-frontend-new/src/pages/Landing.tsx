@@ -8,7 +8,6 @@ import {
   Compass,
   Users,
   ArrowLeftRight,
-  Calendar,
   MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -453,7 +452,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ── 6. PROFILE PREVIEW CALLOUT ────────────────────────────────────── */}
+      {/* ── 6. PEOPLE DISCOVERY ────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-6 py-20">
         <div className="grid md:grid-cols-2 gap-12 items-center">
 
@@ -465,22 +464,23 @@ const Landing = () => {
             transition={{ duration: 0.28 }}
           >
             <p className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground mb-4">
-              Built for real life
+              How people connect
             </p>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-[-0.02em] mb-4">
-              Learning happens when schedules align.
+              Meet people through what they know.
             </h2>
             <p className="text-sm text-muted-foreground leading-relaxed mb-8 max-w-sm">
-              SkillShare helps you find people whose availability matches yours.
-              No chasing, no missed messages — just sessions that happen.
+              On SkillShare, skills are how you introduce yourself.
+              What you can teach tells people who you are.
+              What you want to learn tells people what you're looking for.
             </p>
 
             <ul className="space-y-3.5">
               {[
-                { icon: Calendar,      text: "Set your available time slots" },
-                { icon: Users,         text: "Match with people whose schedules align" },
-                { icon: MessageSquare, text: "Chat and confirm sessions in-app" },
-                { icon: ArrowLeftRight,text: "Exchange knowledge, not just follow requests" },
+                { icon: BookOpen,       text: "Browse what others can teach" },
+                { icon: Users,          text: "Find someone whose skills match what you need" },
+                { icon: ArrowLeftRight, text: "Offer something in return — or just connect" },
+                { icon: MessageSquare,  text: "Chat, agree on a time, and exchange knowledge" },
               ].map((item) => (
                 <li key={item.text} className="flex items-center gap-3 text-sm text-foreground">
                   <item.icon className="w-4 h-4 text-primary flex-shrink-0" />
@@ -490,7 +490,7 @@ const Landing = () => {
             </ul>
           </motion.div>
 
-          {/* Profile card preview */}
+          {/* Profile card — peer, not mentor */}
           <motion.div
             initial={{ opacity: 0, x: 12 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -516,7 +516,7 @@ const Landing = () => {
                   className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-2"
                   style={{ color: "hsl(var(--teach-text))" }}
                 >
-                  Can teach
+                  I can teach
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {["Python", "Machine Learning", "Data Structures"].map((s) => (
@@ -533,7 +533,7 @@ const Landing = () => {
                   className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-2"
                   style={{ color: "hsl(var(--learn-text))" }}
                 >
-                  Wants to learn
+                  I want to learn
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {["UI/UX Design", "Video Editing"].map((s) => (
@@ -544,29 +544,19 @@ const Landing = () => {
                 </div>
               </div>
 
-              {/* Availability */}
-              <div>
-                <p className="text-xs text-muted-foreground mb-2">Available</p>
-                <div className="flex gap-1.5 flex-wrap">
-                  {["Mon", "Wed", "Fri", "Sat"].map((d) => (
-                    <span key={d} className="inline-flex items-center h-5 text-[11px] px-2 rounded border border-border bg-secondary text-secondary-foreground">
-                      {d}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
               <Button
                 size="sm"
+                variant="outline"
                 className="w-full mt-1"
                 onClick={() => navigate("/signup")}
               >
-                Request a session
+                Connect with Alex
               </Button>
             </div>
           </motion.div>
         </div>
       </section>
+
 
       {/* ── 7. FINAL CTA ──────────────────────────────────────────────────── */}
       <section className="border-t border-border">

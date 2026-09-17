@@ -1,5 +1,18 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Search, Calendar, Bell, LogOut, Layers, Coins, Settings as SettingsIcon, Trophy } from "lucide-react";
+import {
+  Home,
+  Search,
+  Calendar,
+  Bell,
+  LogOut,
+  Layers,
+  Coins,
+  Settings as SettingsIcon,
+  Trophy,
+  GraduationCap,
+  Menu,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -9,7 +22,7 @@ interface AppLayoutProps { children: React.ReactNode; }
 
 const navItems = [
   { path: "/dashboard",     icon: Home,         label: "Dashboard" },
-  { path: "/search",        icon: Search,       label: "Find Mentors" },
+  { path: "/search",        icon: Search,       label: "Explore" },
   { path: "/sessions",      icon: Layers,       label: "Sessions" },
   { path: "/my-schedule",   icon: Calendar,     label: "Schedule" },
   { path: "/leaderboard",   icon: Trophy,       label: "Leaderboard" },
@@ -22,11 +35,17 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     notificationsApi.getUnreadCount()
       .then(setUnreadCount)
       .catch(() => {});
+  }, [location.pathname]);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
   }, [location.pathname]);
 
   const handleLogout = () => {
@@ -37,23 +56,35 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   const getInitials = (name: string) =>
     name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) ?? "?";
 
+  const isProfileActive = location.pathname === `/profile/${user?.id}`;
+
   return (
     <div className="min-h-screen bg-background flex">
-      {/* ── Sidebar (desktop) ──────────────────────── */}
-      <aside className="hidden md:flex flex-col w-64 border-r border-border bg-card/60 backdrop-blur-sm fixed top-0 bottom-0 left-0">
-        {/* Logo */}
-        <div className="p-6 border-b border-border flex-shrink-0">
-          <Link to="/dashboard" className="flex items-center gap-2 font-heading font-bold text-xl">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground text-xs font-black">SS</span>
+
+      {/* ── Sidebar (desktop) ──────────────────────────────────────── */}
+      <aside className="hidden md:flex flex-col w-60 border-r border-border bg-background fixed top-0 bottom-0 left-0 z-30">
+
+        {/* Wordmark */}
+        <div className="h-14 px-4 border-b border-border flex items-center flex-shrink-0">
+          <Link
+            to="/dashboard"
+            className="flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
+          >
+            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center flex-shrink-0">
+              <GraduationCap className="w-4 h-4 text-primary-foreground" />
             </div>
-            Skill<span className="gradient-text">Share</span>
+            <span className="font-semibold text-base">
+              <span className="text-foreground">Skill</span>
+              <span className="text-primary">Share</span>
+            </span>
           </Link>
         </div>
 
-        {/* Nav Area (Scrollable container to prevent cropping links) */}
-        <div className="flex-1 overflow-y-auto min-h-0 flex flex-col justify-between py-4 px-3">
-          <nav className="space-y-0.5">
+        {/* Scrollable nav + bottom section */}
+        <div className="flex-1 overflow-y-auto min-h-0 flex flex-col py-3 px-2">
+
+          {/* Main navigation */}
+          <nav className="space-y-0.5" aria-label="Main navigation">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
               const isNotif = item.path === "/notifications";
@@ -61,17 +92,21 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 <Link
                   key={item.path}
                   to={item.path}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 relative",
+                    "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-150 relative",
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                      ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                   )}
                 >
-                  <item.icon className="w-4 h-4 flex-shrink-0" />
+                  <item.icon className="w-4 h-4 flex-shrink-0" aria-hidden />
                   {item.label}
                   {isNotif && unreadCount > 0 && (
-                    <span className="ml-auto w-5 h-5 rounded-full bg-accent text-accent-foreground text-[10px] flex items-center justify-center font-bold">
+                    <span
+                      className="ml-auto min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-semibold px-1"
+                      aria-label={`${unreadCount} unread notifications`}
+                    >
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
@@ -80,101 +115,176 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             })}
           </nav>
 
-          {/* Bottom Profile Section */}
-          <div className="pt-4 border-t border-border space-y-1 mt-4 flex-shrink-0">
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Bottom: credits + profile + sign out */}
+          <div className="border-t border-border pt-3 space-y-0.5">
+
+            {/* Credits chip */}
             {user && (
-              <div className="px-4 py-2 rounded-xl bg-secondary/50 flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                <Coins className="w-3.5 h-3.5 text-yellow-400" />
-                <span className="font-medium text-foreground">{user.credits ?? 0}</span> credits
+              <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+                <Coins className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" aria-hidden />
+                <span className="font-medium text-foreground">{user.credits ?? 0}</span>
+                <span>credits</span>
               </div>
             )}
 
+            {/* Profile link */}
             <Link
               to={user?.id ? `/profile/${user.id}` : "/dashboard"}
+              aria-current={isProfileActive ? "page" : undefined}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
-                location.pathname === `/profile/${user?.id}`
-                  ? "bg-primary text-primary-foreground"
+                "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-150",
+                isProfileActive
+                  ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-secondary hover:text-foreground"
               )}
             >
-              <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[9px] font-bold flex-shrink-0">
+              <div
+                className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-bold flex-shrink-0"
+                aria-hidden
+              >
                 {getInitials(user?.fullName ?? "")}
               </div>
               <span className="truncate">{user?.fullName ?? "My Profile"}</span>
             </Link>
 
+            {/* Sign out */}
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
+              aria-label="Sign out"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors duration-150"
             >
-              <LogOut className="w-4 h-4" />
-              Sign Out
+              <LogOut className="w-4 h-4 flex-shrink-0" aria-hidden />
+              Sign out
             </button>
           </div>
         </div>
       </aside>
 
-      {/* ── Main content ─────────────────────────── */}
-      <div className="flex-1 flex flex-col md:ml-64 w-full">
+      {/* ── Main content area ──────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col md:ml-60 min-w-0">
+
         {/* Mobile header */}
-        <header className="md:hidden border-b border-border bg-card/60 backdrop-blur-sm p-4 flex items-center justify-between sticky top-0 z-40">
-          <Link to="/dashboard" className="font-heading font-bold text-lg flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground text-[9px] font-black">SS</span>
+        <header className="md:hidden border-b border-border bg-background h-14 px-4 flex items-center justify-between sticky top-0 z-40 flex-shrink-0">
+
+          {/* Mobile wordmark */}
+          <Link to="/dashboard" className="flex items-center gap-2 focus:outline-none">
+            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center flex-shrink-0">
+              <GraduationCap className="w-4 h-4 text-primary-foreground" />
             </div>
-            Skill<span className="gradient-text">Share</span>
+            <span className="font-semibold text-base">
+              <span className="text-foreground">Skill</span>
+              <span className="text-primary">Share</span>
+            </span>
           </Link>
-          <div className="flex items-center gap-3">
+
+          {/* Mobile right controls */}
+          <div className="flex items-center gap-2">
+            {/* Credits */}
             {user && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary border border-border">
-                <Coins className="w-3.5 h-3.5 text-yellow-400" />
-                <span className="font-heading font-semibold text-sm">{user.credits ?? 0}</span>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Coins className="w-3.5 h-3.5" aria-hidden />
+                <span className="font-medium text-foreground">{user.credits ?? 0}</span>
               </div>
             )}
-            <Link to={user?.id ? `/profile/${user.id}` : "/dashboard"} className="relative">
-              <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold border border-primary/20">
+
+            {/* Avatar */}
+            <Link
+              to={user?.id ? `/profile/${user.id}` : "/dashboard"}
+              aria-label="My profile"
+            >
+              <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-semibold border border-primary/15">
                 {getInitials(user?.fullName ?? "")}
               </div>
             </Link>
-            <button 
-              onClick={handleLogout}
-              className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
-              title="Sign Out"
+
+            {/* Hamburger */}
+            <button
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+              className="w-8 h-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
             >
-              <LogOut className="w-5 h-5" />
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-auto">{children}</main>
+        {/* Mobile slide-out menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+              onClick={() => setMobileMenuOpen(false)}
+              aria-hidden
+            />
+            {/* Panel */}
+            <nav
+              className="relative ml-auto w-64 h-full bg-background border-l border-border flex flex-col py-4 px-3 shadow-lg"
+              aria-label="Mobile navigation"
+            >
+              <div className="space-y-0.5 flex-1">
+                {navItems.map((item) => {
+                  const isActive = location.pathname === item.path;
+                  const isNotif = item.path === "/notifications";
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      aria-current={isActive ? "page" : undefined}
+                      className={cn(
+                        "flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium transition-colors duration-150 relative",
+                        isActive
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      )}
+                    >
+                      <item.icon className="w-4 h-4 flex-shrink-0" aria-hidden />
+                      {item.label}
+                      {isNotif && unreadCount > 0 && (
+                        <span
+                          className="ml-auto min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-semibold px-1"
+                          aria-label={`${unreadCount} unread notifications`}
+                        >
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
 
-        {/* Mobile bottom nav (Optimized spacing for 7 items) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border px-1 py-1 flex items-center justify-between z-40 overflow-x-auto select-none">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            const isNotif = item.path === "/notifications";
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "flex flex-col items-center gap-0.5 flex-1 min-w-[50px] py-1.5 rounded-lg text-[9px] font-medium transition-colors relative text-center",
-                  isActive ? "text-primary font-semibold" : "text-muted-foreground"
-                )}
-              >
-                <item.icon className="w-4.5 h-4.5" />
-                <span className="scale-90 origin-top truncate max-w-full block px-0.5">{item.label}</span>
-                {isNotif && unreadCount > 0 && (
-                  <span className="absolute top-1 right-2 w-3.5 h-3.5 bg-accent rounded-full text-[8px] flex items-center justify-center text-accent-foreground font-bold">
-                    {unreadCount}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+              {/* Bottom actions */}
+              <div className="border-t border-border pt-3 space-y-0.5">
+                <Link
+                  to={user?.id ? `/profile/${user.id}` : "/dashboard"}
+                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                >
+                  <div className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-bold flex-shrink-0" aria-hidden>
+                    {getInitials(user?.fullName ?? "")}
+                  </div>
+                  <span className="truncate">{user?.fullName ?? "My Profile"}</span>
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                >
+                  <LogOut className="w-4 h-4 flex-shrink-0" aria-hidden />
+                  Sign out
+                </button>
+              </div>
+            </nav>
+          </div>
+        )}
+
+        {/* Page content */}
+        <main className="flex-1 overflow-auto">
+          {children}
+        </main>
+
       </div>
     </div>
   );
