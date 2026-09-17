@@ -2,11 +2,17 @@ package com.zenware.skillsharebackend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zenware.skillsharebackend.dto.AvailabilityRequest;
+import com.zenware.skillsharebackend.dto.SessionRequest;
 import com.zenware.skillsharebackend.entity.Availability;
 import com.zenware.skillsharebackend.entity.Role;
+import com.zenware.skillsharebackend.entity.Skill;
 import com.zenware.skillsharebackend.entity.User;
 import com.zenware.skillsharebackend.repository.AvailabilityRepository;
+import com.zenware.skillsharebackend.repository.NotificationRepository;
+import com.zenware.skillsharebackend.repository.SessionRepository;
+import com.zenware.skillsharebackend.repository.SkillRepository;
 import com.zenware.skillsharebackend.repository.UserRepository;
+import com.zenware.skillsharebackend.repository.CreditDebtRepository;
 import com.zenware.skillsharebackend.service.JwtService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,8 +32,10 @@ import java.util.UUID;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -48,12 +56,28 @@ public class AvailabilityControllerTest {
     @Autowired
     private JwtService jwtService;
 
+    @Autowired
+    private SessionRepository sessionRepository;
+
+    @Autowired
+    private SkillRepository skillRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private CreditDebtRepository creditDebtRepository;
+
     private MockMvc mockMvc;
+    private ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     private User mentor;
     private User otherUser;
+    private User learner;
+    private Skill skill;
     private String mentorToken;
     private String otherUserToken;
+    private String learnerToken;
 
     @BeforeEach
     void setUp() {
@@ -62,7 +86,11 @@ public class AvailabilityControllerTest {
                 .addFilters(springSecurityFilterChain)
                 .build();
 
+        creditDebtRepository.deleteAll();
+        notificationRepository.deleteAll();
+        sessionRepository.deleteAll();
         availabilityRepository.deleteAll();
+        skillRepository.deleteAll();
         userRepository.deleteAll();
 
         mentor = User.builder()
@@ -70,6 +98,7 @@ public class AvailabilityControllerTest {
                 .fullName("Mentor Avail")
                 .password("password")
                 .role(Role.USER)
+                .credits(100)
                 .build();
         mentor = userRepository.save(mentor);
         mentorToken = "Bearer " + jwtService.generateToken(mentor);
@@ -82,11 +111,30 @@ public class AvailabilityControllerTest {
                 .build();
         otherUser = userRepository.save(otherUser);
         otherUserToken = "Bearer " + jwtService.generateToken(otherUser);
+
+        learner = User.builder()
+                .email("learner_avail@example.com")
+                .fullName("Learner Avail")
+                .password("password")
+                .role(Role.USER)
+                .credits(100)
+                .build();
+        learner = userRepository.save(learner);
+        learnerToken = "Bearer " + jwtService.generateToken(learner);
+
+        skill = Skill.builder()
+                .name("Test Skill")
+                .build();
+        skill = skillRepository.save(skill);
     }
 
     @AfterEach
     void tearDown() {
+        creditDebtRepository.deleteAll();
+        notificationRepository.deleteAll();
+        sessionRepository.deleteAll();
         availabilityRepository.deleteAll();
+        skillRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -143,7 +191,21 @@ public class AvailabilityControllerTest {
                         .header("Authorization", mentorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonPayload))
-                .andExpect(status().isBadRequest());
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Logic Violation")); // Validates it is returning due to NPE -> 400 fallback
+    }
+
+    @Test
+    void addAvailability_ZeroDuration_Behavior() throws Exception {
+        String sameTime = LocalDateTime.now().plusDays(1).withNano(0).toString();
+        String jsonPayload = String.format("{\"startTime\":\"%s\",\"endTime\":\"%s\"}", sameTime, sameTime);
+
+        mockMvc.perform(post("/api/availability/add")
+                        .header("Authorization", mentorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andDo(print());
     }
 
     @Test
@@ -234,5 +296,61 @@ public class AvailabilityControllerTest {
                         .header("Authorization", mentorToken))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Time slot not found"));
+    }
+
+    @Test
+    void deleteAvailability_AfterSessionCancelled_Returns200() throws Exception {
+        // 3. Mentor creates an availability slot
+        String start = LocalDateTime.now().plusDays(1).withNano(0).toString();
+        String end = LocalDateTime.now().plusDays(1).plusHours(1).withNano(0).toString();
+        String jsonPayload = String.format("{\"startTime\":\"%s\",\"endTime\":\"%s\"}", start, end);
+
+        String availResponse = mockMvc.perform(post("/api/availability/add")
+                        .header("Authorization", mentorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        String availId = objectMapper.readTree(availResponse).get("id").asText();
+        Availability avail = availabilityRepository.findById(UUID.fromString(availId)).orElseThrow();
+
+        // 4. Learner books the slot
+        SessionRequest bookingRequest = new SessionRequest();
+        bookingRequest.setSkillId(skill.getId());
+        bookingRequest.setAvailabilityId(avail.getId());
+
+        String bookResponse = mockMvc.perform(post("/api/sessions/book")
+                        .header("Authorization", learnerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(bookingRequest)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        UUID sessionId = UUID.fromString(objectMapper.readTree(bookResponse).get("id").asText());
+
+        // 5. Verify the slot is booked
+        Availability bookedAvail = availabilityRepository.findById(avail.getId()).orElseThrow();
+        assertTrue(bookedAvail.getIsBooked());
+
+        // 7. Authenticate as mentor and cancel the session
+        mockMvc.perform(put("/api/sessions/" + sessionId + "/cancel")
+                        .header("Authorization", mentorToken))
+                .andExpect(status().isOk());
+
+        // 8. Verify Learner refund and Availability state
+        User updatedLearner = userRepository.findById(learner.getId()).orElseThrow();
+        assertEquals(100, updatedLearner.getCredits()); // Orig 100 -> booked (90) -> cancelled (100)
+
+        Availability freedAvail = availabilityRepository.findById(avail.getId()).orElseThrow();
+        assertFalse(freedAvail.getIsBooked());
+
+        // 9. Delete the now-released availability slot
+        mockMvc.perform(delete("/api/availability/" + avail.getId())
+                        .header("Authorization", mentorToken))
+                .andExpect(status().isOk());
+
+        // 10. Verify deletion
+        assertTrue(availabilityRepository.findById(avail.getId()).isEmpty());
     }
 }
