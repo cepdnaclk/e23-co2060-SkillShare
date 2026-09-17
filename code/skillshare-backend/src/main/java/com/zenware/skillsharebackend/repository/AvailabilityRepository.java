@@ -22,6 +22,13 @@ public interface AvailabilityRepository extends JpaRepository<Availability, UUID
 
     Optional<Availability> findByUserIdAndStartTime(UUID userId, LocalDateTime startTime);
 
+    @Query("SELECT COUNT(a) FROM Availability a WHERE a.user.id = :userId AND a.startTime < :endTime AND a.endTime > :startTime")
+    int countOverlappingSlots(
+            @Param("userId") UUID userId,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
+    );
+
     List<Availability> findByUserId(UUID mentorId);
 
     @Modifying(flushAutomatically = true)

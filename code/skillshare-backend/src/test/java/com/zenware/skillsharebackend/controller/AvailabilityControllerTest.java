@@ -152,7 +152,7 @@ public class AvailabilityControllerTest {
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.startTime").exists())
                 .andExpect(jsonPath("$.endTime").exists());
-                
+
         assertFalse(availabilityRepository.findAll().isEmpty());
     }
 
@@ -179,7 +179,7 @@ public class AvailabilityControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonPayload))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Start time must be before end time!"));
+                .andExpect(jsonPath("$.message").value("Start time must be strictly before end time!"));
     }
 
     @Test
@@ -191,13 +191,12 @@ public class AvailabilityControllerTest {
                         .header("Authorization", mentorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonPayload))
-                .andDo(print())
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Logic Violation")); // Validates it is returning due to NPE -> 400 fallback
+                .andExpect(jsonPath("$.error").value("Validation Error"));
     }
 
     @Test
-    void addAvailability_ZeroDuration_Behavior() throws Exception {
+    void addAvailability_ZeroDuration_Returns400() throws Exception {
         String sameTime = LocalDateTime.now().plusDays(1).withNano(0).toString();
         String jsonPayload = String.format("{\"startTime\":\"%s\",\"endTime\":\"%s\"}", sameTime, sameTime);
 
@@ -205,7 +204,135 @@ public class AvailabilityControllerTest {
                         .header("Authorization", mentorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonPayload))
-                .andDo(print());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Start time must be strictly before end time!"));
+
+        assertTrue(availabilityRepository.findAll().isEmpty());
+    }
+
+    @Test
+    void addAvailability_PastTime_Returns400() throws Exception {
+        String start = LocalDateTime.now().minusDays(1).withNano(0).toString();
+        String end = LocalDateTime.now().minusDays(1).plusHours(1).withNano(0).toString();
+        String jsonPayload = String.format("{\"startTime\":\"%s\",\"endTime\":\"%s\"}", start, end);
+
+        mockMvc.perform(post("/api/availability/add")
+                        .header("Authorization", mentorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Start time cannot be in the past!"));
+
+        assertTrue(availabilityRepository.findAll().isEmpty());
+    }
+
+    @Test
+    void addAvailability_Duplicate_Returns409() throws Exception {
+        String start = LocalDateTime.now().plusDays(1).withNano(0).toString();
+        String end = LocalDateTime.now().plusDays(1).plusHours(1).withNano(0).toString();
+        String jsonPayload = String.format("{\"startTime\":\"%s\",\"endTime\":\"%s\"}", start, end);
+
+        // First succeeds
+        mockMvc.perform(post("/api/availability/add")
+                        .header("Authorization", mentorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isOk());
+
+        // Second duplicate fails
+        mockMvc.perform(post("/api/availability/add")
+                        .header("Authorization", mentorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Time slot overlaps with existing availability!"));
+
+        assertEquals(1, availabilityRepository.findAll().size());
+    }
+
+    @Test
+    void addAvailability_Overlapping_Returns409() throws Exception {
+        // Existing: 10:00 - 11:00
+        String start1 = LocalDateTime.now().plusDays(1).withHour(10).withMinute(0).withNano(0).toString();
+        String end1 = LocalDateTime.now().plusDays(1).withHour(11).withMinute(0).withNano(0).toString();
+        String payload1 = String.format("{\"startTime\":\"%s\",\"endTime\":\"%s\"}", start1, end1);
+
+        mockMvc.perform(post("/api/availability/add")
+                        .header("Authorization", mentorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload1))
+                .andExpect(status().isOk());
+
+        // New: 10:30 - 11:30 (Partial overlap)
+        String start2 = LocalDateTime.now().plusDays(1).withHour(10).withMinute(30).withNano(0).toString();
+        String end2 = LocalDateTime.now().plusDays(1).withHour(11).withMinute(30).withNano(0).toString();
+        String payload2 = String.format("{\"startTime\":\"%s\",\"endTime\":\"%s\"}", start2, end2);
+
+        mockMvc.perform(post("/api/availability/add")
+                        .header("Authorization", mentorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload2))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Time slot overlaps with existing availability!"));
+
+        assertEquals(1, availabilityRepository.findAll().size());
+    }
+
+    @Test
+    void addAvailability_Contained_Returns409() throws Exception {
+        // Existing: 10:00 - 12:00
+        String start1 = LocalDateTime.now().plusDays(1).withHour(10).withMinute(0).withNano(0).toString();
+        String end1 = LocalDateTime.now().plusDays(1).withHour(12).withMinute(0).withNano(0).toString();
+        String payload1 = String.format("{\"startTime\":\"%s\",\"endTime\":\"%s\"}", start1, end1);
+
+        mockMvc.perform(post("/api/availability/add")
+                        .header("Authorization", mentorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload1))
+                .andExpect(status().isOk());
+
+        // New: 10:30 - 11:00 (Full containment)
+        String start2 = LocalDateTime.now().plusDays(1).withHour(10).withMinute(30).withNano(0).toString();
+        String end2 = LocalDateTime.now().plusDays(1).withHour(11).withMinute(0).withNano(0).toString();
+        String payload2 = String.format("{\"startTime\":\"%s\",\"endTime\":\"%s\"}", start2, end2);
+
+        mockMvc.perform(post("/api/availability/add")
+                        .header("Authorization", mentorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload2))
+                .andExpect(status().isConflict());
+
+        assertEquals(1, availabilityRepository.findAll().size());
+    }
+
+    @Test
+    void addAvailability_Adjacent_Returns200() throws Exception {
+        // Existing: 10:00 - 11:00
+        String start1 = LocalDateTime.now().plusDays(1).withHour(10).withMinute(0).withNano(0).toString();
+        String end1 = LocalDateTime.now().plusDays(1).withHour(11).withMinute(0).withNano(0).toString();
+        String payload1 = String.format("{\"startTime\":\"%s\",\"endTime\":\"%s\"}", start1, end1);
+
+        mockMvc.perform(post("/api/availability/add")
+                        .header("Authorization", mentorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload1))
+                .andExpect(status().isOk());
+
+        // New: 11:00 - 12:00 (Adjacent)
+        String start2 = LocalDateTime.now().plusDays(1).withHour(11).withMinute(0).withNano(0).toString();
+        String end2 = LocalDateTime.now().plusDays(1).withHour(12).withMinute(0).withNano(0).toString();
+        String payload2 = String.format("{\"startTime\":\"%s\",\"endTime\":\"%s\"}", start2, end2);
+
+        mockMvc.perform(post("/api/availability/add")
+                        .header("Authorization", mentorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload2))
+                .andExpect(status().isOk());
+
+        assertEquals(2, availabilityRepository.findAll().size());
+        for (Availability a : availabilityRepository.findAll()) {
+            assertFalse(a.getIsBooked());
+        }
     }
 
     @Test

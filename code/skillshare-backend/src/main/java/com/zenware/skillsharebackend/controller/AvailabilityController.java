@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/availability")
@@ -18,7 +19,7 @@ public class AvailabilityController {
     private final AvailabilityService availabilityService;
 
     @PostMapping("/add")
-    public ResponseEntity<Availability> addAvailability(@RequestBody AvailabilityRequest request) {
+    public ResponseEntity<Availability> addAvailability(@Valid @RequestBody AvailabilityRequest request) {
         // LOGIC: try-catch is GONE!
         // Any error thrown by the service is caught by your GlobalExceptionHandler.
         return ResponseEntity.ok(availabilityService.addAvailability(request));

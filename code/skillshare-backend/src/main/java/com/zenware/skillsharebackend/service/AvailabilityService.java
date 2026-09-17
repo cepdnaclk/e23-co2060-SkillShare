@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,14 +32,29 @@ public class AvailabilityService {
     @Transactional
     public Availability addAvailability(AvailabilityRequest request) {
         // Business Logic 1: Time Travel Check!
-        if (request.getStartTime().isAfter(request.getEndTime())) {
-            throw new IllegalArgumentException("Start time must be before end time!");
+        if (!request.getStartTime().isBefore(request.getEndTime())) {
+            throw new IllegalArgumentException("Start time must be strictly before end time!");
+        }
+
+        if (request.getStartTime().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Start time cannot be in the past!");
         }
 
         // Business Logic 2: Securely identify the mentor from the Token!
         User mentor = getAuthenticatedUser();
 
-        // Business Logic 3: Build the actual Entity using the Builder pattern
+        // Business Logic 3: Overlap detection
+        int overlaps = availabilityRepository.countOverlappingSlots(
+                mentor.getId(),
+                request.getStartTime(),
+                request.getEndTime()
+        );
+
+        if (overlaps > 0) {
+            throw new IllegalStateException("Time slot overlaps with existing availability!");
+        }
+
+        // Business Logic 4: Build the actual Entity using the Builder pattern
         Availability availability = Availability.builder()
                 .user(mentor)
                 .startTime(request.getStartTime())
