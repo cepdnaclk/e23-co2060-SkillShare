@@ -7,7 +7,6 @@ import {
   Compass,
   Layers,
   Search,
-  Users,
   Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,9 +34,8 @@ const formatDate = (iso: string) =>
     minute: "2-digit",
   });
 
-const getHour = () => new Date().getHours();
 const greeting = () => {
-  const h = getHour();
+  const h = new Date().getHours();
   if (h < 12) return "Good morning";
   if (h < 18) return "Good afternoon";
   return "Good evening";
@@ -55,7 +53,6 @@ const stagger = {
 
 /* ─── Sub-components ──────────────────────────────────────────── */
 
-/** Compact section label */
 function SectionLabel({
   icon: Icon,
   label,
@@ -80,9 +77,9 @@ function SectionLabel({
   }[color];
 
   return (
-    <div className="flex items-center gap-2 mb-4">
+    <div className="flex items-center gap-2 mb-3">
       <div
-        className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0"
+        className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0"
         style={
           styles.bg
             ? { background: styles.bg, border: `1px solid ${styles.border}` }
@@ -90,14 +87,18 @@ function SectionLabel({
         }
       >
         <Icon
-          className="w-3.5 h-3.5"
+          className="w-3 h-3"
           aria-hidden
           style={styles.text ? { color: styles.text } : undefined}
         />
       </div>
       <p
         className="text-[11px] font-semibold tracking-[0.1em] uppercase"
-        style={styles.text ? { color: styles.text } : { color: "hsl(var(--muted-foreground))" }}
+        style={
+          styles.text
+            ? { color: styles.text }
+            : { color: "hsl(var(--muted-foreground))" }
+        }
       >
         {label}
       </p>
@@ -105,20 +106,14 @@ function SectionLabel({
   );
 }
 
-/** A single skill pill — teach or learn style */
 function SkillPill({
   name,
   variant,
 }: {
   name: string;
-  variant: "teach" | "learn" | "neutral";
+  variant: "teach" | "learn";
 }) {
-  const cls =
-    variant === "teach"
-      ? "skill-badge-teach"
-      : variant === "learn"
-      ? "skill-badge-learn"
-      : "inline-flex items-center h-6 text-xs px-2.5 rounded-full border border-border bg-secondary text-secondary-foreground font-medium";
+  const cls = variant === "teach" ? "skill-badge-teach" : "skill-badge-learn";
   return (
     <span className={`${cls} inline-flex items-center h-6 text-xs px-2.5 font-medium`}>
       {name}
@@ -126,29 +121,27 @@ function SkillPill({
   );
 }
 
-/** Compact session row */
 function SessionRow({ session }: { session: Session }) {
   const statusColor: Record<string, string> = {
-    PENDING: "text-amber-600 bg-amber-50 border-amber-200",
-    ACCEPTED: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    PENDING:   "text-amber-600 bg-amber-50 border-amber-200",
+    ACCEPTED:  "text-emerald-700 bg-emerald-50 border-emerald-200",
     COMPLETED: "text-muted-foreground bg-secondary border-border",
     CANCELLED: "text-red-600 bg-red-50 border-red-200",
-    REJECTED: "text-red-600 bg-red-50 border-red-200",
-    EXPIRED: "text-muted-foreground bg-secondary border-border",
+    REJECTED:  "text-red-600 bg-red-50 border-red-200",
+    EXPIRED:   "text-muted-foreground bg-secondary border-border",
   };
-  const badge = statusColor[session.status] ?? "text-muted-foreground bg-secondary border-border";
+  const badge =
+    statusColor[session.status] ?? "text-muted-foreground bg-secondary border-border";
 
   return (
-    <div className="flex items-start justify-between gap-3 py-3 border-b border-border last:border-0">
+    <div className="flex items-center justify-between gap-3 py-3 border-b border-border last:border-0">
       <div className="min-w-0">
-        <p className="text-sm font-medium truncate">
-          {session.skillName}
-        </p>
+        <p className="text-sm font-medium truncate">{session.skillName}</p>
         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
           <Clock className="w-3 h-3 flex-shrink-0" aria-hidden />
           {formatDate(session.startTime)}
-          <span className="mx-1">·</span>
-          with {session.mentorName}
+          <span className="text-border mx-0.5">·</span>
+          {session.mentorName}
         </p>
       </div>
       <span
@@ -179,7 +172,6 @@ const Dashboard = () => {
       setLoading(false);
       return;
     }
-
     const uid = user.id;
     if (refreshUser) refreshUser(uid);
     setLoading(true);
@@ -205,38 +197,11 @@ const Dashboard = () => {
   /* ── Derived data ─────────────────────────────────────────── */
   const teachSkills = skills.filter((s) => s.skillType === "TEACH");
   const learnSkills = skills.filter((s) => s.skillType === "LEARN");
-
   const upcomingLearner = learnerSessions.filter((s) =>
     ["PENDING", "ACCEPTED"].includes(s.status)
   );
   const upcomingMentor = mentorSessions.filter((s) => s.status === "PENDING");
-
   const firstName = user?.fullName?.split(" ")[0] ?? "there";
-
-  /* ── Stats for secondary section ─────────────────────────── */
-  const statItems = [
-    {
-      label: "Booked sessions",
-      value: upcomingLearner.length,
-      href: "/sessions",
-    },
-    {
-      label: "Pending requests",
-      value: upcomingMentor.length,
-      href: "/sessions",
-    },
-    {
-      label: "Skills shared",
-      value: teachSkills.length,
-      href: "/create-profile",
-      hrefState: { startStep: 2 },
-    },
-    {
-      label: "Feedback received",
-      value: feedback.length,
-      href: "/notifications",
-    },
-  ];
 
   return (
     <AppLayout>
@@ -255,7 +220,7 @@ const Dashboard = () => {
             {greeting()}, {firstName}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Ready to share something or learn something new?
+            What are you sharing or learning today?
           </p>
         </motion.div>
 
@@ -272,7 +237,7 @@ const Dashboard = () => {
             {/* I CAN TEACH */}
             <motion.div
               variants={fadeUp}
-              className="rounded-lg border p-5"
+              className="rounded-lg border p-4"
               style={{
                 background: "hsl(var(--teach-bg))",
                 borderColor: "hsl(var(--teach-border))",
@@ -282,7 +247,7 @@ const Dashboard = () => {
 
               {teachSkills.length > 0 ? (
                 <>
-                  <div className="flex flex-wrap gap-1.5 mb-4">
+                  <div className="flex flex-wrap gap-1.5 mb-3">
                     {teachSkills.map((s) => (
                       <SkillPill
                         key={`${s.skillId}-${s.skillType}`}
@@ -302,15 +267,12 @@ const Dashboard = () => {
                   </button>
                 </>
               ) : (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    You haven't added any teaching skills yet.
-                    Share something you know with the community.
-                  </p>
+                <div className="flex items-center gap-3">
+                  <p className="text-xs text-muted-foreground flex-1">No skills yet.</p>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 text-xs"
+                    className="h-7 text-xs flex-shrink-0"
                     onClick={() =>
                       navigate("/create-profile", { state: { startStep: 2 } })
                     }
@@ -324,7 +286,7 @@ const Dashboard = () => {
             {/* I WANT TO LEARN */}
             <motion.div
               variants={fadeUp}
-              className="rounded-lg border p-5"
+              className="rounded-lg border p-4"
               style={{
                 background: "hsl(var(--learn-bg))",
                 borderColor: "hsl(var(--learn-border))",
@@ -334,7 +296,7 @@ const Dashboard = () => {
 
               {learnSkills.length > 0 ? (
                 <>
-                  <div className="flex flex-wrap gap-1.5 mb-4">
+                  <div className="flex flex-wrap gap-1.5 mb-3">
                     {learnSkills.map((s) => (
                       <SkillPill
                         key={`${s.skillId}-${s.skillType}`}
@@ -350,23 +312,21 @@ const Dashboard = () => {
                     className="text-xs font-medium"
                     style={{ color: "hsl(var(--learn-text))" }}
                   >
-                    Manage learning goals →
+                    Manage goals →
                   </button>
                 </>
               ) : (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Tell others what you want to learn so they can find you.
-                  </p>
+                <div className="flex items-center gap-3">
+                  <p className="text-xs text-muted-foreground flex-1">No goals yet.</p>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 text-xs"
+                    className="h-7 text-xs flex-shrink-0"
                     onClick={() =>
                       navigate("/create-profile", { state: { startStep: 2 } })
                     }
                   >
-                    Add learning goals
+                    Add a goal
                   </Button>
                 </div>
               )}
@@ -381,10 +341,9 @@ const Dashboard = () => {
           animate="show"
           className="grid sm:grid-cols-2 gap-3 mb-8"
         >
-          {/* Explore people */}
           <motion.div
             variants={fadeUp}
-            className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-secondary/30 transition-colors cursor-pointer group"
+            className="flex items-center justify-between p-3.5 rounded-lg border border-border bg-card hover:bg-secondary/30 transition-colors cursor-pointer group"
             onClick={() => navigate("/search")}
             role="button"
             tabIndex={0}
@@ -392,21 +351,20 @@ const Dashboard = () => {
             aria-label="Explore people and skills"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Search className="w-4 h-4 text-primary" aria-hidden />
+              <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Search className="w-3.5 h-3.5 text-primary" aria-hidden />
               </div>
               <div>
-                <p className="text-sm font-medium">Explore people</p>
-                <p className="text-xs text-muted-foreground">Find someone who knows what you want to learn</p>
+                <p className="text-sm font-medium">Explore</p>
+                <p className="text-xs text-muted-foreground">Find people through their skills</p>
               </div>
             </div>
             <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" aria-hidden />
           </motion.div>
 
-          {/* Session requests */}
           <motion.div
             variants={fadeUp}
-            className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-secondary/30 transition-colors cursor-pointer group"
+            className="flex items-center justify-between p-3.5 rounded-lg border border-border bg-card hover:bg-secondary/30 transition-colors cursor-pointer group"
             onClick={() => navigate("/sessions")}
             role="button"
             tabIndex={0}
@@ -414,8 +372,8 @@ const Dashboard = () => {
             aria-label="View sessions"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Layers className="w-4 h-4 text-primary" aria-hidden />
+              <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Layers className="w-3.5 h-3.5 text-primary" aria-hidden />
               </div>
               <div>
                 <p className="text-sm font-medium">
@@ -428,8 +386,8 @@ const Dashboard = () => {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {upcomingMentor.length > 0
-                    ? `${upcomingMentor.length} request${upcomingMentor.length > 1 ? "s" : ""} waiting for your response`
-                    : "Manage your teaching and learning sessions"}
+                    ? `${upcomingMentor.length} pending request${upcomingMentor.length > 1 ? "s" : ""}`
+                    : "Upcoming and requested sessions"}
                 </p>
               </div>
             </div>
@@ -437,14 +395,14 @@ const Dashboard = () => {
           </motion.div>
         </motion.div>
 
-        {/* ── 4. UPCOMING SESSIONS ──────────────────────────────── */}
+        {/* ── 4. UPCOMING ───────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.1 }}
           className="mb-8"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-muted-foreground" aria-hidden />
               <h2 className="text-sm font-semibold text-foreground">Upcoming</h2>
@@ -460,9 +418,9 @@ const Dashboard = () => {
           </div>
 
           {loading ? (
-            <div className="h-20 rounded-lg bg-secondary animate-pulse" />
+            <div className="h-16 rounded-lg bg-secondary animate-pulse" />
           ) : upcomingLearner.length > 0 ? (
-            <div className="rounded-lg border border-border bg-card divide-y divide-border overflow-hidden">
+            <div className="rounded-lg border border-border bg-card overflow-hidden">
               {upcomingLearner.slice(0, 4).map((s) => (
                 <div key={s.id} className="px-4">
                   <SessionRow session={s} />
@@ -470,69 +428,66 @@ const Dashboard = () => {
               ))}
             </div>
           ) : (
-            <div className="rounded-lg border border-border bg-card px-5 py-6">
+            <div className="flex items-center justify-between px-4 py-4 rounded-lg border border-border bg-card">
               <p className="text-sm text-muted-foreground">No upcoming sessions.</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Connect with someone and plan your next learning exchange.
-              </p>
               <Button
                 size="sm"
                 variant="outline"
-                className="mt-3 h-7 text-xs gap-1.5"
+                className="h-7 text-xs flex-shrink-0"
                 onClick={() => navigate("/search")}
               >
-                <Users className="w-3.5 h-3.5" aria-hidden />
-                Find someone to connect with
+                Find someone
               </Button>
             </div>
           )}
         </motion.div>
 
-        {/* ── 5. SECONDARY STATS ────────────────────────────────── */}
-        {!loading && (
+        {/* ── 5. ACCOUNT SUMMARY (secondary) ───────────────────── */}
+        {!loading && user && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.15 }}
+            className="border-t border-border pt-6"
           >
-            <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-sm font-semibold text-foreground">Overview</h2>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {statItems.map((stat) => (
-                <button
-                  key={stat.label}
-                  onClick={() =>
-                    navigate(stat.href, { state: stat.hrefState ?? {} })
-                  }
-                  className="text-left p-4 rounded-lg border border-border bg-card hover:bg-secondary/30 hover:border-primary/20 transition-colors"
-                >
-                  <p className="text-xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
-                </button>
-              ))}
-            </div>
-
-            {/* Account stats — reputation, credits — secondary */}
-            {user && (
-              <div className="grid grid-cols-2 gap-3 mt-3">
-                <div className="p-4 rounded-lg border border-border bg-card">
-                  <p className="text-xl font-bold text-foreground">
-                    {user.reputationScore ?? 0}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Reputation score</p>
-                </div>
-                <div className="p-4 rounded-lg border border-border bg-card">
-                  <p className="text-xl font-bold text-foreground">
-                    {user.credits ?? 0}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Credits</p>
-                </div>
-              </div>
-            )}
+            <p className="text-xs text-muted-foreground">
+              <span
+                className="hover:text-foreground cursor-pointer transition-colors"
+                onClick={() => navigate("/sessions")}
+              >
+                {upcomingLearner.length} booked
+              </span>
+              <span className="mx-2 text-border">·</span>
+              <span
+                className="hover:text-foreground cursor-pointer transition-colors"
+                onClick={() => navigate("/sessions")}
+              >
+                {upcomingMentor.length} pending
+              </span>
+              <span className="mx-2 text-border">·</span>
+              <span
+                className="hover:text-foreground cursor-pointer transition-colors"
+                onClick={() =>
+                  navigate("/create-profile", { state: { startStep: 2 } })
+                }
+              >
+                {teachSkills.length} skill{teachSkills.length !== 1 ? "s" : ""}
+              </span>
+              <span className="mx-2 text-border">·</span>
+              <span
+                className="hover:text-foreground cursor-pointer transition-colors"
+                onClick={() => navigate("/notifications")}
+              >
+                {feedback.length} feedback
+              </span>
+              <span className="mx-2 text-border">·</span>
+              <span>{user.credits ?? 0} credits</span>
+              <span className="mx-2 text-border">·</span>
+              <span>{user.reputationScore ?? 0} rep</span>
+            </p>
           </motion.div>
         )}
+
       </div>
     </AppLayout>
   );
