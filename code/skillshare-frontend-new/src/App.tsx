@@ -25,16 +25,6 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 });
 
-// Fixed, click-through gradient wash that sits ABOVE every page's own
-// (opaque) background div, so the violet/orange glow is visible on
-// every route regardless of what bg-* class that page's root div uses.
-const GradientOverlay = () => (
-  <div
-    aria-hidden
-    className="pointer-events-none fixed inset-0 z-[60]"
-    style={{ backgroundImage: "var(--gradient-glow)" }}
-  />
-);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -43,7 +33,6 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner richColors position="top-right" />
-        <GradientOverlay />
           <BrowserRouter>
           <Routes>
             {/* Public routes */}
