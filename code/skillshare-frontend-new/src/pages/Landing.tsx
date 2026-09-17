@@ -1,281 +1,621 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Users, Clock, MapPin, BookOpen, Sparkles, GraduationCap, Sun, Moon, Code2, Palette, Mic, BarChart3, PenLine, Music2, Camera, Video, Megaphone, Calculator, Check } from "lucide-react";
+import {
+  ArrowRight,
+  GraduationCap,
+  Sun,
+  Moon,
+  BookOpen,
+  Compass,
+  Users,
+  ArrowLeftRight,
+  Calendar,
+  MessageSquare,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/hooks/useTheme";
 
+/* ─── Animation variants ─────────────────────────────────────────────────── */
 const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
+  hidden: { opacity: 0, y: 10 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.28, ease: "easeOut" } },
 };
 
 const stagger = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.12 } },
+  show:   { transition: { staggerChildren: 0.07 } },
 };
 
+const fadeIn = {
+  hidden: { opacity: 0 },
+  show:   { opacity: 1, transition: { duration: 0.3, ease: "easeOut" } },
+};
+
+/* ─── Static skill data ───────────────────────────────────────────────────── */
+const teachSkills = [
+  "Python", "UI/UX Design", "Machine Learning", "Guitar",
+  "Photography", "Public Speaking", "Calculus", "React",
+];
+
+const learnSkills = [
+  "Video Editing", "Digital Marketing", "Data Analysis", "Piano",
+  "3D Modelling", "Game Dev", "Spanish", "Finance",
+];
+
+
+/* ─── How It Works steps ─────────────────────────────────────────────────── */
+const steps = [
+  {
+    num: "01",
+    title: "Share",
+    desc: "Tell people what you can teach — any skill, any level.",
+  },
+  {
+    num: "02",
+    title: "Discover",
+    desc: "Find people who know what you want to learn and whose schedule fits yours.",
+  },
+  {
+    num: "03",
+    title: "Learn together",
+    desc: "Schedule a session, exchange knowledge, and grow alongside each other.",
+  },
+];
+
+/* ════════════════════════════════════════════════════════════════════════════
+   LANDING PAGE
+   ════════════════════════════════════════════════════════════════════════════ */
 const Landing = () => {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
-  const isDark = theme !== "light";
+  const isDark = theme === "dark";
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
 
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="font-heading font-bold text-xl flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-orange-400 flex items-center justify-center">
-              <GraduationCap className="w-4.5 h-4.5 text-white" />
+      {/* ── 1. NAVIGATION ─────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+
+          {/* Wordmark — no gap between Skill and Share */}
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="flex items-center gap-2 font-semibold text-base select-none focus:outline-none"
+          >
+            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center flex-shrink-0">
+              <GraduationCap className="w-4 h-4 text-primary-foreground" />
             </div>
-            Skill<span className="bg-gradient-to-r from-violet-400 to-orange-400 bg-clip-text text-transparent">Share</span>
-          </div>
-          <div className="flex items-center gap-3">
+            <span>
+              <span className="text-foreground">Skill</span>
+              <span className="text-primary">Share</span>
+            </span>
+          </button>
+
+          {/* Right nav */}
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setTheme(isDark ? "light" : "dark")}
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              className="w-8 h-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors duration-150"
               aria-label="Toggle theme"
             >
-              {isDark ? <Moon className="w-4.5 h-4.5" /> : <Sun className="w-4.5 h-4.5" />}
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            <Button variant="ghost" onClick={() => navigate("/signup", { state: { tab: "signin" } })}>
-              Log In
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => navigate("/signup", { state: { tab: "signin" } })}
+            >
+              Log in
             </Button>
-            <Button onClick={() => navigate("/signup", { state: { tab: "signup" } })} className="gap-2 bg-gradient-to-r from-violet-500 to-orange-400 hover:opacity-90 text-white border-0">
-              Sign Up
+
+            <Button
+              size="sm"
+              onClick={() => navigate("/signup", { state: { tab: "signup" } })}
+            >
+              Get started
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="relative container mx-auto px-6 pt-20 pb-28 text-center overflow-hidden">
+      {/* ── 2. HERO ───────────────────────────────────────────────────────── */}
+      <section className="relative max-w-6xl mx-auto px-6 pt-28 pb-24">
+        {/* Very subtle dot grid — barely visible */}
+        <div className="absolute inset-0 dot-grid opacity-40 pointer-events-none" aria-hidden />
+
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-2xl mx-auto relative z-10"
+          variants={stagger}
+          initial="hidden"
+          animate="show"
+          className="relative z-10 max-w-2xl mx-auto text-center"
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-violet-500 to-orange-400 text-white text-xs font-semibold mb-6 shadow-lg shadow-violet-500/30"
+          {/* Eyebrow */}
+          <motion.p
+            variants={fadeUp}
+            className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground mb-10"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            For University Students
-          </motion.div>
+            Peer-to-peer skill sharing
+          </motion.p>
 
-          <h1 className="text-4xl sm:text-5xl font-heading font-bold leading-tight mb-5">
-            Share skills,<br />
-            <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-orange-400 bg-clip-text text-transparent">find your match.</span>
-          </h1>
+          {/* Primary statement — the product identity */}
+          <motion.h1
+            variants={fadeUp}
+            className="text-[clamp(2.25rem,6vw,3.75rem)] font-bold leading-[1.08] tracking-[-0.025em] text-foreground mb-3"
+          >
+            Everyone has something
+            <br />
+            <span className="text-primary">to teach.</span>
+          </motion.h1>
 
-          <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg mx-auto">
-            Connect with fellow students who share your interests. Match schedules,
-            exchange knowledge, and grow together on campus.
-          </p>
+          {/* Secondary statement — echoes, slightly smaller */}
+          <motion.p
+            variants={fadeUp}
+            className="text-[clamp(1.25rem,3.5vw,1.875rem)] font-semibold leading-snug tracking-[-0.02em] text-muted-foreground mb-8"
+          >
+            Everyone has something to learn.
+          </motion.p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          {/* Supporting copy — one sentence, no jargon */}
+          <motion.p
+            variants={fadeUp}
+            className="text-sm sm:text-base text-muted-foreground max-w-sm mx-auto mb-10 leading-relaxed"
+          >
+            Share what you know. Learn from someone else.
+          </motion.p>
+
+          {/* CTA buttons */}
+          <motion.div
+            variants={fadeUp}
+            className="flex flex-col sm:flex-row gap-2.5 justify-center mb-10"
+          >
             <Button
-              onClick={() => navigate("/signup")}
-              className="text-base px-8 py-6 rounded-xl gap-2 bg-gradient-to-r from-violet-500 to-orange-400 hover:opacity-90 text-white border-0 shadow-lg shadow-violet-500/30"
+              size="lg"
+              className="gap-2 px-8"
+              onClick={() => navigate("/signup", { state: { tab: "signup" } })}
             >
-              Get Started <ArrowRight className="w-4 h-4" />
+              Get started <ArrowRight className="w-4 h-4" />
             </Button>
             <Button
               variant="outline"
-              className="text-base px-8 py-6 rounded-xl border-2 border-violet-500/40 text-foreground hover:bg-violet-500/10"
+              size="lg"
+              className="px-8"
               onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
             >
-              Learn More
+              How it works
             </Button>
-          </div>
-        </motion.div>
+          </motion.div>
 
-        {/* purple + orange layered glow behind hero */}
-        <div className="absolute inset-x-0 top-0 -z-0 flex justify-center">
-          <div className="w-[560px] h-[560px] rounded-full bg-gradient-to-br from-violet-500/30 via-fuchsia-500/20 to-orange-400/30 blur-3xl" />
-        </div>
-        <div className="absolute -left-16 top-32 -z-0 w-[260px] h-[260px] rounded-full bg-purple-500/20 blur-3xl" />
-        <div className="absolute -right-16 top-8 -z-0 w-[260px] h-[260px] rounded-full bg-orange-400/20 blur-3xl" />
+          {/* Popular skills — very subtle, no interactive affordance */}
+          <motion.div variants={fadeUp} className="flex flex-wrap gap-1.5 justify-center">
+            <span className="text-xs text-muted-foreground/60 self-center mr-1">Popular:</span>
+            {["Python", "UI/UX Design", "Photography", "Guitar", "Public Speaking", "Machine Learning"].map((skill) => (
+              <span
+                key={skill}
+                className="text-xs px-2.5 py-1 h-6 rounded-full border border-border/60 text-muted-foreground/70 select-none"
+              >
+                {skill}
+              </span>
+            ))}
+          </motion.div>
+        </motion.div>
       </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="container mx-auto px-6 py-20">
+      {/* ── 3. TEACH ↔ LEARN — the conceptual centerpiece ─────────────────── */}
+      <section className="border-y border-border bg-secondary/25">
+        <div className="max-w-6xl mx-auto px-6 py-20">
+
+          {/* Section header */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.28 }}
+            className="text-center mb-12"
+          >
+            <p className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground mb-3">
+              One profile. Two sides.
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-[-0.02em] mb-3">
+              Every person is both a teacher and a learner.
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              Share what you know and discover what you want to learn.
+            </p>
+          </motion.div>
+
+          {/* Two-sided layout — cards with connector */}
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-60px" }}
+            className="grid md:grid-cols-[1fr_64px_1fr] gap-3 md:gap-0 items-stretch"
+          >
+            {/* I Can Teach */}
+            <motion.div
+              variants={fadeUp}
+              className="rounded-lg border p-6 sm:p-7"
+              style={{
+                background: "hsl(var(--teach-bg))",
+                borderColor: "hsl(var(--teach-border))",
+              }}
+            >
+              <div className="flex items-center gap-2.5 mb-5">
+                <BookOpen
+                  className="w-4 h-4 flex-shrink-0"
+                  style={{ color: "hsl(var(--teach-text))" }}
+                />
+                <div>
+                  <p
+                    className="text-[11px] font-semibold tracking-[0.1em] uppercase leading-none mb-0.5"
+                    style={{ color: "hsl(var(--teach-text))" }}
+                  >
+                    I Can Teach
+                  </p>
+                  <p className="text-xs text-muted-foreground">Skills I share with others</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {teachSkills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="skill-badge-teach inline-flex items-center h-6 text-xs px-2.5 font-medium"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Connector — centered bidirectional symbol */}
+            <motion.div
+              variants={fadeIn}
+              className="flex items-center justify-center py-4 md:py-0"
+            >
+              <div className="flex flex-col items-center gap-1 text-muted-foreground/50">
+                <div className="hidden md:block w-px h-8 bg-border" />
+                <div className="w-8 h-8 rounded-full border border-border bg-background flex items-center justify-center">
+                  <ArrowLeftRight className="w-3.5 h-3.5 text-muted-foreground" />
+                </div>
+                <div className="hidden md:block w-px h-8 bg-border" />
+              </div>
+            </motion.div>
+
+            {/* I Want to Learn */}
+            <motion.div
+              variants={fadeUp}
+              className="rounded-lg border p-6 sm:p-7"
+              style={{
+                background: "hsl(var(--learn-bg))",
+                borderColor: "hsl(var(--learn-border))",
+              }}
+            >
+              <div className="flex items-center gap-2.5 mb-5">
+                <Compass
+                  className="w-4 h-4 flex-shrink-0"
+                  style={{ color: "hsl(var(--learn-text))" }}
+                />
+                <div>
+                  <p
+                    className="text-[11px] font-semibold tracking-[0.1em] uppercase leading-none mb-0.5"
+                    style={{ color: "hsl(var(--learn-text))" }}
+                  >
+                    I Want to Learn
+                  </p>
+                  <p className="text-xs text-muted-foreground">Skills I want from others</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {learnSkills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="skill-badge-learn inline-flex items-center h-6 text-xs px-2.5 font-medium"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+
+          {/* Bottom note */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+            className="text-center text-xs text-muted-foreground mt-8"
+          >
+            You're not locked into one role — teach what you know, learn what you don't.
+          </motion.p>
+        </div>
+      </section>
+
+      {/* ── 4. HOW IT WORKS ───────────────────────────────────────────────── */}
+      <section id="how-it-works" className="max-w-6xl mx-auto px-6 py-20">
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 8 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          className="text-center mb-12"
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.28 }}
+          className="mb-14"
         >
-          <h2 className="text-3xl font-heading font-bold mb-2">How It Works</h2>
-          <p className="text-muted-foreground">Three simple steps to find your perfect study partner</p>
+          <p className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground mb-3">
+            How it works
+          </p>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-[-0.02em] max-w-xs">
+            Three steps to your next exchange.
+          </h2>
         </motion.div>
 
         <motion.div
           variants={stagger}
           initial="hidden"
           whileInView="show"
-          viewport={{ once: true, margin: "-80px" }}
-          className="grid sm:grid-cols-3 gap-6"
+          viewport={{ once: true, margin: "-60px" }}
+          className="grid sm:grid-cols-3 gap-px bg-border rounded-lg overflow-hidden"
         >
-          {[
-            { icon: Users, title: "Create Your Profile", desc: "Add your skills, interests, and what you want to learn from others.", grad: "from-violet-500 to-purple-600", ring: "hover:border-violet-500/50" },
-            { icon: Clock, title: "Set Your Schedule", desc: "Mark your free time slots so we can find overlapping availability.", grad: "from-amber-500 to-orange-500", ring: "hover:border-amber-500/50" },
-            { icon: Sparkles, title: "Get Matched", desc: "We'll connect you with students who match your skills and schedule.", grad: "from-fuchsia-500 to-orange-400", ring: "hover:border-fuchsia-500/50" },
-          ].map((feature, i) => (
+          {steps.map((step, i) => (
             <motion.div
-              key={i}
+              key={step.num}
               variants={fadeUp}
-              whileHover={{ y: -6 }}
-              className={`p-6 rounded-2xl bg-card border-2 border-border text-center transition-colors ${feature.ring}`}
+              className="bg-background p-8 flex flex-col"
             >
-              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.grad} flex items-center justify-center mx-auto mb-4 shadow-lg`}>
-                <feature.icon className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="font-heading font-semibold text-lg mb-1.5">{feature.title}</h3>
-              <p className="text-sm text-muted-foreground">{feature.desc}</p>
+              {/* Step number */}
+              <span className="text-[44px] font-bold leading-none text-border/80 mb-6 select-none tabular-nums">
+                {step.num}
+              </span>
+
+              <h3 className="text-base font-semibold mb-2">{step.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
             </motion.div>
           ))}
         </motion.div>
       </section>
 
-      {/* More Features */}
-      <section className="border-y border-border bg-gradient-to-br from-violet-500/5 via-background to-orange-400/5">
-        <div className="container mx-auto px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
+      {/* ── 5. SKILLS STRIP ───────────────────────────────────────────────── */}
+      <section className="border-t border-border bg-secondary/20">
+        <div className="max-w-6xl mx-auto px-6 py-16">
           <motion.div
-            initial={{ opacity: 0, x: -24 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.28 }}
+            className="mb-10"
           >
-            <h2 className="text-3xl font-heading font-bold mb-4">
-              Everything you need to<br />
-              <span className="bg-gradient-to-r from-violet-400 to-orange-400 bg-clip-text text-transparent">collaborate effectively</span>
-            </h2>
-            <p className="text-muted-foreground mb-8">
-              Built specifically for university students who want to learn from
-              each other and make the most of their campus experience.
+            <p className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground mb-3">
+              What people share
             </p>
-
-            <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true }} className="space-y-4">
-              {[
-                { icon: BookOpen, label: "Add your class schedule", grad: "from-purple-500 to-violet-500" },
-                { icon: MapPin, label: "Share meeting locations", grad: "from-fuchsia-500 to-pink-500" },
-                { icon: Clock, label: "Find common free time", grad: "from-amber-500 to-orange-500" },
-                { icon: Users, label: "Connect with peers", grad: "from-violet-500 to-fuchsia-500" },
-              ].map((item, i) => (
-                <motion.div key={i} variants={fadeUp} className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.grad} flex items-center justify-center shrink-0 shadow-md`}>
-                    <item.icon className="w-4.5 h-4.5 text-white" />
-                  </div>
-                  <span className="text-sm font-medium">{item.label}</span>
-                </motion.div>
-              ))}
-            </motion.div>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-[-0.02em]">
+              Find people through what they know.
+            </h2>
           </motion.div>
 
-          {/* Skill match grid visual */}
           <motion.div
-            initial={{ opacity: 0, x: 24 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            className="p-6 rounded-2xl bg-card border-2 border-violet-500/30 shadow-xl shadow-violet-500/10"
+            variants={stagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-60px" }}
+            className="grid sm:grid-cols-2 gap-8"
           >
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-orange-400 flex items-center justify-center">
-                <GraduationCap className="w-4 h-4 text-white" />
+            {/* Teaching */}
+            <motion.div variants={fadeUp}>
+              <p
+                className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-3"
+                style={{ color: "hsl(var(--teach-text))" }}
+              >
+                People are teaching
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {[...teachSkills, "Figma", "TypeScript", "Yoga", "Statistics"].map((skill) => (
+                  <button
+                    key={skill}
+                    onClick={() => navigate("/signup")}
+                    className="skill-badge-teach inline-flex items-center h-6 text-xs px-2.5 font-medium hover:opacity-75 transition-opacity"
+                  >
+                    {skill}
+                  </button>
+                ))}
               </div>
-              <span className="text-sm font-semibold">Live skill matches</span>
-            </div>
-            <motion.div
-              variants={stagger}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true }}
-              className="grid grid-cols-6 gap-2"
-            >
-              {[
-                { icon: Code2,      bg: "bg-violet-500" },
-                { icon: Palette,    bg: "bg-orange-500" },
-                { icon: Mic,        bg: "bg-fuchsia-500" },
-                { icon: BarChart3,  bg: "bg-amber-500" },
-                { icon: PenLine,    bg: "bg-purple-500" },
-                { icon: Music2,     bg: "bg-violet-600" },
-                { icon: Camera,     bg: "bg-orange-400" },
-                { icon: Video,      bg: "bg-fuchsia-400" },
-                { icon: Megaphone,  bg: "bg-amber-400" },
-                { icon: Calculator, bg: "bg-purple-600" },
-                { icon: BookOpen,   bg: "bg-violet-400" },
-                { icon: MapPin,     bg: "bg-orange-600" },
-                { icon: Users,      bg: "bg-fuchsia-600" },
-                { icon: Sparkles,   bg: "bg-amber-600" },
-                { icon: GraduationCap, bg: "bg-purple-400" },
-                { icon: Clock,      bg: "bg-violet-500" },
-                { icon: Code2,      bg: "bg-orange-500" },
-                { icon: Palette,    bg: "bg-fuchsia-500" },
-                { icon: Mic,        bg: "bg-amber-500" },
-                { icon: BarChart3,  bg: "bg-purple-500" },
-                { icon: PenLine,    bg: "bg-violet-600" },
-                { icon: Music2,     bg: "bg-orange-400" },
-                { icon: Camera,     bg: "bg-fuchsia-400" },
-                { icon: Video,      bg: "bg-amber-400" },
-                { icon: Megaphone,  bg: "bg-purple-600" },
-                { icon: Calculator, bg: "bg-violet-400" },
-                { icon: BookOpen,   bg: "bg-orange-600" },
-                { icon: MapPin,     bg: "bg-fuchsia-600" },
-                { icon: Users,      bg: "bg-amber-600" },
-                { icon: Sparkles,   bg: "bg-purple-400" },
-              ].map((skill, i) => (
-                <motion.div
-                  key={i}
-                  variants={{
-                    hidden: { opacity: 0, scale: 0.7 },
-                    show: { opacity: 1, scale: 1 },
-                  }}
-                  transition={{ duration: 0.25 }}
-                  whileHover={{ y: -2, scale: 1.05 }}
-                  className={`relative aspect-square rounded-xl ${skill.bg} flex items-center justify-center`}
-                >
-                  <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-card flex items-center justify-center">
-                    <Check className="w-2 h-2 text-white" strokeWidth={3.5} />
-                  </div>
-                  <skill.icon className="w-4 h-4 text-white" />
-                </motion.div>
-              ))}
+            </motion.div>
+
+            {/* Learning */}
+            <motion.div variants={fadeUp}>
+              <p
+                className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-3"
+                style={{ color: "hsl(var(--learn-text))" }}
+              >
+                People want to learn
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {[...learnSkills, "Cooking", "Cinematography", "Arabic", "Negotiation"].map((skill) => (
+                  <button
+                    key={skill}
+                    onClick={() => navigate("/signup")}
+                    className="skill-badge-learn inline-flex items-center h-6 text-xs px-2.5 font-medium hover:opacity-75 transition-opacity"
+                  >
+                    {skill}
+                  </button>
+                ))}
+              </div>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="container mx-auto px-6 py-24 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          className="relative rounded-3xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-orange-400 py-16 px-6 overflow-hidden"
-        >
-          <h2 className="text-3xl font-heading font-bold mb-3 text-white">Ready to find your study partners?</h2>
-          <p className="text-white/90 mb-8">
-            Join thousands of students already connecting and learning from each other.
-          </p>
-          <Button
-            onClick={() => navigate("/signup")}
-            className="text-base px-8 py-6 rounded-xl gap-2 bg-white text-violet-600 hover:bg-white/90 border-0 shadow-lg font-semibold"
+      {/* ── 6. PROFILE PREVIEW CALLOUT ────────────────────────────────────── */}
+      <section className="max-w-6xl mx-auto px-6 py-20">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+
+          {/* Text side */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.28 }}
           >
-            Get Started Free <ArrowRight className="w-4 h-4" />
-          </Button>
+            <p className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground mb-4">
+              Built for real life
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-[-0.02em] mb-4">
+              Learning happens when schedules align.
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-8 max-w-sm">
+              SkillShare helps you find people whose availability matches yours.
+              No chasing, no missed messages — just sessions that happen.
+            </p>
+
+            <ul className="space-y-3.5">
+              {[
+                { icon: Calendar,      text: "Set your available time slots" },
+                { icon: Users,         text: "Match with people whose schedules align" },
+                { icon: MessageSquare, text: "Chat and confirm sessions in-app" },
+                { icon: ArrowLeftRight,text: "Exchange knowledge, not just follow requests" },
+              ].map((item) => (
+                <li key={item.text} className="flex items-center gap-3 text-sm text-foreground">
+                  <item.icon className="w-4 h-4 text-primary flex-shrink-0" />
+                  {item.text}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+
+          {/* Profile card preview */}
+          <motion.div
+            initial={{ opacity: 0, x: 12 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.35 }}
+            className="rounded-lg border border-border bg-card shadow-xs p-6 max-w-sm md:ml-auto"
+          >
+            {/* Avatar + name */}
+            <div className="flex items-center gap-3 mb-5 pb-4 border-b border-border">
+              <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center text-sm font-semibold text-primary flex-shrink-0">
+                AJ
+              </div>
+              <div>
+                <p className="text-sm font-semibold leading-tight">Alex Johnson</p>
+                <p className="text-xs text-muted-foreground">Engineering Student</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Can teach */}
+              <div>
+                <p
+                  className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-2"
+                  style={{ color: "hsl(var(--teach-text))" }}
+                >
+                  Can teach
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["Python", "Machine Learning", "Data Structures"].map((s) => (
+                    <span key={s} className="skill-badge-teach inline-flex items-center h-5 text-[11px] px-2 font-medium">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Wants to learn */}
+              <div>
+                <p
+                  className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-2"
+                  style={{ color: "hsl(var(--learn-text))" }}
+                >
+                  Wants to learn
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["UI/UX Design", "Video Editing"].map((s) => (
+                    <span key={s} className="skill-badge-learn inline-flex items-center h-5 text-[11px] px-2 font-medium">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Availability */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Available</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {["Mon", "Wed", "Fri", "Sat"].map((d) => (
+                    <span key={d} className="inline-flex items-center h-5 text-[11px] px-2 rounded border border-border bg-secondary text-secondary-foreground">
+                      {d}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <Button
+                size="sm"
+                className="w-full mt-1"
+                onClick={() => navigate("/signup")}
+              >
+                Request a session
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── 7. FINAL CTA ──────────────────────────────────────────────────── */}
+      <section className="border-t border-border">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.28 }}
+          className="max-w-6xl mx-auto px-6 py-24"
+        >
+          <div className="max-w-lg">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-[-0.025em] mb-4 leading-[1.1]">
+              Have something<br />to share?
+            </h2>
+            <p className="text-muted-foreground text-base leading-relaxed mb-8">
+              Someone out there may be looking for exactly what you know.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                size="lg"
+                className="gap-2 px-8"
+                onClick={() => navigate("/signup", { state: { tab: "signup" } })}
+              >
+                Get started <ArrowRight className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="px-8"
+                onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
+              >
+                Explore skills
+              </Button>
+            </div>
+          </div>
         </motion.div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-8">
-        <div className="container mx-auto px-6 text-center">
-          <p className="text-sm text-muted-foreground">© 2026 SkillShare. Built for students, by students.</p>
+      {/* ── 8. FOOTER ─────────────────────────────────────────────────────── */}
+      <footer className="border-t border-border">
+        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2 select-none">
+            <div className="w-5 h-5 rounded bg-primary flex items-center justify-center flex-shrink-0">
+              <GraduationCap className="w-3 h-3 text-primary-foreground" />
+            </div>
+            <span className="text-sm font-semibold">
+              <span className="text-foreground">Skill</span>
+              <span className="text-primary">Share</span>
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            © 2026 SkillShare. Built for students, by students.
+          </p>
         </div>
       </footer>
+
     </div>
   );
 };
