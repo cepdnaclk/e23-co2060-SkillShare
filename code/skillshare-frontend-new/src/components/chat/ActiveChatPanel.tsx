@@ -8,7 +8,7 @@ import {
 } from "react";
 import { ArrowLeft, Send } from "lucide-react";
 import { format } from "date-fns";
-import type { ChatHistoryMessage } from "@/lib/chatApi";
+import type { ChatMessageResponse as ChatHistoryMessage } from "@/api/types";
 import { useChat } from "@/context/ChatContext";
 import { useAuth } from "@/context/AuthContext";
 import { chatSocketService } from "@/services/chatSocketService";

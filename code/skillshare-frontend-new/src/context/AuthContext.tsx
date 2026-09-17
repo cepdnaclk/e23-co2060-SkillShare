@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
-import { authApi, usersApi, type User, type ApiError } from "@/lib/api";
+import { authApi } from "@/api/auth.api";
+import { usersApi } from "@/api/users.api";
+import type { UserPrivateDto as User, UserPublicDto } from "@/api/types";
+import type { ApiError } from "@/api/client";
 import {
   getToken, setToken, removeToken,
   getStoredUser, setStoredUser, removeStoredUser,
@@ -76,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
 
     try {
-      const response = await authApi.login(email, password);
+      const response = await authApi.login({ email, password });
       console.log("AUTH RESPONSE:", response);
       const jwt = response.token;
 
@@ -125,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
 
     try {
-      const response = await authApi.register(fullName, email, password);
+      const response = await authApi.register({ fullName, email, password });
       console.log("REGISTER AUTH RESPONSE:", response);
       const jwt = response.token;
 

@@ -1,7 +1,13 @@
 import { Client, type IMessage } from "@stomp/stompjs";
-import type { ChatMessageDto, TypingStatusDto } from "@/lib/chatApi";
+import type { ChatMessageDto, TypingStatusDto } from "@/api/types";
 
-const WS_URL = `${import.meta.env.VITE_API_URL.replace(/^http/, "ws")}/ws`;
+// Derive the WebSocket base URL from the REST API base URL.
+// The backend WebSocket endpoint is registered at /ws (root, no /api prefix).
+// WebSocketConfig.java: registry.addEndpoint("/ws")
+// So if REST base is http://localhost:8080/api, the WS URL is ws://localhost:8080/ws.
+const _apiBase = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:8080/api") as string;
+// Strip trailing /api or /api/ to get the server root, then replace http→ws, append /ws
+const WS_URL = `${_apiBase.replace(/\/api\/?$/, "").replace(/^http/, "ws")}/ws`;
 
 type MessageHandler = (msg: ChatMessageDto) => void;
 type TypingHandler = (status: TypingStatusDto) => void;
