@@ -20,10 +20,11 @@ import org.springframework.messaging.simp.user.SimpUserRegistry;
 @RequiredArgsConstructor
 public class ChatController {
 
-    private final SimpMessagingTemplate messagingTemplate;
+    private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
     private final SimpUserRegistry simpUserRegistry;
+    private final com.zenware.skillsharebackend.service.ChatAuthorizationService chatAuthorizationService;
 
     @MessageMapping("/chat")
     public void processMessage(@Payload ChatMessageDto chatMessageDto, java.security.Principal principal) {
@@ -41,6 +42,11 @@ public class ChatController {
 
             User receiver = userRepository.findById(chatMessageDto.getReceiverId())
                     .orElseThrow(() -> new IllegalArgumentException("Receiver not found in DB! UUID: " + chatMessageDto.getReceiverId()));
+
+            // Authorization check
+            if (!chatAuthorizationService.isAuthorizedToChat(sender.getId(), receiver.getId())) {
+                throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Not authorized to chat with this user.");
+            }
 
             // 2. Build and save the message to PostgreSQL for history
             ChatMessage savedMsg = chatMessageRepository.save(ChatMessage.builder()
@@ -60,6 +66,8 @@ public class ChatController {
 
             System.out.println("✅ Message routed to user email: " + receiver.getEmail() + " at /queue/messages\n");
 
+        } catch (com.zenware.skillsharebackend.exception.UnauthorizedAccessException e) {
+            System.err.println("❌ UNAUTHORIZED CHAT MESSAGE: " + e.getMessage());
         } catch (Exception e) {
             // IF ANYTHING FAILS, WE CATCH IT AND PRINT IT HERE INSTEAD OF FAILING SILENTLY
             System.err.println("❌ ERROR PROCESSING WEBSOCKET MESSAGE:");
@@ -84,8 +92,15 @@ public class ChatController {
             User receiver = userRepository.findById(typingStatus.getReceiverId())
                     .orElseThrow(() -> new IllegalArgumentException("Receiver not found for typing status! UUID: " + typingStatus.getReceiverId()));
             
+            // Authorization check
+            if (!chatAuthorizationService.isAuthorizedToChat(sender.getId(), receiver.getId())) {
+                throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Not authorized to chat with this user.");
+            }
+
             // We instantly route it to the receiver's dedicated typing queue using their email
             messagingTemplate.convertAndSendToUser(receiver.getEmail(), "/queue/typing", typingStatus);
+        } catch (com.zenware.skillsharebackend.exception.UnauthorizedAccessException e) {
+            System.err.println("❌ UNAUTHORIZED TYPING STATUS: " + e.getMessage());
         } catch (Exception e) {
             System.err.println("❌ ERROR PROCESSING TYPING STATUS:");
             e.printStackTrace();
