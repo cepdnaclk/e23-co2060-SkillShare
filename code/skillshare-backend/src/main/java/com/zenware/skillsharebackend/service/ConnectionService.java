@@ -120,7 +120,7 @@ public class ConnectionService {
         // Notify the sender that their request was accepted
         notificationService.sendNotification(
                 connection.getSender(),
-                currentUser.getFullName() + " accepted your connection request!",
+                authenticatedUser.getFullName() + " accepted your connection request!",
                 NotificationType.SYSTEM_ALERT
         );
 
