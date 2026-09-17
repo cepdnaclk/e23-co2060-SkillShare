@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.test.context.ActiveProfiles;
@@ -21,6 +22,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -28,6 +30,7 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -59,6 +62,9 @@ public class SessionControllerTest {
 
     @Autowired
     private com.zenware.skillsharebackend.repository.CreditDebtRepository creditDebtRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
@@ -424,5 +430,78 @@ public class SessionControllerTest {
         availabilityRepository.saveAndFlush(availability);
 
         return session;
+    }
+
+    @Test
+    void bookSession_AlreadyBookedSlot_ReturnsConflict() throws Exception {
+        SessionRequest request = new SessionRequest();
+        request.setSkillId(skill.getId());
+        request.setAvailabilityId(availability.getId());
+
+        mockMvc.perform(post("/api/sessions/book")
+                        .header("Authorization", learnerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/sessions/book")
+                        .header("Authorization", learnerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", containsString("already booked")));
+
+        User updatedLearner = userRepository.findById(learner.getId()).orElseThrow();
+        assertEquals(90, updatedLearner.getCredits());
+
+        assertEquals(1, sessionRepository.count());
+    }
+
+    @Test
+    void cancelSession_MentorInsufficientCredits_CreatesCreditDebt() throws Exception {
+        mentor.setCredits(0);
+        userRepository.save(mentor);
+
+        Session session = createPendingSession();
+        session.setStatus(SessionStatus.ACCEPTED);
+        session = sessionRepository.saveAndFlush(session);
+
+        mockMvc.perform(put("/api/sessions/" + session.getId() + "/cancel")
+                        .header("Authorization", mentorToken))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        User updatedLearner = userRepository.findById(learner.getId()).orElseThrow();
+        assertEquals(105, updatedLearner.getCredits());
+
+        User updatedMentor = userRepository.findById(mentor.getId()).orElseThrow();
+        assertEquals(0, updatedMentor.getCredits());
+
+        List<CreditDebt> debts = creditDebtRepository.findAll();
+        assertEquals(1, debts.size());
+        assertEquals(5, debts.get(0).getAmount());
+        assertEquals(DebtStatus.UNPAID, debts.get(0).getStatus());
+        assertEquals(mentor.getId(), debts.get(0).getMentor().getId());
+
+        mockMvc.perform(put("/api/sessions/" + session.getId() + "/cancel")
+                        .header("Authorization", mentorToken))
+                .andExpect(status().isConflict());
+
+        assertEquals(1, creditDebtRepository.count());
+    }
+
+    @Test
+    void updateSessionStatus_AcceptExpiredRequest_ReturnsConflict() throws Exception {
+        Session session = createPendingSession();
+        jdbcTemplate.update("UPDATE sessions SET created_at = ? WHERE id = ?",
+                LocalDateTime.now().minusDays(5), session.getId());
+
+        mockMvc.perform(patch("/api/sessions/" + session.getId() + "/status")
+                        .header("Authorization", mentorToken)
+                        .param("status", "ACCEPTED"))
+                .andDo(print())
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", containsString("expired")));
     }
 }
