@@ -82,8 +82,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
-        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
-            // Token is malformed, expired, or invalid.
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException | org.springframework.security.core.userdetails.UsernameNotFoundException e) {
+            // Token is malformed, expired, invalid, or user was deleted.
             // Do not throw an exception here, otherwise we bypass the AuthenticationEntryPoint.
             // Leave SecurityContext unauthenticated, which triggers 401 downstream.
             SecurityContextHolder.clearContext();
