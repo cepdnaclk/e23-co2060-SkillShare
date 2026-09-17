@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -122,9 +121,17 @@ const Landing = () => {
       </header>
 
       {/* ── 2. HERO ───────────────────────────────────────────────────────── */}
-      <section className="relative max-w-6xl mx-auto px-6 pt-28 pb-24">
-        {/* Very subtle dot grid — barely visible */}
-        <div className="absolute inset-0 dot-grid opacity-40 pointer-events-none" aria-hidden />
+      <section className="relative max-w-6xl mx-auto px-6 pt-20 pb-16">
+        {/* Dot-grid texture — barely visible */}
+        <div className="absolute inset-0 dot-grid opacity-[0.35] pointer-events-none" aria-hidden />
+        {/* Extremely subtle primary-blue atmospheric centre — stays almost white */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse 60% 50% at 50% 40%, hsl(var(--primary) / 0.045) 0%, transparent 70%)",
+          }}
+          aria-hidden
+        />
 
         <motion.div
           variants={stagger}
