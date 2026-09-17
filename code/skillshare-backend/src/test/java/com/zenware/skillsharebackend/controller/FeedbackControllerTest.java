@@ -234,12 +234,16 @@ public class FeedbackControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
+        long initialCount = feedbackRepository.count();
+
         mockMvc.perform(post("/api/feedback/leave")
                         .header("Authorization", learnerToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message", containsString("already left feedback")));
+
+        org.junit.jupiter.api.Assertions.assertEquals(initialCount, feedbackRepository.count());
     }
 
     @Test

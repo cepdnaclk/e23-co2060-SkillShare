@@ -317,7 +317,7 @@ public class SessionControllerTest {
 
     // --- Completion ---
     @Test
-    void completeSession_LearnerCompletesAccepted_Returns200() throws Exception {
+    void completeSession_LearnerCompletesAccepted_Returns200AndAwardsXp() throws Exception {
         Session session = createPendingSession();
         session.setStatus(SessionStatus.ACCEPTED);
         session.setStartTime(LocalDateTime.now().minusHours(2));
@@ -328,6 +328,67 @@ public class SessionControllerTest {
                         .header("Authorization", learnerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
+
+        // Verify XP is awarded (20 XP) and expected user XP value changes
+        User updatedLearner = userRepository.findById(learner.getId()).orElseThrow();
+        User updatedMentor = userRepository.findById(mentor.getId()).orElseThrow();
+        assertEquals(20, updatedLearner.getXp() == null ? 0 : updatedLearner.getXp());
+        assertEquals(20, updatedMentor.getXp() == null ? 0 : updatedMentor.getXp());
+        assertEquals(1, updatedLearner.getLevel() == null ? 1 : updatedLearner.getLevel());
+        assertEquals(1, updatedMentor.getLevel() == null ? 1 : updatedMentor.getLevel());
+    }
+
+    @Test
+    void completeSession_LevelUpAtThreshold_Returns200() throws Exception {
+        // Prepare mentor with 90 XP (needs 10 to level up, SessionCompletion gives 20)
+        mentor.setXp(90);
+        userRepository.save(mentor);
+
+        Session session = createPendingSession();
+        session.setStatus(SessionStatus.ACCEPTED);
+        session.setStartTime(LocalDateTime.now().minusHours(2));
+        session.setEndTime(LocalDateTime.now().minusHours(1));
+        sessionRepository.save(session);
+
+        mockMvc.perform(patch("/api/sessions/" + session.getId() + "/complete")
+                        .header("Authorization", learnerToken))
+                .andExpect(status().isOk());
+
+        User updatedMentor = userRepository.findById(mentor.getId()).orElseThrow();
+        assertEquals(110, updatedMentor.getXp());
+        assertEquals(2, updatedMentor.getLevel()); // Configured threshold is 100 XP per level
+    }
+
+    @Test
+    void completeSession_AlreadyCompleted_Returns409() throws Exception {
+        Session session = createPendingSession();
+        session.setStatus(SessionStatus.COMPLETED);
+        session.setStartTime(LocalDateTime.now().minusHours(2));
+        session.setEndTime(LocalDateTime.now().minusHours(1));
+        sessionRepository.save(session);
+
+        mockMvc.perform(patch("/api/sessions/" + session.getId() + "/complete")
+                        .header("Authorization", learnerToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Only ACCEPTED sessions can be marked as COMPLETED!"));
+
+        // Verify XP is not awarded again
+        User updatedLearner = userRepository.findById(learner.getId()).orElseThrow();
+        assertEquals(0, updatedLearner.getXp() == null ? 0 : updatedLearner.getXp());
+    }
+
+    @Test
+    void completeSession_UnrelatedUser_Returns403() throws Exception {
+        Session session = createPendingSession();
+        session.setStatus(SessionStatus.ACCEPTED);
+        session.setStartTime(LocalDateTime.now().minusHours(2));
+        session.setEndTime(LocalDateTime.now().minusHours(1));
+        sessionRepository.save(session);
+
+        mockMvc.perform(patch("/api/sessions/" + session.getId() + "/complete")
+                        .header("Authorization", unrelatedToken))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message", containsString("Security Violation: Only the Learner can complete the session!")));
     }
 
     @Test

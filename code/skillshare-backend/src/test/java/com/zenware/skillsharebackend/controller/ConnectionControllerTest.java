@@ -108,7 +108,7 @@ public class ConnectionControllerTest {
                         .header("Authorization", senderToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"));
-                
+
         assertFalse(connectionRepository.findAll().isEmpty());
     }
 
@@ -127,10 +127,35 @@ public class ConnectionControllerTest {
                 .build();
         connectionRepository.save(connection);
 
+        long initialCount = connectionRepository.count();
+
         mockMvc.perform(post("/api/connections/request/" + receiver.getId())
                         .header("Authorization", senderToken))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message", containsString("You have already sent a connection request to this user.")));
+
+        org.junit.jupiter.api.Assertions.assertEquals(initialCount, connectionRepository.count());
+    }
+
+    @Test
+    void sendRequest_InverseRequest_AutoAcceptsAndReturns200() throws Exception {
+        Connection connection = Connection.builder()
+                .sender(receiver) // The 'receiver' originally sent the request to 'sender'
+                .receiver(sender)
+                .status(ConnectionStatus.PENDING)
+                .build();
+        connectionRepository.save(connection);
+
+        // Sender now sends a request back to Receiver
+        mockMvc.perform(post("/api/connections/request/" + receiver.getId())
+                        .header("Authorization", senderToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"));
+
+        // Verify it was auto-accepted
+        Connection updatedConnection = connectionRepository.findAll().get(0);
+        org.junit.jupiter.api.Assertions.assertEquals(ConnectionStatus.ACCEPTED, updatedConnection.getStatus());
+        org.junit.jupiter.api.Assertions.assertEquals(1, connectionRepository.count());
     }
 
     @Test
