@@ -80,15 +80,17 @@ public class GlobalExceptionHandler {
 
     // 4. Handle Unexpected Server Crashes (The Safety Net)
     // LOGIC: This logs the full error to IntelliJ but shows the clean message in Postman for easier debugging.
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex) {
-        // This is crucial for you! It prints the red error text in your IntelliJ console.
-        ex.printStackTrace();
+        // Log the exception securely server-side
+        logger.error("Unexpected server error: ", ex);
 
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Server Error",
-                ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred on our end."
+                "An unexpected error occurred."
         );
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
