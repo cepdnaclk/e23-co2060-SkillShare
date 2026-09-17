@@ -150,8 +150,11 @@ public class AvailabilityControllerTest {
                         .content(jsonPayload))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.mentorId").exists()) // DTO property
+                .andExpect(jsonPath("$.user").doesNotExist()) // Proof entity is not leaked
                 .andExpect(jsonPath("$.startTime").exists())
-                .andExpect(jsonPath("$.endTime").exists());
+                .andExpect(jsonPath("$.endTime").exists())
+                .andExpect(jsonPath("$.isBooked").value(false));
 
         assertFalse(availabilityRepository.findAll().isEmpty());
     }

@@ -1,6 +1,7 @@
 package com.zenware.skillsharebackend.service;
 
 import com.zenware.skillsharebackend.dto.AvailabilityRequest;
+import com.zenware.skillsharebackend.dto.AvailabilityResponse;
 import com.zenware.skillsharebackend.entity.Availability;
 import com.zenware.skillsharebackend.entity.User;
 import com.zenware.skillsharebackend.repository.AvailabilityRepository;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor // LOGIC: Modern constructor injection
@@ -29,8 +31,19 @@ public class AvailabilityService {
                 .orElseThrow(() -> new IllegalArgumentException("Authenticated user not found!"));
     }
 
+    private AvailabilityResponse mapToResponse(Availability availability) {
+        return AvailabilityResponse.builder()
+                .id(availability.getId())
+                .mentorId(availability.getUser().getId())
+                .startTime(availability.getStartTime())
+                .endTime(availability.getEndTime())
+                .isBooked(availability.getIsBooked())
+                .activeSessionId(availability.getActiveSessionId())
+                .build();
+    }
+
     @Transactional
-    public Availability addAvailability(AvailabilityRequest request) {
+    public AvailabilityResponse addAvailability(AvailabilityRequest request) {
         // Business Logic 1: Time Travel Check!
         if (!request.getStartTime().isBefore(request.getEndTime())) {
             throw new IllegalArgumentException("Start time must be strictly before end time!");
@@ -62,7 +75,8 @@ public class AvailabilityService {
                 .isBooked(false)
                 .build();
 
-        return availabilityRepository.save(availability);
+        Availability saved = availabilityRepository.save(availability);
+        return mapToResponse(saved);
     }
 
     // --- NEW FEATURE: Delete Slot ---
@@ -84,12 +98,15 @@ public class AvailabilityService {
         availabilityRepository.delete(availability);
     }
 
-    public List<Availability> getMentorFreeSlots(UUID mentorId) {
+    public List<AvailabilityResponse> getMentorFreeSlots(UUID mentorId) {
         // Just ask the repository for the unbooked slots!
-        return availabilityRepository.findByUserIdAndIsBookedFalse(mentorId);
+        return availabilityRepository.findByUserIdAndIsBookedFalse(mentorId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
-    public List<Availability> getMyAvailabilities() {
+    public List<AvailabilityResponse> getMyAvailabilities() {
         // 1. Get the email from the current JWT token
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
@@ -98,6 +115,9 @@ public class AvailabilityService {
                 .orElseThrow(() -> new IllegalArgumentException("Authenticated user not found!"));
 
         // 3. Return only their slots
-        return availabilityRepository.findByUserId(currentUser.getId());
+        return availabilityRepository.findByUserId(currentUser.getId())
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 }

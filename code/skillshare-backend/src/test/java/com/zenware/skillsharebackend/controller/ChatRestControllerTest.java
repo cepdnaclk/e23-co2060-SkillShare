@@ -104,6 +104,7 @@ class ChatRestControllerTest {
         // Create some messages
         chatMessageRepository.save(ChatMessage.builder()
                 .sender(user1).receiver(user2).content("Hello 1").isRead(true).build());
+        Thread.sleep(100);
         chatMessageRepository.save(ChatMessage.builder()
                 .sender(user2).receiver(user1).content("Hello 2").isRead(false).build());
         
@@ -111,8 +112,15 @@ class ChatRestControllerTest {
                         .header("Authorization", user1Token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(2)))
-                .andExpect(jsonPath("$.content[0].content").exists())
-                .andExpect(jsonPath("$.content[1].content").exists());
+                // Verify explicitly DESC ordering (newest first)
+                .andExpect(jsonPath("$.content[0].content").value("Hello 2"))
+                .andExpect(jsonPath("$.content[1].content").value("Hello 1"))
+                // Verify DTO mapping
+                .andExpect(jsonPath("$.content[0].senderId").value(user2.getId().toString()))
+                .andExpect(jsonPath("$.content[0].receiverId").value(user1.getId().toString()))
+                // Verify raw entities are not leaked
+                .andExpect(jsonPath("$.content[0].sender").doesNotExist())
+                .andExpect(jsonPath("$.content[0].receiver").doesNotExist());
     }
 
     @Test
@@ -125,17 +133,30 @@ class ChatRestControllerTest {
     void getHistory_PaginationWorks() throws Exception {
         // Save 3 messages
         chatMessageRepository.save(ChatMessage.builder().sender(user1).receiver(user2).content("Msg 1").build());
+        Thread.sleep(50);
         chatMessageRepository.save(ChatMessage.builder().sender(user2).receiver(user1).content("Msg 2").build());
+        Thread.sleep(50);
         chatMessageRepository.save(ChatMessage.builder().sender(user1).receiver(user2).content("Msg 3").build());
 
         // Request page 0, size 2
+        String jsonResponse = mockMvc.perform(get("/api/chat/history/" + user2.getId())
+                        .param("page", "0")
+                        .param("size", "2")
+                        .header("Authorization", user1Token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        System.out.println("PAGE JSON SHAPE: " + jsonResponse);
+
         mockMvc.perform(get("/api/chat/history/" + user2.getId())
                         .param("page", "0")
                         .param("size", "2")
                         .header("Authorization", user1Token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(2)))
-                .andExpect(jsonPath("$.totalElements").value(3));
+                .andExpect(jsonPath("$.totalElements").value(3))
+                // Verify DESC order
+                .andExpect(jsonPath("$.content[0].content").value("Msg 3"))
+                .andExpect(jsonPath("$.content[1].content").value("Msg 2"));
     }
 
     @Test
