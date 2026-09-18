@@ -1,21 +1,20 @@
-import { useState, useCallback, KeyboardEvent, useRef } from "react";
-import { Search, X, Check, ArrowRight, User, Sparkles, Clock } from "lucide-react";
+import { useState, useCallback, KeyboardEvent, useRef, useEffect } from "react";
+import { Search, X, Check, User, Sparkles, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { publicSkillsApi, userSkillsApi, availabilityApi, type Skill, type ApiError } from "@/lib/api";
+import { publicSkillsApi, userSkillsApi, availabilityApi, trendingApi, usersApi, type Skill, type ApiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";
 import { toast } from "sonner";
 import { DatePicker } from "@/components/DatePicker";
 import { TimePicker } from "@/components/TimePicker";
 
-interface SkillEntry { name: string; type: "TEACH" | "LEARN"; }
+interface SkillEntry { name: string; type: "TEACH" | "LEARN"; skillId?: string; }
 
-// "?"?"? Skill Search with debounce "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?
 let searchTimer: ReturnType<typeof setTimeout>;
 function useSkillSearch() {
   const [results, setResults] = useState<Skill[]>([]);
@@ -37,12 +36,12 @@ function useSkillSearch() {
   return { results, searching, search, clearResults: () => setResults([]) };
 }
 
-// "?"?"? Sub-component: Skill Input "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?
 const SkillSection = ({ 
   type, 
   title, 
   description, 
-  skills, 
+  skills,
+  recommended,
   onAdd, 
   onRemove 
 }: {
@@ -50,6 +49,7 @@ const SkillSection = ({
   title: string;
   description: string;
   skills: SkillEntry[];
+  recommended: string[];
   onAdd: (name: string, type: "TEACH" | "LEARN") => void;
   onRemove: (name: string, type: "TEACH" | "LEARN") => void;
 }) => {
@@ -73,6 +73,10 @@ const SkillSection = ({
   };
 
   const currentSkills = skills.filter(s => s.type === type);
+  
+  const availableRecommended = recommended.filter(
+    rec => !skills.some(s => s.name.toLowerCase() === rec.toLowerCase())
+  );
 
   return (
     <div className="space-y-3">
@@ -92,7 +96,6 @@ const SkillSection = ({
           className="pl-10 bg-background"
         />
         
-        {/* Autocomplete Dropdown */}
         {query && (results.length > 0 || searching) && (
           <div className="absolute top-full mt-1 left-0 right-0 z-50 bg-background border border-border rounded-xl shadow-lg overflow-hidden max-h-48 overflow-y-auto">
             {searching ? (
@@ -103,10 +106,9 @@ const SkillSection = ({
                   key={r.id}
                   type="button"
                   onClick={() => handleAdd(r.name)}
-                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-secondary flex items-center justify-between"
+                  className="w-full text-left px-4 py-2 hover:bg-secondary text-sm transition-colors"
                 >
-                  <span className="font-medium text-foreground">{r.name}</span>
-                  {r.category && <span className="text-xs text-muted-foreground">{r.category}</span>}
+                  {r.name}
                 </button>
               ))
             )}
@@ -114,12 +116,30 @@ const SkillSection = ({
         )}
       </div>
 
+      {availableRecommended.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs text-muted-foreground mb-2">Recommended</p>
+          <div className="flex flex-wrap gap-2">
+            {availableRecommended.slice(0, 8).map(name => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => handleAdd(name)}
+                className="text-xs px-3 py-1 rounded-full bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors border border-border/50"
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {currentSkills.length > 0 && (
-        <div className="flex flex-wrap gap-2 pt-1">
+        <div className="flex flex-wrap gap-2 pt-2">
           {currentSkills.map(s => (
-            <Badge key={s.name} variant={type === "TEACH" ? "secondary" : "outline"} className="gap-1 px-2.5 py-1 text-sm font-medium">
+            <Badge key={s.name} variant="secondary" className="gap-1 pr-1.5 py-1 text-xs">
               {s.name}
-              <button onClick={() => onRemove(s.name, type)} aria-label={`Remove ${s.name}`} className="hover:bg-muted-foreground/20 rounded-full p-0.5 ml-1">
+              <button type="button" onClick={() => onRemove(s.name, type)} aria-label={`Remove ${s.name}`} className="hover:bg-muted-foreground/20 rounded-full p-0.5 ml-1">
                 <X className="w-3 h-3" />
               </button>
             </Badge>
@@ -130,7 +150,6 @@ const SkillSection = ({
   );
 };
 
-// "?"?"? Main Form "?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?"?
 const CreateProfile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -140,14 +159,57 @@ const CreateProfile = () => {
 
   const [profileInfo, setProfileInfo] = useState({ university: "", major: "", bio: "" });
   const [skills, setSkills] = useState<SkillEntry[]>([]);
+  const [initialSkills, setInitialSkills] = useState<SkillEntry[]>([]);
+  const [recommended, setRecommended] = useState<string[]>([]);
   
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
 
+  useEffect(() => {
+    if (!user?.id) return;
+    let mounted = true;
+
+    Promise.all([
+      userSkillsApi.getByUser(user.id).catch(() => []),
+      trendingApi.getTopSharingSkills().catch(() => [])
+    ]).then(([userSkills, trending]) => {
+      if (!mounted) return;
+      
+      const mappedSkills: SkillEntry[] = userSkills.map(s => ({
+        name: s.skillName,
+        type: s.skillType as "TEACH" | "LEARN",
+        skillId: s.skillId
+      }));
+      
+      setSkills(mappedSkills);
+      setInitialSkills(mappedSkills);
+      setRecommended(trending.map(t => t.name));
+
+      const names = mappedSkills.map(s => s.name.toLowerCase());
+      const hasConflicts = new Set(names).size !== names.length;
+      if (hasConflicts) {
+        setError("You have conflicting skills in your profile (same skill in Teach and Learn). Please remove the duplicates.");
+      }
+    });
+
+    return () => { mounted = false; };
+  }, [user?.id]);
+
   const handleAddSkill = (name: string, type: "TEACH" | "LEARN") => {
-    const exists = skills.find(s => s.name.toLowerCase() === name.toLowerCase() && s.type === type);
-    if (!exists) setSkills(prev => [...prev, { name, type }]);
+    const normalizedName = name.trim();
+    if (!normalizedName) return;
+
+    const existsSame = skills.find(s => s.name.toLowerCase() === normalizedName.toLowerCase() && s.type === type);
+    if (existsSame) return; 
+
+    const existsOther = skills.find(s => s.name.toLowerCase() === normalizedName.toLowerCase() && s.type !== type);
+    if (existsOther) {
+      toast.error(`"${normalizedName}" is already listed under ${existsOther.type === "TEACH" ? "I Can Teach" : "I Want To Learn"}. You cannot teach and learn the same skill.`);
+      return;
+    }
+
+    setSkills(prev => [...prev, { name: normalizedName, type }]);
   };
 
   const handleRemoveSkill = (name: string, type: "TEACH" | "LEARN") => {
@@ -157,7 +219,6 @@ const CreateProfile = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation
     const teachSkills = skills.filter(s => s.type === "TEACH");
     const learnSkills = skills.filter(s => s.type === "LEARN");
     if (teachSkills.length === 0 && learnSkills.length === 0) {
@@ -176,15 +237,19 @@ const CreateProfile = () => {
     setIsSaving(true);
     setError(null);
     try {
-      // Best-effort bio update
       if (profileInfo.bio && user) {
-        try { await import("@/lib/api").then(m => m.usersApi.updateMyBio(profileInfo.bio)); } catch (err) { console.error("Failed to update bio:", err); }
+        try { await usersApi.updateMyBio(profileInfo.bio); } catch (err) { console.error("Failed to update bio:", err); }
       }
 
-      // Add skills
-      await Promise.all(skills.map(s => userSkillsApi.add(s.name, s.type)));
+      const newSkills = skills.filter(s => !initialSkills.some(is => is.name.toLowerCase() === s.name.toLowerCase() && is.type === s.type));
+      const removedSkills = initialSkills.filter(is => !skills.some(s => s.name.toLowerCase() === is.name.toLowerCase() && s.type === is.type));
 
-      // Add availability if provided
+      await Promise.all(removedSkills.map(s => {
+        if (s.skillId) return userSkillsApi.remove(s.skillId, s.type);
+      }));
+
+      await Promise.all(newSkills.map(s => userSkillsApi.add(s.name, s.type)));
+
       if (startDateTime && endDateTime) {
         await availabilityApi.add(startDateTime, endDateTime);
       }
@@ -213,7 +278,6 @@ const CreateProfile = () => {
 
         <form onSubmit={handleSubmit} className="space-y-12">
           
-          {/* 1. Bio */}
           <section className="space-y-6">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
@@ -259,7 +323,6 @@ const CreateProfile = () => {
             </div>
           </section>
 
-          {/* 2. Skills */}
           <section className="space-y-6">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
@@ -274,6 +337,7 @@ const CreateProfile = () => {
                 title="I can teach"
                 description="Skills you are comfortable sharing with others."
                 skills={skills}
+                recommended={recommended}
                 onAdd={handleAddSkill}
                 onRemove={handleRemoveSkill}
               />
@@ -285,13 +349,13 @@ const CreateProfile = () => {
                 title="I want to learn"
                 description="Skills you are currently looking to develop."
                 skills={skills}
+                recommended={recommended}
                 onAdd={handleAddSkill}
                 onRemove={handleRemoveSkill}
               />
             </div>
           </section>
 
-          {/* 3. Availability */}
           <section className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
               <div className="flex items-center gap-2">
@@ -322,7 +386,6 @@ const CreateProfile = () => {
             </div>
           </section>
 
-          {/* Actions */}
           <div className="pt-6 border-t border-border flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => navigate("/dashboard")} disabled={isSaving}>
               Cancel
