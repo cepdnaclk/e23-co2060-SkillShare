@@ -1,279 +1,392 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Users, Clock, MapPin, BookOpen, Sparkles, GraduationCap, Sun, Moon, Code2, Palette, Mic, BarChart3, PenLine, Music2, Camera, Video, Megaphone, Calculator, Check } from "lucide-react";
+import {
+  ArrowRight,
+  GraduationCap,
+  Sun,
+  Moon,
+  BookOpen,
+  Compass,
+  Users,
+  ArrowLeftRight,
+  MessageSquare,
+  PlayCircle
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/hooks/useTheme";
 
+/* ─── Animation variants ─────────────────────────────────────────────────── */
 const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
+  hidden: { opacity: 0, y: 10 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.28, ease: "easeOut" } },
 };
 
 const stagger = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.12 } },
+  show:   { transition: { staggerChildren: 0.07 } },
 };
 
+const fadeIn = {
+  hidden: { opacity: 0 },
+  show:   { opacity: 1, transition: { duration: 0.3, ease: "easeOut" } },
+};
+
+
+
+/* ─── How It Works steps ─────────────────────────────────────────────────── */
+const steps = [
+  {
+    num: "01",
+    title: "Share",
+    desc: "Tell people what you can teach — any skill, any level.",
+  },
+  {
+    num: "02",
+    title: "Discover",
+    desc: "Find people who know what you want to learn and whose schedule fits yours.",
+  },
+  {
+    num: "03",
+    title: "Learn together",
+    desc: "Schedule a session, exchange knowledge, and grow alongside each other.",
+  },
+];
+
+/* ════════════════════════════════════════════════════════════════════════════
+   LANDING PAGE
+   ════════════════════════════════════════════════════════════════════════════ */
 const Landing = () => {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
-  const isDark = theme !== "light";
+  const isDark = theme === "dark";
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="font-heading font-bold text-xl flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-orange-400 flex items-center justify-center">
-              <GraduationCap className="w-4.5 h-4.5 text-white" />
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden font-sans">
+      {/* ── 1. NAVIGATION ─────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          
+          {/* Logo */}
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="flex items-center gap-2.5 font-bold text-lg select-none focus:outline-none"
+          >
+            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center flex-shrink-0 shadow-sm">
+              <GraduationCap className="w-5 h-5 text-primary-foreground" />
             </div>
-            Skill<span className="bg-gradient-to-r from-violet-400 to-orange-400 bg-clip-text text-transparent">Share</span>
-          </div>
+            <span className="tracking-tight">
+              <span className="text-foreground">Skill</span>
+              <span className="text-primary">Share</span>
+            </span>
+          </button>
+
+          {/* Center Nav */}
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
+            <button onClick={() => document.getElementById("skills")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-primary transition-colors">Explore</button>
+            <button onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-primary transition-colors">How it works</button>
+            <button className="hover:text-primary transition-colors">About</button>
+          </nav>
+
+          {/* Right nav */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setTheme(isDark ? "light" : "dark")}
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors duration-150"
               aria-label="Toggle theme"
             >
-              {isDark ? <Moon className="w-4.5 h-4.5" /> : <Sun className="w-4.5 h-4.5" />}
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            <Button variant="ghost" onClick={() => navigate("/signup", { state: { tab: "signin" } })}>
-              Log In
-            </Button>
-            <Button onClick={() => navigate("/signup", { state: { tab: "signup" } })} className="gap-2 bg-gradient-to-r from-violet-500 to-orange-400 hover:opacity-90 text-white border-0">
-              Sign Up
-            </Button>
+
+            <div className="hidden sm:flex items-center gap-2">
+              <Button
+                variant="ghost"
+                className="text-muted-foreground hover:text-foreground font-medium rounded-full px-5"
+                onClick={() => navigate("/signup", { state: { tab: "signin" } })}
+              >
+                Log in
+              </Button>
+
+              <Button
+                className="font-medium rounded-full px-6 shadow-sm"
+                onClick={() => navigate("/signup", { state: { tab: "signup" } })}
+              >
+                Sign up
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="relative container mx-auto px-6 pt-20 pb-28 text-center overflow-hidden">
+      {/* ── 2. HERO ───────────────────────────────────────────────────────── */}
+      <section className="relative max-w-7xl mx-auto px-6 pt-24 pb-20 lg:pt-32 lg:pb-28">
+        {/* Decorative background blur */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
+
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-2xl mx-auto relative z-10"
+          variants={stagger}
+          initial="hidden"
+          animate="show"
+          className="relative z-10 max-w-3xl mx-auto text-center"
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-violet-500 to-orange-400 text-white text-xs font-semibold mb-6 shadow-lg shadow-violet-500/30"
+          <motion.h1
+            variants={fadeUp}
+            className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-foreground mb-6 leading-[1.1]"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            For University Students
-          </motion.div>
+            Learn. Teach.<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-violet-500">
+              Grow Together.
+            </span>
+          </motion.h1>
 
-          <h1 className="text-4xl sm:text-5xl font-heading font-bold leading-tight mb-5">
-            Share skills,<br />
-            <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-orange-400 bg-clip-text text-transparent">find your match.</span>
-          </h1>
+          <motion.p
+            variants={fadeUp}
+            className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed"
+          >
+            A peer-to-peer skill sharing platform for university students. Share what you know. Learn what you love.
+          </motion.p>
 
-          <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-lg mx-auto">
-            Connect with fellow students who share your interests. Match schedules,
-            exchange knowledge, and grow together on campus.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <motion.div
+            variants={fadeUp}
+            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+          >
             <Button
-              onClick={() => navigate("/signup")}
-              className="text-base px-8 py-6 rounded-xl gap-2 bg-gradient-to-r from-violet-500 to-orange-400 hover:opacity-90 text-white border-0 shadow-lg shadow-violet-500/30"
+              size="lg"
+              className="gap-2 px-8 h-12 rounded-full text-base font-medium shadow-md shadow-primary/20 w-full sm:w-auto"
+              onClick={() => navigate("/signup", { state: { tab: "signup" } })}
             >
               Get Started <ArrowRight className="w-4 h-4" />
             </Button>
             <Button
               variant="outline"
-              className="text-base px-8 py-6 rounded-xl border-2 border-violet-500/40 text-foreground hover:bg-violet-500/10"
-              onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
+              size="lg"
+              className="gap-2 px-8 h-12 rounded-full text-base font-medium w-full sm:w-auto hover:bg-secondary/50"
+              onClick={() => {}}
             >
-              Learn More
+              <PlayCircle className="w-5 h-5 text-primary" /> Watch Video
+            </Button>
+          </motion.div>
+        </motion.div>
+      </section>
+
+
+
+      {/* ── 3. TEACH ↔ LEARN ─────────────────────────────────────────────── */}
+      <section className="py-24 bg-background">
+        <div className="max-w-6xl mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.28 }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+              Every person is both a teacher and a learner
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Share what you know and discover what you want to learn. You're not locked into one role.
+            </p>
+          </motion.div>
+
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-60px" }}
+            className="grid md:grid-cols-[1fr_auto_1fr] gap-6 md:gap-8 items-center"
+          >
+            <motion.div
+              variants={fadeUp}
+              className="rounded-2xl border bg-card p-8 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-primary/10 rounded-xl">
+                  <BookOpen className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">I Can Teach</h3>
+                  <p className="text-sm text-muted-foreground">Skills I share with others</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {["Python", "Guitar"].map((skill) => (
+                  <span
+                    key={skill}
+                    className="skill-badge-teach inline-flex items-center h-7 text-xs px-3 rounded-full font-medium"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div
+              variants={fadeIn}
+              className="hidden md:flex flex-col items-center gap-2"
+            >
+              <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-muted-foreground shadow-sm">
+                <ArrowLeftRight className="w-5 h-5" />
+              </div>
+            </motion.div>
+
+            <motion.div
+              variants={fadeUp}
+              className="rounded-2xl border bg-card p-8 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-violet-500/10 rounded-xl">
+                  <Compass className="w-6 h-6 text-violet-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">I Want to Learn</h3>
+                  <p className="text-sm text-muted-foreground">Skills I want from others</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {["Video Editing", "Spanish"].map((skill) => (
+                  <span
+                    key={skill}
+                    className="skill-badge-learn inline-flex items-center h-7 text-xs px-3 rounded-full font-medium"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── 4. HOW IT WORKS ───────────────────────────────────────────────── */}
+      <section id="how-it-works" className="py-24 bg-secondary/30">
+        <div className="max-w-6xl mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.28 }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+              Three steps to your next exchange
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Getting started is easy. Build your profile and start connecting.
+            </p>
+          </motion.div>
+
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-60px" }}
+            className="grid md:grid-cols-3 gap-8"
+          >
+            {steps.map((step, i) => (
+              <motion.div
+                key={step.num}
+                variants={fadeUp}
+                className="bg-card rounded-2xl p-8 border shadow-sm relative overflow-hidden"
+              >
+                <div className="text-[100px] font-black absolute -top-10 -right-6 text-muted/20 select-none pointer-events-none">
+                  {step.num}
+                </div>
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center font-bold text-lg mb-6">
+                    {step.num}
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed">{step.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+
+
+      {/* ── 6. PEOPLE DISCOVERY ────────────────────────────────────────── */}
+      <section className="py-24 bg-secondary/20">
+        <div className="max-w-3xl mx-auto px-6 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.28 }}
+            >
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-6">
+                Meet people through what they know.
+              </h2>
+              <p className="text-lg text-muted-foreground leading-relaxed mb-8">
+                On SkillShare, skills are how you introduce yourself. What you can teach tells people who you are. What you want to learn tells people what you're looking for.
+              </p>
+
+              <ul className="space-y-4 max-w-lg mx-auto text-left">
+                {[
+                  { icon: BookOpen,       text: "Browse what others can teach" },
+                  { icon: Users,          text: "Find someone whose skills match what you need" },
+                  { icon: ArrowLeftRight, text: "Offer something in return — or just connect" },
+                  { icon: MessageSquare,  text: "Chat, agree on a time, and exchange knowledge" },
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-4 text-base font-medium">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <item.icon className="w-4 h-4 text-primary" />
+                    </div>
+                    {item.text}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+        </div>
+      </section>
+
+      {/* ── 7. FINAL CTA ──────────────────────────────────────────────────── */}
+      <section className="py-24 relative overflow-hidden bg-primary text-primary-foreground">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+        
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.28 }}
+          className="max-w-4xl mx-auto px-6 text-center relative z-10"
+        >
+          <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
+            Ready to share your skills?
+          </h2>
+          <p className="text-xl text-primary-foreground/80 leading-relaxed mb-10 max-w-2xl mx-auto">
+            Join our community of university students learning from each other every day.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button
+              size="lg"
+              variant="secondary"
+              className="gap-2 px-10 h-14 rounded-full text-lg font-semibold text-primary hover:bg-white shadow-lg"
+              onClick={() => navigate("/signup", { state: { tab: "signup" } })}
+            >
+              Get started for free <ArrowRight className="w-5 h-5" />
             </Button>
           </div>
         </motion.div>
-
-        {/* purple + orange layered glow behind hero */}
-        <div className="absolute inset-x-0 top-0 -z-0 flex justify-center">
-          <div className="w-[560px] h-[560px] rounded-full bg-gradient-to-br from-violet-500/30 via-fuchsia-500/20 to-orange-400/30 blur-3xl" />
-        </div>
-        <div className="absolute -left-16 top-32 -z-0 w-[260px] h-[260px] rounded-full bg-purple-500/20 blur-3xl" />
-        <div className="absolute -right-16 top-8 -z-0 w-[260px] h-[260px] rounded-full bg-orange-400/20 blur-3xl" />
       </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="container mx-auto px-6 py-20">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          className="text-center mb-12"
-        >
-          <h2 className="text-3xl font-heading font-bold mb-2">How It Works</h2>
-          <p className="text-muted-foreground">Three simple steps to find your perfect study partner</p>
-        </motion.div>
-
-        <motion.div
-          variants={stagger}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-80px" }}
-          className="grid sm:grid-cols-3 gap-6"
-        >
-          {[
-            { icon: Users, title: "Create Your Profile", desc: "Add your skills, interests, and what you want to learn from others.", grad: "from-violet-500 to-purple-600", ring: "hover:border-violet-500/50" },
-            { icon: Clock, title: "Set Your Schedule", desc: "Mark your free time slots so we can find overlapping availability.", grad: "from-amber-500 to-orange-500", ring: "hover:border-amber-500/50" },
-            { icon: Sparkles, title: "Get Matched", desc: "We'll connect you with students who match your skills and schedule.", grad: "from-fuchsia-500 to-orange-400", ring: "hover:border-fuchsia-500/50" },
-          ].map((feature, i) => (
-            <motion.div
-              key={i}
-              variants={fadeUp}
-              whileHover={{ y: -6 }}
-              className={`p-6 rounded-2xl bg-card border-2 border-border text-center transition-colors ${feature.ring}`}
-            >
-              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.grad} flex items-center justify-center mx-auto mb-4 shadow-lg`}>
-                <feature.icon className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="font-heading font-semibold text-lg mb-1.5">{feature.title}</h3>
-              <p className="text-sm text-muted-foreground">{feature.desc}</p>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
-
-      {/* More Features */}
-      <section className="border-y border-border bg-gradient-to-br from-violet-500/5 via-background to-orange-400/5">
-        <div className="container mx-auto px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -24 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-          >
-            <h2 className="text-3xl font-heading font-bold mb-4">
-              Everything you need to<br />
-              <span className="bg-gradient-to-r from-violet-400 to-orange-400 bg-clip-text text-transparent">collaborate effectively</span>
-            </h2>
-            <p className="text-muted-foreground mb-8">
-              Built specifically for university students who want to learn from
-              each other and make the most of their campus experience.
-            </p>
-
-            <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true }} className="space-y-4">
-              {[
-                { icon: BookOpen, label: "Add your class schedule", grad: "from-purple-500 to-violet-500" },
-                { icon: MapPin, label: "Share meeting locations", grad: "from-fuchsia-500 to-pink-500" },
-                { icon: Clock, label: "Find common free time", grad: "from-amber-500 to-orange-500" },
-                { icon: Users, label: "Connect with peers", grad: "from-violet-500 to-fuchsia-500" },
-              ].map((item, i) => (
-                <motion.div key={i} variants={fadeUp} className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.grad} flex items-center justify-center shrink-0 shadow-md`}>
-                    <item.icon className="w-4.5 h-4.5 text-white" />
-                  </div>
-                  <span className="text-sm font-medium">{item.label}</span>
-                </motion.div>
-              ))}
-            </motion.div>
-          </motion.div>
-
-          {/* Skill match grid visual */}
-          <motion.div
-            initial={{ opacity: 0, x: 24 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            className="p-6 rounded-2xl bg-card border-2 border-violet-500/30 shadow-xl shadow-violet-500/10"
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-orange-400 flex items-center justify-center">
-                <GraduationCap className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-sm font-semibold">Live skill matches</span>
+      {/* ── 8. FOOTER ─────────────────────────────────────────────────────── */}
+      <footer className="bg-background border-t border-border py-12">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3 select-none">
+            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center flex-shrink-0 shadow-sm">
+              <GraduationCap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <motion.div
-              variants={stagger}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true }}
-              className="grid grid-cols-6 gap-2"
-            >
-              {[
-                { icon: Code2,      bg: "bg-violet-500" },
-                { icon: Palette,    bg: "bg-orange-500" },
-                { icon: Mic,        bg: "bg-fuchsia-500" },
-                { icon: BarChart3,  bg: "bg-amber-500" },
-                { icon: PenLine,    bg: "bg-purple-500" },
-                { icon: Music2,     bg: "bg-violet-600" },
-                { icon: Camera,     bg: "bg-orange-400" },
-                { icon: Video,      bg: "bg-fuchsia-400" },
-                { icon: Megaphone,  bg: "bg-amber-400" },
-                { icon: Calculator, bg: "bg-purple-600" },
-                { icon: BookOpen,   bg: "bg-violet-400" },
-                { icon: MapPin,     bg: "bg-orange-600" },
-                { icon: Users,      bg: "bg-fuchsia-600" },
-                { icon: Sparkles,   bg: "bg-amber-600" },
-                { icon: GraduationCap, bg: "bg-purple-400" },
-                { icon: Clock,      bg: "bg-violet-500" },
-                { icon: Code2,      bg: "bg-orange-500" },
-                { icon: Palette,    bg: "bg-fuchsia-500" },
-                { icon: Mic,        bg: "bg-amber-500" },
-                { icon: BarChart3,  bg: "bg-purple-500" },
-                { icon: PenLine,    bg: "bg-violet-600" },
-                { icon: Music2,     bg: "bg-orange-400" },
-                { icon: Camera,     bg: "bg-fuchsia-400" },
-                { icon: Video,      bg: "bg-amber-400" },
-                { icon: Megaphone,  bg: "bg-purple-600" },
-                { icon: Calculator, bg: "bg-violet-400" },
-                { icon: BookOpen,   bg: "bg-orange-600" },
-                { icon: MapPin,     bg: "bg-fuchsia-600" },
-                { icon: Users,      bg: "bg-amber-600" },
-                { icon: Sparkles,   bg: "bg-purple-400" },
-              ].map((skill, i) => (
-                <motion.div
-                  key={i}
-                  variants={{
-                    hidden: { opacity: 0, scale: 0.7 },
-                    show: { opacity: 1, scale: 1 },
-                  }}
-                  transition={{ duration: 0.25 }}
-                  whileHover={{ y: -2, scale: 1.05 }}
-                  className={`relative aspect-square rounded-xl ${skill.bg} flex items-center justify-center`}
-                >
-                  <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-card flex items-center justify-center">
-                    <Check className="w-2 h-2 text-white" strokeWidth={3.5} />
-                  </div>
-                  <skill.icon className="w-4 h-4 text-white" />
-                </motion.div>
-              ))}
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="container mx-auto px-6 py-24 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          className="relative rounded-3xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-orange-400 py-16 px-6 overflow-hidden"
-        >
-          <h2 className="text-3xl font-heading font-bold mb-3 text-white">Ready to find your study partners?</h2>
-          <p className="text-white/90 mb-8">
-            Join thousands of students already connecting and learning from each other.
+            <span className="text-lg font-bold tracking-tight">
+              <span className="text-foreground">Skill</span>
+              <span className="text-primary">Share</span>
+            </span>
+          </div>
+          <p className="text-sm font-medium text-muted-foreground">
+            © {new Date().getFullYear()} SkillShare. Built for students, by students.
           </p>
-          <Button
-            onClick={() => navigate("/signup")}
-            className="text-base px-8 py-6 rounded-xl gap-2 bg-white text-violet-600 hover:bg-white/90 border-0 shadow-lg font-semibold"
-          >
-            Get Started Free <ArrowRight className="w-4 h-4" />
-          </Button>
-        </motion.div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border py-8">
-        <div className="container mx-auto px-6 text-center">
-          <p className="text-sm text-muted-foreground">© 2026 SkillShare. Built for students, by students.</p>
         </div>
       </footer>
     </div>

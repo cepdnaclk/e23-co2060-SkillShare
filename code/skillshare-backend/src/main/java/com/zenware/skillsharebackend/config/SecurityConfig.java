@@ -1,6 +1,7 @@
 package com.zenware.skillsharebackend.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -21,11 +22,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+        @Value("${cors.allowed.origins}")
+        private List<String> allowedOrigins;
+
         private final JwtAuthenticationFilter jwtAuthFilter;
         private final AuthenticationProvider authenticationProvider;
 
         // --- NEW: INJECT OUR CUSTOM SUCCESS HANDLER ---
         private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+
+        // --- NEW: INJECT OUR CUSTOM API SECURITY HANDLERS ---
+        private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+        private final RestAccessDeniedHandler restAccessDeniedHandler;
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -41,7 +49,9 @@ public class SecurityConfig {
                                 // WHITELIST: Anyone can access the login, register, and public skills endpoints
                                 // --- NEW: ADD OAUTH2 ENDPOINTS TO WHITELIST ---
                                 .requestMatchers("/api/auth/**", "/login/oauth2/**", "/oauth2/**", "/ws/**").permitAll()
-                                .requestMatchers("/api/skills/**").permitAll()
+                                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/skills/**").permitAll()
+                                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/feedback/**", "/api/user-skills/**").permitAll()
+                                .requestMatchers("/api/sessions/expire-overdue").hasRole("ADMIN")
 
                                 // BLACKLIST: Every other single endpoint requires a valid JWT Token!
                                 .anyRequest().authenticated())
@@ -59,7 +69,19 @@ public class SecurityConfig {
                         .authenticationProvider(authenticationProvider)
 
                         // 6. Insert our Custom JWT Bouncer BEFORE the standard password filter
-                        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+
+                        // 7. --- NEW: API SECURITY EXCEPTION HANDLING ---
+                        .exceptionHandling(exceptions -> exceptions
+                                .defaultAuthenticationEntryPointFor(
+                                        restAuthenticationEntryPoint,
+                                        request -> request.getServletPath().startsWith("/api/")
+                                )
+                                .defaultAccessDeniedHandlerFor(
+                                        restAccessDeniedHandler,
+                                        request -> request.getServletPath().startsWith("/api/")
+                                )
+                        );
 
                 return http.build();
         }
@@ -70,12 +92,7 @@ public class SecurityConfig {
                 CorsConfiguration configuration = new CorsConfiguration();
 
                 // Let React (3000) or Vite/Vue/Angular (5173, 4200) talk to the backend
-                configuration.setAllowedOrigins(List.of(
-                        "http://localhost:3000",
-                        "http://localhost:5173",
-                        "http://localhost:4200",
-                        "https://skillshare-topaz-delta.vercel.app/",
-                        "http://10.30.6.151:5173"));
+                configuration.setAllowedOrigins(allowedOrigins);
 
                 // Allow all standard HTTP methods
                 configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

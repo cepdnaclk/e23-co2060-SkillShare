@@ -1,206 +1,270 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+/*
+ * index.css — SkillShare Global Design Tokens
+ *
+ * Design system: Apple × Linear × Modern Educational Platform
+ * Accent: #2563EB (professional blue — phase 1 token, subject to brand review)
+ * Typography: Inter (single modern sans-serif)
+ * Philosophy: whitespace > decoration, hierarchy through scale/weight/spacing
+ */
+
+/* ─── Fonts ──────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400;1,14..32,500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Design Tokens ─────────────────────────────────────────────────────── */
 @layer base {
   :root {
-    /* ─── Light Mode ─────────────────────────────────── */
     color-scheme: light;
 
-    --background:       240 20% 99%;     /* near-white       */
-    --foreground:       222 47% 11%;     /* dark navy text   */
+    /* ── Surfaces ─────────────────────────── */
+    --background:             246 30% 97%;    /* Faint lavender-gray #F6F5FB */
+    --foreground:             230 25% 10%;    /* Near-black with slight blue */
 
-    --card:             0 0% 100%;       /* white card       */
-    --card-foreground:  222 47% 11%;
+    --card:                   0 0% 100%;      /* #FFFFFF */
+    --card-foreground:        230 25% 10%;
 
-    --popover:          0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover:                0 0% 100%;
+    --popover-foreground:     230 25% 10%;
 
-    /* Electric violet — the signature accent, darkened for contrast on white */
-    --primary:          258 90% 60%;
-    --primary-foreground: 0 0% 100%;
+    /* ── Primary accent — Indigo-Blue ────── */
+    --primary:                245 58% 51%;    /* #4F46E5 — indigo to match reference */
+    --primary-foreground:     0 0% 100%;
 
-    --secondary:        222 25% 95%;
-    --secondary-foreground: 222 30% 20%;
+    /* ── Secondary surface ────────────────── */
+    --secondary:              246 30% 95%;    /* Lavender-tinted gray */
+    --secondary-foreground:   230 20% 20%;
 
-    --muted:            222 20% 96%;
-    --muted-foreground: 215 15% 40%;
+    /* ── Muted ────────────────────────────── */
+    --muted:                  246 20% 95%;
+    --muted-foreground:       230 10% 46%;    /* Softer muted text */
 
-    /* Warm orange — secondary accent, matches the violet→orange gradient used across pages */
-    --accent:           27 90% 52%;
-    --accent-foreground: 0 0% 100%;
+    /* ── Accent (hover tint — soft indigo) ── */
+    --accent:                 245 58% 96%;    /* Very light indigo tint */
+    --accent-foreground:      245 58% 40%;    /* Deep indigo text on accent bg */
 
-    --destructive:      0 70% 50%;
+    /* ── Semantic ─────────────────────────── */
+    --destructive:            0 70% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border:           222 20% 88%;
-    --input:            222 20% 90%;
-    --ring:             258 90% 60%;
+    /* ── Borders & Inputs ─────────────────── */
+    --border:                 240 15% 89%;    /* Soft lavender-gray border */
+    --input:                  240 15% 89%;
+    --ring:                   245 58% 51%;    /* matches primary */
 
-    --radius: 0.75rem;
+    /* ── Radius scale ─────────────────────── */
+    --radius:                 0.75rem;        /* 12px — default containers, cards */
+    --radius-sm:              0.5rem;         /* 8px — inputs, buttons */
+    --radius-lg:              1rem;           /* 16px — modals, large panels */
+    --radius-xl:              1.25rem;        /* 20px — hero sections */
+    --radius-pill:            9999px;         /* skills, tags, status badges */
 
-    /* ─── Custom Design Tokens (light) ─────────────────── */
-    --gradient-hero:     linear-gradient(135deg, hsl(258 90% 60%), hsl(292 84% 58%) 55%, hsl(27 96% 55%));
-    --gradient-teal:     linear-gradient(135deg, hsl(292 84% 58%), hsl(27 96% 55%));
-    --gradient-card:     linear-gradient(145deg, hsl(0 0% 100%), hsl(222 20% 97%));
-    --gradient-glow:     radial-gradient(ellipse 900px 700px at 8% -5%, hsl(258 90% 60% / 0.12), transparent 60%),
-                         radial-gradient(ellipse 900px 700px at 95% 10%, hsl(27 96% 55% / 0.10), transparent 60%),
-                         radial-gradient(ellipse 700px 600px at 50% 100%, hsl(292 84% 58% / 0.06), transparent 65%);
+    /* ── Shadows (softer, more diffuse) ───── */
+    --shadow-xs:   0 1px 2px 0 rgb(0 0 0 / 0.04);
+    --shadow-sm:   0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+    --shadow-md:   0 4px 12px -2px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+    --shadow-lg:   0 12px 24px -4px rgb(0 0 0 / 0.08), 0 4px 8px -4px rgb(0 0 0 / 0.04);
+    --shadow-xl:   0 24px 48px -8px rgb(0 0 0 / 0.08), 0 8px 16px -6px rgb(0 0 0 / 0.04);
 
-    --shadow-card:       0 4px 24px -4px hsl(222 20% 60% / 0.15);
-    --shadow-elevated:   0 12px 32px -8px hsl(222 20% 50% / 0.2);
-    --shadow-glow-primary: 0 0 32px -8px hsl(258 90% 60% / 0.25);
-    --shadow-glow-accent:  0 0 32px -8px hsl(27 90% 52% / 0.25);
+    /* ── Legacy aliases (kept for compatibility) ── */
+    --shadow-card:     var(--shadow-sm);
+    --shadow-elevated: var(--shadow-md);
 
-    --font-heading: 'Space Grotesk', sans-serif;
-    --font-body:    'Inter', sans-serif;
+    /* ── Typography ───────────────────────── */
+    --font-sans:     'Inter', system-ui, -apple-system, sans-serif;
+    --font-heading:  'Inter', system-ui, -apple-system, sans-serif;
+    --font-body:     'Inter', system-ui, -apple-system, sans-serif;
 
-    /* Sidebar (light) */
-    --sidebar-background: 0 0% 99%;
-    --sidebar-foreground: 222 30% 25%;
-    --sidebar-primary: 258 90% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 20% 94%;
-    --sidebar-accent-foreground: 222 30% 15%;
-    --sidebar-border: 222 20% 88%;
-    --sidebar-ring: 258 90% 60%;
+    /* ── Teach ↔ Learn brand tokens ────────── */
+    --teach-bg:      225 100% 97%;            /* light indigo-blue tint */
+    --teach-border:  245 58% 85%;
+    --teach-text:    245 58% 45%;
+    --learn-bg:      270 80% 97%;             /* light violet tint */
+    --learn-border:  270 60% 85%;
+    --learn-text:    270 60% 45%;
+
+    /* ── Sidebar ──────────────────────────── */
+    --sidebar-background:          0 0% 100%;   /* White sidebar */
+    --sidebar-foreground:          230 20% 30%;
+    --sidebar-primary:             245 58% 51%;
+    --sidebar-primary-foreground:  0 0% 100%;
+    --sidebar-accent:              245 58% 96%;  /* Light indigo hover */
+    --sidebar-accent-foreground:   245 58% 40%;
+    --sidebar-border:              240 15% 91%;
+    --sidebar-ring:                245 58% 51%;
   }
 
   .dark {
-    /* ─── Deep Dark Mode ─────────────────────────────── */
     color-scheme: dark;
 
-    --background:       222 47% 5%;      /* near-black navy */
-    --foreground:       210 20% 93%;     /* off-white       */
+    /* ── Surfaces ─────────────────────────── */
+    --background:             240 10% 4%;     /* #0A0A0F */
+    --foreground:             240 10% 96%;    /* #F4F4F6 */
 
-    --card:             222 40% 8%;      /* elevated card   */
-    --card-foreground:  210 20% 93%;
+    --card:                   240 10% 8%;     /* #131318 */
+    --card-foreground:        240 10% 96%;
 
-    --popover:          222 40% 9%;
-    --popover-foreground: 210 20% 93%;
+    --popover:                240 10% 9%;
+    --popover-foreground:     240 10% 96%;
 
-    /* Electric violet — the signature accent */
-    --primary:          258 90% 68%;
-    --primary-foreground: 0 0% 100%;
+    /* ── Primary accent — brightened for dark bg ── */
+    --primary:                245 58% 62%;    /* slightly lighter indigo */
+    --primary-foreground:     0 0% 100%;
 
-    --secondary:        222 30% 13%;
-    --secondary-foreground: 210 15% 75%;
+    /* ── Secondary surface ────────────────── */
+    --secondary:              240 10% 12%;
+    --secondary-foreground:   240 10% 75%;
 
-    --muted:            222 30% 11%;
-    --muted-foreground: 215 15% 50%;
+    /* ── Muted ────────────────────────────── */
+    --muted:                  240 10% 10%;
+    --muted-foreground:       240 5% 63%;
 
-    /* Warm orange — secondary accent, matches the violet→orange gradient used across pages */
-    --accent:           27 95% 58%;
-    --accent-foreground: 0 0% 5%;
+    /* ── Accent (hover tint — dark indigo) ── */
+    --accent:                 245 58% 15%;
+    --accent-foreground:      245 58% 75%;
 
-    --destructive:      0 70% 55%;
+    /* ── Semantic ─────────────────────────── */
+    --destructive:            0 70% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border:           222 25% 16%;
-    --input:            222 25% 14%;
-    --ring:             258 90% 68%;
+    /* ── Borders & Inputs ─────────────────── */
+    --border:                 240 10% 15%;
+    --input:                  240 10% 13%;
+    --ring:                   245 58% 62%;
 
-    /* ─── Custom Design Tokens (dark) ──────────────────── */
-    --gradient-hero:     linear-gradient(135deg, hsl(258 90% 68%), hsl(292 84% 62%) 55%, hsl(27 96% 58%));
-    --gradient-teal:     linear-gradient(135deg, hsl(292 84% 62%), hsl(27 96% 58%));
-    --gradient-card:     linear-gradient(145deg, hsl(222 40% 10%), hsl(222 35% 8%));
-    --gradient-glow:     radial-gradient(ellipse 900px 700px at 8% -5%, hsl(258 90% 68% / 0.16), transparent 60%),
-                         radial-gradient(ellipse 900px 700px at 95% 10%, hsl(27 96% 58% / 0.14), transparent 60%),
-                         radial-gradient(ellipse 700px 600px at 50% 100%, hsl(292 84% 62% / 0.09), transparent 65%);
+    /* ── Shadows (deeper for dark mode) ──── */
+    --shadow-xs:   0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-sm:   0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+    --shadow-md:   0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+    --shadow-lg:   0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+    --shadow-xl:   0 20px 25px -5px rgb(0 0 0 / 0.6), 0 8px 10px -6px rgb(0 0 0 / 0.4);
 
-    --shadow-card:       0 4px 32px -4px hsl(222 60% 3% / 0.7);
-    --shadow-elevated:   0 16px 48px -8px hsl(222 60% 3% / 0.9);
-    --shadow-glow-primary: 0 0 40px -8px hsl(258 90% 68% / 0.4);
-    --shadow-glow-accent:  0 0 40px -8px hsl(27 95% 58% / 0.35);
+    /* ── Teach ↔ Learn brand tokens (dark) ── */
+    --teach-bg:      245 58% 10%;
+    --teach-border:  245 58% 25%;
+    --teach-text:    245 58% 72%;
+    --learn-bg:      270 60% 10%;
+    --learn-border:  270 60% 25%;
+    --learn-text:    270 60% 75%;
 
-    /* Sidebar (dark) */
-    --sidebar-background: 222 44% 6%;
-    --sidebar-foreground: 210 20% 70%;
-    --sidebar-primary: 258 90% 68%;
+    /* ── Sidebar ──────────────────────────── */
+    --sidebar-background:         240 10% 5%;
+    --sidebar-foreground:         240 10% 70%;
+    --sidebar-primary:            245 58% 62%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 30% 13%;
-    --sidebar-accent-foreground: 210 20% 93%;
-    --sidebar-border: 222 25% 14%;
-    --sidebar-ring: 258 90% 68%;
+    --sidebar-accent:             240 10% 12%;
+    --sidebar-accent-foreground:  240 10% 96%;
+    --sidebar-border:             240 10% 14%;
+    --sidebar-ring:               245 58% 62%;
   }
 }
 
+/* ─── Base Styles ────────────────────────────────────────────────────────── */
 @layer base {
-  * { @apply border-border; }
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: var(--font-body);
-    background-image: var(--gradient-glow);
-    background-attachment: fixed;
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01", "ss03";
+    /* No gradient overlay — hierarchy through whitespace and type */
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    letter-spacing: -0.02em;
   }
 
-  /* Custom scrollbar */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: hsl(var(--muted)); }
-  ::-webkit-scrollbar-thumb {
+  /* ── Scrollbar ───────────────────────────── */
+  ::-webkit-scrollbar        { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track  { background: transparent; }
+  ::-webkit-scrollbar-thumb  {
     background: hsl(var(--border));
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--primary) / 0.6);
+    background: hsl(var(--muted-foreground) / 0.5);
   }
 }
 
+/* ─── Component Utilities ────────────────────────────────────────────────── */
 @layer utilities {
-  /* Glassmorphism card */
-  .glass-card {
-    background: hsl(var(--card) / 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid hsl(var(--border) / 0.8);
+
+  /* ── Teach ↔ Learn semantic badge styles ── */
+  /* These are the two sides of every SkillShare profile */
+  .skill-badge-teach {
+    background: hsl(var(--teach-bg));
+    color: hsl(var(--teach-text));
+    border: 1px solid hsl(var(--teach-border));
+    border-radius: var(--radius-pill);
   }
 
-  /* Glow border on hover */
+  .skill-badge-learn {
+    background: hsl(var(--learn-bg));
+    color: hsl(var(--learn-text));
+    border: 1px solid hsl(var(--learn-border));
+    border-radius: var(--radius-pill);
+  }
+
+  /* ── Subtle surface card (replaces heavy glassmorphism) ── */
+  /* Kept as .glass-card for backward compat — now renders clean surface */
+  .glass-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* ── Hover elevation (replaces glow-border) ── */
+  /* Kept as .glow-border for backward compat — now a clean elevation */
   .glow-border {
-    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
   }
   .glow-border:hover {
-    box-shadow: var(--shadow-glow-primary);
-    border-color: hsl(var(--primary) / 0.4);
+    box-shadow: var(--shadow-md);
+    border-color: hsl(var(--primary) / 0.25);
   }
 
-  /* Gradient text */
+  /* ── Solid accent text (replaces multi-color gradient text) ── */
+  /* Kept as .gradient-text for backward compat — now solid primary */
   .gradient-text {
-    background: var(--gradient-hero);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: hsl(var(--primary));
   }
 
-  /* Gradient teal text */
+  /* ── Solid accent text variant ─────────── */
   .gradient-text-teal {
-    background: var(--gradient-teal);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: hsl(var(--primary));
   }
 
-  /* Subtle grid dot pattern for hero sections */
+  /* ── Subtle dot grid for hero sections ── */
   .dot-grid {
-    background-image: radial-gradient(circle at 1px 1px, hsl(var(--foreground) / 0.04) 1px, transparent 0);
-    background-size: 32px 32px;
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      hsl(var(--foreground) / 0.04) 1px,
+      transparent 0
+    );
+    background-size: 28px 28px;
   }
 
-  /* Status badge colors */
-  .status-pending   { @apply bg-yellow-500/15 text-yellow-400 border border-yellow-500/30; }
-  .status-accepted  { @apply bg-emerald-500/15 text-emerald-400 border border-emerald-500/30; }
-  .status-rejected  { @apply bg-red-500/15 text-red-400 border border-red-500/30; }
-  .status-completed { @apply bg-primary/15 text-primary border border-primary/30; }
-  .status-expired   { @apply bg-gray-500/15 text-gray-400 border border-gray-500/30; }
+  /* ── Status badges (functional semantic color) ── */
+  .status-pending   { @apply bg-yellow-50 text-yellow-700 border border-yellow-200 dark:bg-yellow-950/30 dark:text-yellow-400 dark:border-yellow-800/40; }
+  .status-accepted  { @apply bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40; }
+  .status-rejected  { @apply bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800/40; }
+  .status-completed { @apply bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800/40; }
+  .status-expired   { @apply bg-zinc-100 text-zinc-500 border border-zinc-200 dark:bg-zinc-900/50 dark:text-zinc-500 dark:border-zinc-800; }
 
-  /* Skeleton shimmer animation */
+  /* ── Skeleton shimmer (functional — loading states) ── */
   .skeleton-shimmer {
     background: linear-gradient(
       90deg,
@@ -209,24 +273,40 @@
       hsl(var(--muted)) 100%
     );
     background-size: 200% 100%;
-    animation: shimmer 1.6s ease-in-out infinite;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* ── Focus ring utility ─────────────────── */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
   }
 }
 
+/* ─── Keyframes ──────────────────────────────────────────────────────────── */
 @keyframes shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-10px); }
+/* Subtle fade-in for page content */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px -4px hsl(var(--primary) / 0.3); }
-  50%       { box-shadow: 0 0 40px -4px hsl(var(--primary) / 0.6); }
+/* Utility class for subtle entrance */
+.animate-fade-up {
+  animation: fade-up 0.25s ease-out both;
 }
 
-.animate-float     { animation: float 3s ease-in-out infinite; }
-.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+/*
+ * NOTE: animate-float and animate-pulse-glow have been removed.
+ * These were decorative-only animations that added visual noise.
+ * Functional animations (accordion, shimmer, fade) are preserved.
+ */

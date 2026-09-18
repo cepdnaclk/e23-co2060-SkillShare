@@ -40,6 +40,25 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     void addXpAtomically(@Param("userId") UUID userId, @Param("amount") int amount);
 
     @Modifying(flushAutomatically = true)
-    @Query("UPDATE User u SET u.credits = u.credits + :amount WHERE u.id = :userId")
-    void addCreditsAtomically(@Param("userId") UUID userId, @Param("amount") int amount);
+    @Query("""
+        UPDATE User u
+        SET u.credits = u.credits - :amount
+        WHERE u.id = :userId
+          AND u.credits >= :amount
+    """)
+    int deductCreditsIfSufficient(
+            @Param("userId") UUID userId,
+            @Param("amount") int amount
+    );
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+        UPDATE User u
+        SET u.credits = u.credits + :amount
+        WHERE u.id = :userId
+    """)
+    int addCreditsAtomically(
+            @Param("userId") UUID userId,
+            @Param("amount") int amount
+    );
 }

@@ -5,18 +5,29 @@ import com.zenware.skillsharebackend.dto.SessionResponse;
 import com.zenware.skillsharebackend.entity.*;
 import com.zenware.skillsharebackend.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.zenware.skillsharebackend.config.SessionProperties;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 @Service
-@RequiredArgsConstructor // LOGIC: Switched to Constructor Injection for modern Spring Boot!
+@RequiredArgsConstructor
+@Slf4j
 public class SessionService {
+
+    private static final int EXPIRATION_BATCH_SIZE = 100;
 
     private final SessionRepository sessionRepository;
     private final UserRepository userRepository;
@@ -24,6 +35,10 @@ public class SessionService {
     private final AvailabilityRepository availabilityRepository;
     private final NotificationService notificationService;
     private final GamificationService gamificationService;
+    private final SessionExpirationProcessor sessionExpirationProcessor;
+    private final SessionProperties sessionProperties;
+    private final CreditDebtRepository creditDebtRepository;
+    private final Clock clock;
 
     // --- THE SECURITY ENGINE ---
     // LOGIC: This helper method grabs the exact user currently making the API request
@@ -92,13 +107,10 @@ public class SessionService {
 
         // CREDIT GUARD RAIL: Enforce minimum credit balance before booking
         int sessionCost = 10;
-        if (learner.getCredits() == null || learner.getCredits() < sessionCost) {
+        int updatedRows = userRepository.deductCreditsIfSufficient(learner.getId(), sessionCost);
+        if (updatedRows != 1) {
             throw new IllegalStateException("You do not have enough credits to book this session! You need " + sessionCost + " credits.");
         }
-
-        // ESCROW: Deduct credits immediately so they cannot double-spend
-        userRepository.addCreditsAtomically(learner.getId(), -sessionCost);
-        learner.setCredits(learner.getCredits() - sessionCost);
 
         // Build the Session Entity
         Session session = new Session();
@@ -110,9 +122,23 @@ public class SessionService {
         session.setAvailabilityId(availability.getId());
         session.setStatus(SessionStatus.PENDING);
 
-        // 7. Update the Availability to show it is now taken
-        availability.setIsBooked(true);
-        availabilityRepository.save(availability);
+        // CRITICAL FIX: Map to DTO *inside* the @Transactional boundary.
+        // This resolves all lazy proxies (Session -> Skill, -> User) before the
+        // Hibernate session closes, preventing "no session" serialization crashes.
+        Session saved = sessionRepository.save(session);
+
+        // 7. Atomically reserve the Availability to show it is now taken
+        int reservedRows =
+                availabilityRepository.reserveAvailabilityAtomically(
+                        availability.getId(),
+                        saved.getId()
+                );
+
+        if (reservedRows != 1) {
+            throw new IllegalStateException(
+                    "Sorry, this time slot is already booked!"
+            );
+        }
 
         // 8. Notification
         notificationService.sendNotification(
@@ -121,10 +147,6 @@ public class SessionService {
                 NotificationType.SESSION_UPDATE
         );
 
-        // CRITICAL FIX: Map to DTO *inside* the @Transactional boundary.
-        // This resolves all lazy proxies (Session -> Skill, -> User) before the
-        // Hibernate session closes, preventing "no session" serialization crashes.
-        Session saved = sessionRepository.save(session);
         return toDto(saved);
     }
 
@@ -138,7 +160,30 @@ public class SessionService {
 
         // SECURITY GUARD: Only the mentor assigned to this session can accept/reject it
         if (!session.getMentor().getId().equals(authenticatedMentor.getId())) {
-            throw new IllegalStateException("Security Violation: Only the assigned mentor can update this session!");
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: Only the assigned mentor can update this session!");
+        }
+
+        if (newStatus != SessionStatus.ACCEPTED && newStatus != SessionStatus.REJECTED) {
+            throw new IllegalArgumentException("Invalid target status");
+        }
+
+        if (newStatus == SessionStatus.ACCEPTED) {
+            LocalDateTime now = LocalDateTime.now(clock);
+            LocalDateTime timeoutThreshold = now.minusHours(sessionProperties.getPendingResponseTimeoutHours());
+            if (!now.isBefore(session.getStartTime()) ||
+                (session.getCreatedAt() != null && !timeoutThreshold.isBefore(session.getCreatedAt()))) {
+                throw new IllegalStateException("Session request has expired and cannot be accepted.");
+            }
+        }
+
+        int updated = sessionRepository.transitionSessionStatusAtomically(
+                session.getId(),
+                newStatus,
+                List.of(SessionStatus.PENDING)
+        );
+
+        if (updated == 0) {
+            throw new IllegalStateException("Session is not in PENDING state or was already processed.");
         }
 
         session.setStatus(newStatus);
@@ -150,14 +195,14 @@ public class SessionService {
                     NotificationType.SESSION_UPDATE
             );
         } else if (newStatus == SessionStatus.REJECTED) {
-            Availability availability = availabilityRepository.findById(session.getAvailabilityId())
-                    .orElseThrow(() -> new IllegalStateException("Original time slot missing"));
-
             userRepository.addCreditsAtomically(session.getLearner().getId(), 10);
-            session.getLearner().setCredits(session.getLearner().getCredits() + 10);
 
-            availability.setIsBooked(false);
-            availabilityRepository.save(availability);
+            if (session.getAvailabilityId() != null) {
+                int released = availabilityRepository.releaseAvailabilityAtomically(session.getAvailabilityId(), session.getId());
+                if (released != 1) {
+                    throw new IllegalStateException("Failed to release availability: ownership mismatch or already released");
+                }
+            }
 
             notificationService.sendNotification(
                     session.getLearner(),
@@ -182,6 +227,22 @@ public class SessionService {
             throw new IllegalStateException("You can only cancel upcoming sessions!");
         }
 
+        if (session.getStatus() == SessionStatus.ACCEPTED) {
+            if (session.getStartTime() == null || !LocalDateTime.now(clock).isBefore(session.getStartTime())) {
+                throw new IllegalStateException("Cannot cancel an ACCEPTED session after its scheduled start time.");
+            }
+        }
+
+        int updated = sessionRepository.transitionSessionStatusAtomically(
+                session.getId(),
+                SessionStatus.CANCELLED,
+                List.of(session.getStatus())
+        );
+
+        if (updated == 0) {
+            throw new IllegalStateException("Session was already cancelled or processed.");
+        }
+
         // SECURITY GUARD: Fetch canceling user from JWT
         User cancelingUser = getAuthenticatedUser();
         User learner = session.getLearner();
@@ -194,14 +255,11 @@ public class SessionService {
             // Learner Cancels Logic
             if (session.getStatus() == SessionStatus.PENDING) {
                 userRepository.addCreditsAtomically(learner.getId(), originalCost);
-                learner.setCredits(learner.getCredits() + originalCost);
                 notificationService.sendNotification(mentor, "The learner cancelled their session request.", NotificationType.SESSION_UPDATE);
                 notificationService.sendNotification(learner, "You cancelled your session request. You were refunded your full 10 credits.", NotificationType.SESSION_UPDATE);
             } else {
                 userRepository.addCreditsAtomically(learner.getId(), originalCost - penaltyAmount);
-                learner.setCredits(learner.getCredits() + originalCost - penaltyAmount);
                 userRepository.addCreditsAtomically(mentor.getId(), penaltyAmount);
-                mentor.setCredits(mentor.getCredits() + penaltyAmount);
                 notificationService.sendNotification(mentor, "The learner cancelled the session. You received " + penaltyAmount + " credits as compensation.", NotificationType.SESSION_UPDATE);
                 notificationService.sendNotification(learner, "You cancelled the session. You were refunded 5 credits (Penalty applied).", NotificationType.SESSION_UPDATE);
             }
@@ -210,30 +268,40 @@ public class SessionService {
             // Mentor Cancels Logic
             if (session.getStatus() == SessionStatus.PENDING) {
                 userRepository.addCreditsAtomically(learner.getId(), originalCost);
-                learner.setCredits(learner.getCredits() + originalCost);
                 notificationService.sendNotification(learner, "The mentor cancelled the session request. You received a full refund.", NotificationType.SESSION_UPDATE);
                 notificationService.sendNotification(mentor, "You cancelled the pending session request. No penalty was applied.", NotificationType.SESSION_UPDATE);
             } else {
                 userRepository.addCreditsAtomically(learner.getId(), originalCost + penaltyAmount);
-                learner.setCredits(learner.getCredits() + originalCost + penaltyAmount);
-                userRepository.addCreditsAtomically(mentor.getId(), -penaltyAmount);
-                mentor.setCredits(mentor.getCredits() - penaltyAmount);
+
+                int deducted = userRepository.deductCreditsIfSufficient(mentor.getId(), penaltyAmount);
+                if (deducted == 1) {
+                    notificationService.sendNotification(mentor, "You cancelled the session. A penalty of " + penaltyAmount + " credits was applied.", NotificationType.SESSION_UPDATE);
+                } else {
+                    CreditDebt debt = CreditDebt.builder()
+                            .mentor(mentor)
+                            .session(session)
+                            .amount(penaltyAmount)
+                            .status(DebtStatus.UNPAID)
+                            .build();
+                    creditDebtRepository.save(debt);
+                    notificationService.sendNotification(mentor, "You cancelled the session. Because your balance was insufficient, an UNPAID debt of " + penaltyAmount + " credits was recorded.", NotificationType.SESSION_UPDATE);
+                }
+
                 notificationService.sendNotification(learner, "The mentor cancelled the session. You received a full refund PLUS " + penaltyAmount + " credits compensation.", NotificationType.SESSION_UPDATE);
-                notificationService.sendNotification(mentor, "You cancelled the session. A penalty of " + penaltyAmount + " credits was applied.", NotificationType.SESSION_UPDATE);
             }
 
         } else {
-            throw new IllegalArgumentException("Security Violation: You are not part of this session!");
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You are not part of this session!");
         }
 
         // userRepository.save(learner);
         // userRepository.save(mentor);
 
         if (session.getAvailabilityId() != null) {
-            Availability availability = availabilityRepository.findById(session.getAvailabilityId())
-                    .orElseThrow(() -> new IllegalStateException("Original time slot missing"));
-            availability.setIsBooked(false);
-            availabilityRepository.save(availability);
+            int released = availabilityRepository.releaseAvailabilityAtomically(session.getAvailabilityId(), session.getId());
+            if (released != 1) {
+                throw new IllegalStateException("Failed to release availability: ownership mismatch or already released");
+            }
         }
 
         session.setStatus(SessionStatus.CANCELLED);
@@ -250,14 +318,24 @@ public class SessionService {
             throw new IllegalStateException("Only ACCEPTED sessions can be marked as COMPLETED!");
         }
 
-//        if (LocalDateTime.now().isBefore(session.getEndTime())) {
-//            throw new IllegalStateException("Cannot complete session before its end time.");
-//        }
+        if (LocalDateTime.now(clock).isBefore(session.getEndTime())) {
+            throw new IllegalStateException("Cannot complete session before its end time.");
+        }
 
         // SECURITY GUARD: Only the learner can mark it complete
         User authenticatedUser = getAuthenticatedUser();
         if (!session.getLearner().getId().equals(authenticatedUser.getId())) {
-            throw new IllegalStateException("Security Violation: Only the Learner can complete the session!");
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: Only the Learner can complete the session!");
+        }
+
+        int updated = sessionRepository.transitionSessionStatusAtomically(
+                session.getId(),
+                SessionStatus.COMPLETED,
+                List.of(SessionStatus.ACCEPTED)
+        );
+
+        if (updated == 0) {
+            throw new IllegalStateException("Session is not in ACCEPTED state or was already completed.");
         }
 
         User mentor = session.getMentor();
@@ -270,7 +348,6 @@ public class SessionService {
         gamificationService.awardSessionCompletionXp(session.getLearner());
 
         userRepository.addCreditsAtomically(mentor.getId(), 10);
-        mentor.setCredits(mentor.getCredits() + 10);
         session.setStatus(SessionStatus.COMPLETED);
 
         Session saved = sessionRepository.save(session);
@@ -281,7 +358,7 @@ public class SessionService {
     public List<SessionResponse> getLearnerSessions(UUID learnerId) {
         // SECURITY GUARD: You can only view your own history
         if (!getAuthenticatedUser().getId().equals(learnerId)) {
-            throw new IllegalStateException("Security Violation: You can only view your own classes!");
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You can only view your own classes!");
         }
         // CRITICAL FIX: Map to DTO inside @Transactional so lazy proxies are resolved
         // before the Hibernate session closes.
@@ -294,7 +371,7 @@ public class SessionService {
     @Transactional
     public List<SessionResponse> getMentorSessions(UUID mentorId) {
         if (!getAuthenticatedUser().getId().equals(mentorId)) {
-            throw new IllegalStateException("Security Violation: You can only view your own schedule!");
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You can only view your own schedule!");
         }
         // CRITICAL FIX: Map to DTO inside @Transactional so lazy proxies are resolved
         // before the Hibernate session closes.
@@ -304,40 +381,43 @@ public class SessionService {
                 .toList();
     }
 
-    @Transactional
     public int expireOverdueSessions() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime timeoutThreshold = now.minusHours(sessionProperties.getPendingResponseTimeoutHours());
 
-        // 1. Handle Expired PENDING Sessions (Refund the Learner)
-        List<Session> expiredPending = sessionRepository.findByStatusInAndEndTimeBefore(
-                Arrays.asList(SessionStatus.PENDING), now);
+        Pageable pendingPageable = PageRequest.of(0, EXPIRATION_BATCH_SIZE, Sort.by("createdAt").ascending());
+        List<Session> expiredPending = sessionRepository.findPendingSessionsForExpiration(
+                SessionStatus.PENDING, now, timeoutThreshold, pendingPageable);
+
+        int successfulCount = 0;
 
         for (Session session : expiredPending) {
-            userRepository.addCreditsAtomically(session.getLearner().getId(), 10);
-            session.getLearner().setCredits(session.getLearner().getCredits() + 10);
-
-            session.setStatus(SessionStatus.EXPIRED);
-            sessionRepository.save(session);
-
-            notificationService.sendNotification(session.getLearner(), "Your session request expired. Your 10 credits have been refunded.", NotificationType.SYSTEM_ALERT);
+            try {
+                boolean processed = sessionExpirationProcessor.processPendingExpiration(session.getId());
+                if (processed) {
+                    successfulCount++;
+                }
+            } catch (Exception e) {
+                log.error("Failed to process expiration for session ID: {}", session.getId(), e);
+            }
         }
 
-        // 2. Handle Forgotten ACCEPTED Sessions (Auto-Pay the Mentor)
+        Pageable acceptedPageable = PageRequest.of(0, EXPIRATION_BATCH_SIZE, Sort.by("endTime").ascending());
         List<Session> forgottenAccepted = sessionRepository.findByStatusInAndEndTimeBefore(
-                Arrays.asList(SessionStatus.ACCEPTED), now);
+                Arrays.asList(SessionStatus.ACCEPTED), now, acceptedPageable);
 
         for (Session session : forgottenAccepted) {
-            // The learner forgot to click complete, so we auto-release the escrow to the mentor
-            userRepository.addCreditsAtomically(session.getMentor().getId(), 10);
-            session.getMentor().setCredits(session.getMentor().getCredits() + 10);
-
-            session.setStatus(SessionStatus.COMPLETED); // Auto-completed!
-            sessionRepository.save(session);
-
-            notificationService.sendNotification(session.getMentor(), "The session time passed and was auto-completed. You received 10 credits.", NotificationType.SYSTEM_ALERT);
+            try {
+                boolean processed = sessionExpirationProcessor.processAcceptedCompletion(session.getId());
+                if (processed) {
+                    successfulCount++;
+                }
+            } catch (Exception e) {
+                log.error("Failed to process accepted completion for session ID: {}", session.getId(), e);
+            }
         }
 
-        return expiredPending.size() + forgottenAccepted.size();
+        return successfulCount;
     }
 
     @Transactional
@@ -349,7 +429,7 @@ public class SessionService {
 
         // 1. Security Check: Only the assigned Mentor can add the link
         if (!session.getMentor().getId().equals(currentUser.getId())) {
-            throw new IllegalStateException("Access Denied: Only the assigned mentor can add a meeting link.");
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Access Denied: Only the assigned mentor can add a meeting link.");
         }
 
         // 2. State Check: Don't let them add links to Cancel or Completed sessions

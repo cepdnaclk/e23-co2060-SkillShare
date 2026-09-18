@@ -51,7 +51,7 @@ const ProfileForm = ({ profile, onUpdate, onAddSkill, onRemoveSkill }: ProfileFo
           <Label htmlFor="name">Full Name</Label>
           <Input
             id="name"
-            placeholder="e.g. Alex Johnson"
+            placeholder="e.g. your full name"
             value={profile.name}
             onChange={(e) => onUpdate({ name: e.target.value })}
           />

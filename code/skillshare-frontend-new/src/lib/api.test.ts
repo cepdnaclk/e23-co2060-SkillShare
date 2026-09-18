@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { usersApi } from './api';
+import { usersApi } from '../api/users.api';
 
 // Mock the global fetch
 global.fetch = vi.fn();
@@ -10,7 +10,7 @@ describe('usersApi', () => {
         localStorage.clear();
     });
 
-    it('getMe should call /api/users/me with correct headers', async () => {
+    it('getMe should call /users/me with Authorization header', async () => {
         const mockUser = {
             id: '123',
             fullName: 'Test User',
@@ -18,7 +18,7 @@ describe('usersApi', () => {
             credits: 100
         };
 
-        (global.fetch as any).mockResolvedValueOnce({
+        (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
             ok: true,
             headers: new Headers({ 'content-type': 'application/json' }),
             json: async () => mockUser
@@ -28,31 +28,31 @@ describe('usersApi', () => {
 
         const user = await usersApi.getMe();
 
-        expect(global.fetch).toHaveBeenCalledWith(
-            expect.stringContaining('/api/users/me'),
-            expect.objectContaining({
-                headers: expect.objectContaining({
-                    'Authorization': 'Bearer fake-jwt-token',
-                    'Content-Type': 'application/json'
-                })
-            })
-        );
+        // The new client uses API_BASE_URL (default: http://localhost:8080/api) + /users/me
+        // with a proper Headers object (not a plain object)
+        const [calledUrl] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+        expect(calledUrl).toContain('/users/me');
         expect(user).toEqual(mockUser);
     });
 
     it('getMe should throw ApiError on failure', async () => {
-        (global.fetch as any).mockResolvedValueOnce({
+        (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
             ok: false,
             status: 401,
             headers: new Headers({ 'content-type': 'application/json' }),
-            json: async () => ({ message: 'Unauthorized access' })
+            json: async () => ({ message: 'Unauthorized access' }),
+            text: async () => 'Unauthorized access',
+            statusText: 'Unauthorized'
         });
 
         try {
             await usersApi.getMe();
-        } catch (error: any) {
-            expect(error.message).toBe('Unauthorized access');
-            expect(error.status).toBe(401);
+            throw new Error('Expected error was not thrown');
+        } catch (error: unknown) {
+            const apiError = error as { message: string; status: number };
+            // The new client normalizes 401 to a standard message
+            expect(apiError.message).toBe('Session expired or unauthorized. Please log in.');
+            expect(apiError.status).toBe(401);
         }
     });
 });

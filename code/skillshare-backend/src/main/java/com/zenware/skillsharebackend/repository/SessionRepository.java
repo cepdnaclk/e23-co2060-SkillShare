@@ -4,6 +4,7 @@ import com.zenware.skillsharebackend.dto.TrendingSkillDto;
 import com.zenware.skillsharebackend.entity.Session;
 import com.zenware.skillsharebackend.entity.SessionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 
 @Repository
 public interface SessionRepository extends JpaRepository<Session, UUID> {
@@ -23,10 +25,19 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
 
     // LOGIC: Finds sessions matching specific statuses where the time has passed!
     // This is the query that powers the Expiration Engine
-    List<Session> findByStatusInAndEndTimeBefore(List<SessionStatus> statuses, LocalDateTime endTime);
+    List<Session> findByStatusInAndEndTimeBefore(List<SessionStatus> statuses, LocalDateTime endTime, Pageable pageable);
 
     // Counts how many sessions are awaiting the mentor's approval
     long countByMentorIdAndStatus(UUID mentorId, com.zenware.skillsharebackend.entity.SessionStatus status);
+
+    @Query("SELECT s FROM Session s WHERE s.status = :status AND (" +
+           "s.startTime <= :now OR " +
+           "(s.createdAt IS NOT NULL AND s.createdAt <= :timeoutThreshold))")
+    List<Session> findPendingSessionsForExpiration(
+        @Param("status") SessionStatus status,
+        @Param("now") LocalDateTime now,
+        @Param("timeoutThreshold") LocalDateTime timeoutThreshold,
+        Pageable pageable);
 
     // Counts upcoming sessions for the learner
     long countByLearnerIdAndStatus(UUID learnerId, com.zenware.skillsharebackend.entity.SessionStatus status);
@@ -40,4 +51,22 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
             "GROUP BY s.skill.name " +
             "ORDER BY totalSessions DESC LIMIT :limit")
     List<TrendingSkillDto> findTopTrendingSkills(@Param("limit") int limit);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+        UPDATE Session s
+        SET s.status = :newStatus
+        WHERE s.id = :sessionId
+          AND s.status IN :expectedCurrentStatuses
+    """)
+    int transitionSessionStatusAtomically(
+        @Param("sessionId") UUID sessionId,
+        @Param("newStatus") SessionStatus newStatus,
+        @Param("expectedCurrentStatuses") List<SessionStatus> expectedCurrentStatuses
+    );
+
+    @Query("SELECT COUNT(s) FROM Session s WHERE " +
+           "(s.mentor.id = :userId1 AND s.learner.id = :userId2) OR " +
+           "(s.mentor.id = :userId2 AND s.learner.id = :userId1)")
+    long countSharedSessions(@Param("userId1") UUID userId1, @Param("userId2") UUID userId2);
 }
