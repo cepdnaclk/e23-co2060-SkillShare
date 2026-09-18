@@ -18,6 +18,8 @@ describe('usersApi', () => {
             credits: 100
         };
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (global.fetch as any).mockResolvedValueOnce({
             ok: true,
             headers: new Headers({ 'content-type': 'application/json' }),
@@ -41,6 +43,7 @@ describe('usersApi', () => {
     });
 
     it('getMe should throw ApiError on failure', async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (global.fetch as any).mockResolvedValueOnce({
             ok: false,
             status: 401,
@@ -50,9 +53,9 @@ describe('usersApi', () => {
 
         try {
             await usersApi.getMe();
-        } catch (error: any) {
-            expect(error.message).toBe('Unauthorized access');
-            expect(error.status).toBe(401);
+        } catch (error: unknown) {
+            expect((error as { message: string, status: number }).message).toBe('Unauthorized access');
+            expect((error as { message: string, status: number }).status).toBe(401);
         }
     });
 });

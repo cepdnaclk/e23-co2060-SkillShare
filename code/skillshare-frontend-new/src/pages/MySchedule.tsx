@@ -48,7 +48,7 @@ const MySchedule = () => {
         setSlots(slotsData);
         setBookedSessions(sessionsData.filter((s) => s.status === "PENDING" || s.status === "ACCEPTED"));
       })
-      .catch((err: ApiError) => setError(err.message ?? "Could not load schedule."))
+      .catch((err: ApiError) => setError((err as Error).message ?? "Could not load schedule."))
       .finally(() => setLoading(false));
   }, [user?.id]);
 
@@ -76,8 +76,8 @@ const MySchedule = () => {
       setShowForm(false);
       setStartTime("");
       setEndTime("");
-    } catch (err: any) {
-      toast.error(err.message ?? "Failed to add slot.");
+    } catch (err: unknown) {
+      toast.error((err as Error).message ?? "Failed to add slot.");
     } finally {
       setSaving(false);
     }
@@ -88,8 +88,8 @@ const MySchedule = () => {
       await availabilityApi.remove(String(id));
       setSlots((prev) => prev.filter((s) => s.id !== id));
       toast.success("Slot removed.");
-    } catch (err: any) {
-      toast.error(err.message ?? "Failed to remove slot.");
+    } catch (err: unknown) {
+      toast.error((err as Error).message ?? "Failed to remove slot.");
     }
   };
 
@@ -109,9 +109,10 @@ const MySchedule = () => {
         const matchingSession = bookedSessions.find(
           (s) => new Date(s.startTime).getTime() === new Date(slot.startTime).getTime()
         );
-        if (matchingSession) {
-          (slot as any).sessionInfo = matchingSession;
-        }
+          if (matchingSession) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (slot as any).sessionInfo = matchingSession;
+          }
       }
     });
   });
@@ -188,6 +189,7 @@ const MySchedule = () => {
                   </h3>
                   <div className="grid gap-3">
                     {group.items.map((slot) => {
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       const sess = (slot as any).sessionInfo as Session | undefined;
                       const status = sess ? sess.status : "FREE";
                       

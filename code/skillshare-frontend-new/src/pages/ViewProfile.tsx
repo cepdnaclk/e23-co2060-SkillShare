@@ -86,7 +86,7 @@ const ViewProfile = () => {
         setConnectionStatus(statusData as { status: string; connectionId: string | null });
       })
       .catch((err: ApiError) => {
-        setError(err.message ?? "Could not load profile.");
+        setError((err as Error).message ?? "Could not load profile.");
       })
       .finally(() => setLoading(false));
   }, [id]);
@@ -119,8 +119,8 @@ const ViewProfile = () => {
         setMentor(refreshedUser);
         toast.success("Profile picture updated!");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to upload profile picture.");
+    } catch (err: unknown) {
+      toast.error((err as Error).message || "Failed to upload profile picture.");
     } finally {
       setUploadingPic(false);
     }
@@ -150,8 +150,8 @@ const ViewProfile = () => {
           setConnectionStatus({ status: "NONE", connectionId: null });
         }
       }
-    } catch (err: any) {
-      toast.error(err.message ?? "Connection action failed.");
+    } catch (err: unknown) {
+      toast.error((err as Error).message ?? "Connection action failed.");
     } finally {
       setConnLoading(false);
     }
@@ -169,8 +169,8 @@ const ViewProfile = () => {
         const av = await availabilityApi.getMentorSlots(id);
         setSlots(av);
       }
-    } catch (err: any) {
-      toast.error(err.message ?? "Failed to book session.");
+    } catch (err: unknown) {
+      toast.error((err as Error).message ?? "Failed to book session.");
     } finally {
       setBooking(false);
     }

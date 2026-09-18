@@ -48,8 +48,8 @@ const FeedbackDialog = ({ session, rateName, onClose, onSubmitted }: FeedbackDia
       toast.success("Thank you for your feedback.");
       onSubmitted(session.id);
       onClose();
-    } catch (err: any) {
-      toast.error(err.message ?? "Feedback submitted.");
+    } catch (err: unknown) {
+      toast.error((err as Error).message ?? "Feedback submitted.");
       onSubmitted(session.id);
       onClose();
     } finally { 
@@ -197,7 +197,7 @@ const Sessions = () => {
         setLearnerSessions(ls);
         setMentorSessions(ms);
       })
-      .catch((err: ApiError) => setError(err.message ?? "Could not load sessions."))
+      .catch((err: ApiError) => setError((err as Error).message ?? "Could not load sessions."))
       .finally(() => setLoading(false));
   }, [user?.id]);
 
@@ -225,8 +225,8 @@ const Sessions = () => {
         const ms = await sessionsApi.getMentorSessions(user.id);
         setMentorSessions(ms);
       }
-    } catch (err: any) {
-      toast.error(err.message ?? "Action failed.");
+    } catch (err: unknown) {
+      toast.error((err as Error).message ?? "Action failed.");
     } finally {
       setActionLoading(null);
     }

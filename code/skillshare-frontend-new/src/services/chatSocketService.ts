@@ -35,7 +35,7 @@ class ChatSocketService {
             
             this.messageHandlers.forEach((h) => h(msg));
           } catch (e) {
-            
+            // ignore
           }
         });
 
@@ -44,7 +44,7 @@ class ChatSocketService {
             const status: TypingStatusDto = JSON.parse(frame.body);
             this.typingHandlers.forEach((h) => h(status));
           } catch {
-            
+            // ignore
           }
         });
       },

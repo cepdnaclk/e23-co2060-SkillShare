@@ -45,8 +45,8 @@ const Notifications = () => {
       ]);
       setNotifications(data);
       setPendingRequests(pending);
-    } catch (err: any) {
-      setError(err.message ?? "Failed to load notifications.");
+    } catch (err: unknown) {
+      setError((err as Error).message ?? "Failed to load notifications.");
     } finally { 
       setLoading(false); 
     }
