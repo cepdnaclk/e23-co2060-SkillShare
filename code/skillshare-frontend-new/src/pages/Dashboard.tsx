@@ -267,32 +267,7 @@ const Dashboard = () => {
           </motion.div>
         )}
 
-        {/* ── 3. BANNER ────────────────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
-          className="mb-8 rounded-xl overflow-hidden relative"
-          style={{
-            background: "linear-gradient(135deg, hsl(245 58% 35%) 0%, hsl(230 50% 45%) 50%, hsl(220 60% 50%) 100%)",
-          }}
-        >
-          <div className="px-8 py-8 sm:py-10 relative z-10">
-            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
-              Grow your skills. Help others grow.
-            </h2>
-            <p className="text-sm text-white/70 mb-5 max-w-md">
-              Join a community of learners and creators.
-            </p>
-            <Button
-              variant="outline"
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20 gap-2"
-              onClick={() => navigate("/search")}
-            >
-              Explore Skills <ArrowRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </motion.div>
+
 
         {/* ── 4. TEACH ↔ LEARN ──────────────────────────────────── */}
         {!loading && (
@@ -402,66 +377,7 @@ const Dashboard = () => {
           </motion.div>
         )}
 
-        {/* ── 5. QUICK ACTIONS ──────────────────────────────────── */}
-        <motion.div
-          variants={stagger}
-          initial="hidden"
-          animate="show"
-          className="grid sm:grid-cols-2 gap-4 mb-8"
-        >
-          <motion.div
-            variants={fadeUp}
-            className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:shadow-sm transition-all cursor-pointer group"
-            onClick={() => navigate("/search")}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => e.key === "Enter" && navigate("/search")}
-            aria-label="Explore people and skills"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Search className="w-4 h-4 text-primary" aria-hidden />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">Explore</p>
-                <p className="text-xs text-muted-foreground">Find people through their skills</p>
-              </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" aria-hidden />
-          </motion.div>
 
-          <motion.div
-            variants={fadeUp}
-            className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:shadow-sm transition-all cursor-pointer group"
-            onClick={() => navigate("/sessions")}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => e.key === "Enter" && navigate("/sessions")}
-            aria-label="View sessions"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                <Layers className="w-4 h-4 text-amber-500" aria-hidden />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">
-                  Sessions
-                  {upcomingMentor.length > 0 && (
-                    <span className="ml-2 inline-flex items-center h-5 px-2 text-[10px] font-semibold rounded-full bg-primary text-primary-foreground">
-                      {upcomingMentor.length}
-                    </span>
-                  )}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {upcomingMentor.length > 0
-                    ? `${upcomingMentor.length} pending request${upcomingMentor.length > 1 ? "s" : ""}`
-                    : "Upcoming and requested sessions"}
-                </p>
-              </div>
-            </div>
-            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" aria-hidden />
-          </motion.div>
-        </motion.div>
 
         {/* ── 6. UPCOMING ───────────────────────────────────────── */}
         <motion.div
