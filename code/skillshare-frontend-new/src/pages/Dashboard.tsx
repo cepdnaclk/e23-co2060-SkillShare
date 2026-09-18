@@ -222,24 +222,17 @@ const Dashboard = () => {
 
         <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-6" />
 
-        {/* ── 1. GREETING ───────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
-          className="mb-8 flex items-start justify-between"
+          className="mb-8"
         >
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-              {greeting()}, {firstName} 👋
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1.5">
-              Keep learning, keep sharing. Small skills make a big impact.
-            </p>
-          </div>
-          <p className="hidden md:block text-sm text-muted-foreground italic max-w-[200px] text-right leading-snug">
-            "A skill shared is a opportunity multiplied."
-            <span className="block text-xs mt-1 not-italic">— SkillShare</span>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            {greeting()}, {firstName} 👋
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1.5">
+            Keep learning, keep sharing. Small skills make a big impact.
           </p>
         </motion.div>
 

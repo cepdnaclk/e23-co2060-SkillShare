@@ -156,7 +156,7 @@ const SignUp = () => {
              Learn. Teach. Connect.
            </h2>
            <p className="text-lg text-muted-foreground leading-relaxed mb-12">
-             Join thousands of students and mentors on the most intuitive skill-sharing platform.
+             Join our community of students and mentors on the most intuitive skill-sharing platform.
            </p>
 
            <div className="w-full bg-white/60 dark:bg-card/60 backdrop-blur-md rounded-2xl p-8 border border-white/40 dark:border-border shadow-lg">

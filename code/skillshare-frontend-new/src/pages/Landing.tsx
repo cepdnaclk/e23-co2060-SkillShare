@@ -423,7 +423,7 @@ const Landing = () => {
             Ready to share your skills?
           </h2>
           <p className="text-xl text-primary-foreground/80 leading-relaxed mb-10 max-w-2xl mx-auto">
-            Join thousands of university students learning from each other every day.
+            Join our community of university students learning from each other every day.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
