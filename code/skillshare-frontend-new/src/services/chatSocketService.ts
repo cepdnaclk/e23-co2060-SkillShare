@@ -26,7 +26,7 @@ class ChatSocketService {
       },
       onConnect: () => {
         this.connected = true;
-        console.log("[ChatSocket] Connected to STOMP broker.");
+        
 
         this.client!.subscribe("/user/queue/messages", (frame: IMessage) => {
           try {
@@ -50,7 +50,7 @@ class ChatSocketService {
       },
       onDisconnect: () => {
         this.connected = false;
-        console.log("[ChatSocket] Disconnected.");
+        
       },
       onStompError: (frame) => {
         console.error("[ChatSocket] STOMP error:", frame.headers["message"]);

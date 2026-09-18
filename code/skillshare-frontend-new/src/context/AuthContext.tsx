@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const response = await authApi.login(email, password);
-      console.log("AUTH RESPONSE:", response);
+      
       const jwt = response.token;
 
       /**const user: User = {
@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const response = await authApi.register(fullName, email, password);
-      console.log("REGISTER AUTH RESPONSE:", response);
+      
       const jwt = response.token;
 
       setToken(jwt);
