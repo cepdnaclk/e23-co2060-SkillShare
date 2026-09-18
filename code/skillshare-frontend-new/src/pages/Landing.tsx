@@ -209,7 +209,7 @@ const Landing = () => {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                {teachSkills.map((skill) => (
+                {["Python", "Guitar"].map((skill) => (
                   <span
                     key={skill}
                     className="skill-badge-teach inline-flex items-center h-7 text-xs px-3 rounded-full font-medium"
@@ -243,7 +243,7 @@ const Landing = () => {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                {learnSkills.map((skill) => (
+                {["Video Editing", "Spanish"].map((skill) => (
                   <span
                     key={skill}
                     className="skill-badge-learn inline-flex items-center h-7 text-xs px-3 rounded-full font-medium"
