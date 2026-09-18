@@ -7,14 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge"; // Fixed import path
 import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/context/AuthContext";
-import {
-  availabilityApi,
-  sessionsApi,
-  type Availability,
-  type Session,
-  type ApiError,
-  type SessionStatus
-} from "@/lib/api";
+import { availabilityApi } from "@/api/availability.api";
+import { sessionsApi } from "@/api/sessions.api";
+import type { AvailabilityResponse, SessionResponse, SessionStatus } from "@/api/types";
+import type { ApiError } from "@/api/client";
 import { SkeletonList } from "@/components/SkeletonCard";
 import ErrorBanner from "@/components/ErrorBanner";
 import { toast } from "sonner";
@@ -75,8 +71,8 @@ const cardStyles = {
 
 const MySchedule = () => {
   const { user } = useAuth();
-  const [slots, setSlots] = useState<Availability[]>([]);
-  const [bookedSessions, setBookedSessions] = useState<Session[]>([]);
+  const [slots, setSlots] = useState<AvailabilityResponse[]>([]);
+  const [bookedSessions, setBookedSessions] = useState<SessionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);

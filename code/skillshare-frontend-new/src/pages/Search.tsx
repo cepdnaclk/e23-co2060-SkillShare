@@ -7,7 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { publicSkillsApi, userSkillsApi, trendingApi, type Skill, type UserSkill, type UserSearchResponse, type UserPublicDto } from "@/lib/api";
+import { skillsApi as publicSkillsApi } from "@/api/skills.api";
+import { userSkillsApi } from "@/api/userSkills.api";
+import { trendingApi } from "@/api/dashboard.api";
+import type { Skill, UserSkillDto as UserSkill, UserSearchResponse, UserPublicDto } from "@/api/types";
 import { SkeletonList } from "@/components/SkeletonCard";
 import ErrorBanner from "@/components/ErrorBanner";
 

@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { Trophy, Medal, TrendingUp, ChevronRight, Users2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { trendingApi, type UserPublicDto } from "@/lib/api";
+import { trendingApi } from "@/api/dashboard.api";
+import type { UserPublicDto } from "@/api/types";
 import { SkeletonList } from "@/components/SkeletonCard";
 import ErrorBanner from "@/components/ErrorBanner";
 

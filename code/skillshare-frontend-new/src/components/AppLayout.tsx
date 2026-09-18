@@ -3,7 +3,7 @@ import { Home, Search, Calendar, Bell, LogOut, Layers, Coins, Settings as Settin
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
-import { notificationsApi } from "@/lib/api";
+import { notificationsApi } from "@/api/notifications.api";
 
 interface AppLayoutProps { children: React.ReactNode; }
 

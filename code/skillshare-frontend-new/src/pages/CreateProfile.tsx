@@ -10,7 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, Link } from "react-router-dom";
-import { publicSkillsApi, userSkillsApi, availabilityApi, type Skill, type ApiError } from "@/lib/api";
+import { skillsApi as publicSkillsApi } from "@/api/skills.api";
+import { userSkillsApi } from "@/api/userSkills.api";
+import { availabilityApi } from "@/api/availability.api";
+import { usersApi } from "@/api/users.api";
+import type { Skill } from "@/api/types";
+import type { ApiError } from "@/api/client";
 import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";
 import { toast } from "sonner";
@@ -454,7 +459,7 @@ const CreateProfile = () => {
       }
       if (profileInfo.bio && user) {
         // Best-effort bio update
-        try { await import("@/lib/api").then(m => m.usersApi.updateMyBio(profileInfo.bio)); } catch (err) { console.error("Failed to update bio:", err); }
+        try { await usersApi.updateMyBio(profileInfo.bio); } catch (err) { console.error("Failed to update bio:", err); }
       }
       toast.success("Profile setup complete! Welcome to SkillShare 🎉");
       navigate("/dashboard");

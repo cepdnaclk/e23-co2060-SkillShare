@@ -24,18 +24,13 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { useChat } from "@/context/ChatContext";
-import {
-  usersApi,
-  userSkillsApi,
-  availabilityApi,
-  sessionsApi,
-  connectionsApi,
-  type User,
-  type UserSkill,
-  type Availability,
-  type ApiError,
-  type ConnectionDto,
-} from "@/lib/api";
+import { usersApi } from "@/api/users.api";
+import { userSkillsApi } from "@/api/userSkills.api";
+import { availabilityApi } from "@/api/availability.api";
+import { sessionsApi } from "@/api/sessions.api";
+import { connectionsApi } from "@/api/connections.api";
+import type { UserPrivateDto as User, UserSkillDto as UserSkill, AvailabilityResponse as Availability, ConnectionDto } from "@/api/types";
+import type { ApiError } from "@/api/client";
 import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";
 import {

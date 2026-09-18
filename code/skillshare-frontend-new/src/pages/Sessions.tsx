@@ -6,10 +6,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AppLayout from "@/components/AppLayout";
-import {
-  sessionsApi, feedbackApi,
-  type Session, type FeedbackTagDto, type SessionStatus, type ApiError
-} from "@/lib/api";
+import { sessionsApi } from "@/api/sessions.api";
+import { feedbackApi } from "@/api/feedback.api";
+import type { SessionResponse as Session, FeedbackTagDto, SessionStatus } from "@/api/types";
+import type { ApiError } from "@/api/client";
 import { useAuth } from "@/context/AuthContext";
 import { SkeletonList } from "@/components/SkeletonCard";
 import ErrorBanner from "@/components/ErrorBanner";
