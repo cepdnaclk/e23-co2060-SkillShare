@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import {
@@ -44,16 +43,6 @@ const greeting = () => {
   return "Good evening";
 };
 
-/* ─── Animation ───────────────────────────────────────────────── */
-const fadeUp = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" } },
-};
-const stagger = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.06 } },
-};
-
 /* ─── Sub-components ──────────────────────────────────────────── */
 
 function SkillPill({ name, variant }: { name: string; variant: "teach" | "learn" }) {
@@ -67,24 +56,24 @@ function SkillPill({ name, variant }: { name: string; variant: "teach" | "learn"
 
 function SessionRow({ session }: { session: Session }) {
   const statusColor: Record<string, string> = {
-    PENDING: "text-amber-600 bg-amber-500/10",
-    ACCEPTED: "text-primary bg-primary/10",
-    COMPLETED: "text-muted-foreground bg-secondary",
-    CANCELLED: "text-red-600 bg-red-500/10",
-    REJECTED: "text-red-600 bg-red-500/10",
-    EXPIRED: "text-muted-foreground bg-secondary",
+    PENDING: "text-amber-600",
+    ACCEPTED: "text-primary",
+    COMPLETED: "text-muted-foreground",
+    CANCELLED: "text-red-500",
+    REJECTED: "text-red-500",
+    EXPIRED: "text-muted-foreground",
   };
-  const badge = statusColor[session.status] ?? "text-muted-foreground bg-secondary";
+  const badge = statusColor[session.status] ?? "text-muted-foreground";
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-border/40 last:border-0 group">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 truncate mb-2 sm:mb-0">
-        <span className="text-base font-medium text-foreground">{session.skillName}</span>
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-border/40 last:border-0 group">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 truncate mb-1 sm:mb-0">
+        <span className="text-sm font-medium text-foreground">{session.skillName}</span>
         <span className="text-sm text-muted-foreground">with {session.mentorName}</span>
       </div>
       <div className="flex items-center gap-4">
-        <span className="text-sm font-medium text-muted-foreground">{formatDate(session.startTime)}</span>
-        <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md ${badge}`}>
+        <span className="text-sm text-muted-foreground">{formatDate(session.startTime)}</span>
+        <span className={`text-[10px] uppercase font-bold tracking-wider ${badge}`}>
           {session.status}
         </span>
       </div>
@@ -142,39 +131,59 @@ const Dashboard = () => {
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto px-6 py-12 md:py-16">
+      <div className="max-w-4xl mx-auto px-6 py-10 flex flex-col min-h-[calc(100vh-4rem)]">
         <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-8" />
 
-        {/* ── 1. GREETING ───────────────────────────────────────── */}
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mb-14">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+        {/* ── 1. GREETING & ACTIONS ─────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-12">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             {greeting()}, {firstName}
           </h1>
-        </motion.div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate("/search")}
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Explore →
+            </button>
+            <button
+              onClick={() => navigate("/sessions")}
+              className="text-sm font-medium text-primary hover:underline flex items-center gap-1.5"
+            >
+              Sessions
+              {upcomingMentor.length > 0 && (
+                <span className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                  {upcomingMentor.length}
+                </span>
+              )}
+              →
+            </button>
+          </div>
+        </div>
 
         {loading ? (
           <div className="animate-pulse space-y-12">
             <div className="grid md:grid-cols-2 gap-12">
-              <div className="h-24 bg-secondary/50 rounded-xl" />
-              <div className="h-24 bg-secondary/50 rounded-xl" />
+              <div className="h-20 bg-secondary/50 rounded-xl" />
+              <div className="h-20 bg-secondary/50 rounded-xl" />
             </div>
             <div className="h-32 bg-secondary/50 rounded-xl" />
           </div>
         ) : (
-          <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-16">
+          <div className="space-y-14">
             
             {/* ── 2. TEACH ↔ LEARN ──────────────────────────────────── */}
-            <div className="grid md:grid-cols-2 gap-x-16 gap-y-12">
+            <div className="grid md:grid-cols-2 gap-x-16 gap-y-10">
               
               {/* I CAN TEACH */}
-              <motion.div variants={fadeUp} className="group">
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-xs font-bold tracking-[0.15em] uppercase text-muted-foreground">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase text-muted-foreground">
                     I Can Teach
                   </h2>
                   <button
                     onClick={() => navigate("/create-profile", { state: { startStep: 2 } })}
-                    className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors"
+                    className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
                   >
                     Manage →
                   </button>
@@ -191,20 +200,20 @@ const Dashboard = () => {
                     onClick={() => navigate("/create-profile", { state: { startStep: 2 } })}
                     className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
                   >
-                    No skills yet <span className="mx-1 text-border">·</span> Add a skill →
+                    No skills yet <span className="mx-1 text-border">·</span> Add →
                   </button>
                 )}
-              </motion.div>
+              </div>
 
               {/* I WANT TO LEARN */}
-              <motion.div variants={fadeUp} className="group">
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-xs font-bold tracking-[0.15em] uppercase text-muted-foreground">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase text-muted-foreground">
                     I Want To Learn
                   </h2>
                   <button
                     onClick={() => navigate("/create-profile", { state: { startStep: 2 } })}
-                    className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors"
+                    className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
                   >
                     Manage →
                   </button>
@@ -221,24 +230,24 @@ const Dashboard = () => {
                     onClick={() => navigate("/create-profile", { state: { startStep: 2 } })}
                     className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
                   >
-                    No goals yet <span className="mx-1 text-border">·</span> Add a goal →
+                    No goals yet <span className="mx-1 text-border">·</span> Add →
                   </button>
                 )}
-              </motion.div>
+              </div>
             </div>
 
             {/* ── 3. UPCOMING ───────────────────────────────────────── */}
-            <motion.div variants={fadeUp}>
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-xs font-bold tracking-[0.15em] uppercase text-muted-foreground">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase text-muted-foreground">
                   Upcoming
                 </h2>
                 {(upcomingLearner.length > 0 || upcomingMentor.length > 0) && (
                   <button
                     onClick={() => navigate("/sessions")}
-                    className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors"
+                    className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
                   >
-                    View all sessions →
+                    View all →
                   </button>
                 )}
               </div>
@@ -250,55 +259,55 @@ const Dashboard = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground py-2 border-b border-border/40">
+                <p className="text-sm text-muted-foreground py-1">
                   No upcoming sessions.
                 </p>
               )}
-            </motion.div>
+            </div>
 
             {/* ── 4. SECONDARY STATS ────────────────────────────────── */}
             {user && (
-              <motion.div variants={fadeUp} className="pt-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+              <div className="pt-8 mt-auto border-t border-border/40">
+                <div className="flex flex-wrap gap-x-8 gap-y-4">
                   
-                  <button onClick={() => navigate("/sessions")} className="text-left group">
-                    <p className="text-2xl font-light text-foreground group-hover:text-primary transition-colors">{upcomingLearner.length}</p>
-                    <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mt-1.5">Booked</p>
+                  <button onClick={() => navigate("/sessions")} className="flex items-baseline gap-1.5 group">
+                    <span className="text-base font-medium text-foreground group-hover:text-primary transition-colors">{upcomingLearner.length}</span>
+                    <span className="text-xs text-muted-foreground">booked</span>
                   </button>
                   
-                  <button onClick={() => navigate("/sessions")} className="text-left group relative">
-                    <p className="text-2xl font-light text-foreground group-hover:text-primary transition-colors">
+                  <button onClick={() => navigate("/sessions")} className="flex items-baseline gap-1.5 group relative">
+                    <span className="text-base font-medium text-foreground group-hover:text-primary transition-colors">
                       {upcomingMentor.length}
-                      {upcomingMentor.length > 0 && <span className="absolute top-1 ml-1 w-1.5 h-1.5 rounded-full bg-primary" />}
-                    </p>
-                    <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mt-1.5">Pending</p>
+                    </span>
+                    <span className="text-xs text-muted-foreground">pending</span>
+                    {upcomingMentor.length > 0 && <span className="absolute -top-0.5 -right-2 w-1.5 h-1.5 rounded-full bg-primary" />}
                   </button>
 
-                  <button onClick={() => navigate("/create-profile", { state: { startStep: 2 } })} className="text-left group">
-                    <p className="text-2xl font-light text-foreground group-hover:text-primary transition-colors">{teachSkills.length}</p>
-                    <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mt-1.5">Skills</p>
+                  <button onClick={() => navigate("/create-profile", { state: { startStep: 2 } })} className="flex items-baseline gap-1.5 group">
+                    <span className="text-base font-medium text-foreground group-hover:text-primary transition-colors">{teachSkills.length}</span>
+                    <span className="text-xs text-muted-foreground">skills</span>
                   </button>
 
-                  <button onClick={() => navigate("/notifications")} className="text-left group">
-                    <p className="text-2xl font-light text-foreground group-hover:text-primary transition-colors">{feedback.length}</p>
-                    <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mt-1.5">Feedback</p>
+                  <button onClick={() => navigate("/notifications")} className="flex items-baseline gap-1.5 group">
+                    <span className="text-base font-medium text-foreground group-hover:text-primary transition-colors">{feedback.length}</span>
+                    <span className="text-xs text-muted-foreground">feedback</span>
                   </button>
 
-                  <div className="text-left">
-                    <p className="text-2xl font-light text-foreground">{user.credits ?? 0}</p>
-                    <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mt-1.5">Credits</p>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-base font-medium text-foreground">{user.credits ?? 0}</span>
+                    <span className="text-xs text-muted-foreground">credits</span>
                   </div>
 
-                  <div className="text-left">
-                    <p className="text-2xl font-light text-foreground">{user.reputationScore ?? 0}</p>
-                    <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mt-1.5">Rep</p>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-base font-medium text-foreground">{user.reputationScore ?? 0}</span>
+                    <span className="text-xs text-muted-foreground">rep</span>
                   </div>
 
                 </div>
-              </motion.div>
+              </div>
             )}
-
-          </motion.div>
+            
+          </div>
         )}
       </div>
     </AppLayout>
