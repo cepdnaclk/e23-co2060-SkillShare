@@ -17,7 +17,7 @@ import MySchedule from "./pages/MySchedule";
 import Notifications from "./pages/Notifications";
 import Sessions from "./pages/Sessions";
 import Settings from "./pages/Settings";
-import Leaderboard from "./pages/Leaderboard";
+
 import NotFound from "./pages/NotFound";
 import OAuth2RedirectHandler from "@/components/OAuth2RedirectHandler";
 
@@ -70,9 +70,7 @@ const App = () => (
             <Route path="/settings" element={
               <ProtectedRoute><Settings /></ProtectedRoute>
             } />
-            <Route path="/leaderboard" element={
-              <ProtectedRoute><Leaderboard /></ProtectedRoute>
-            } />
+
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>

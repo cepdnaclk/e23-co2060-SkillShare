@@ -25,7 +25,7 @@ const navItems = [
   { path: "/search",        icon: Search,       label: "Explore" },
   { path: "/sessions",      icon: Layers,       label: "Sessions" },
   { path: "/my-schedule",   icon: Calendar,     label: "Schedule" },
-  { path: "/leaderboard",   icon: Trophy,       label: "Leaderboard" },
+  
   { path: "/notifications", icon: Bell,         label: "Notifications" },
   { path: "/settings",      icon: SettingsIcon, label: "Settings" },
 ];
