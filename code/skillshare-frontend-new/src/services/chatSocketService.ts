@@ -22,7 +22,7 @@ class ChatSocketService {
       },
       reconnectDelay: 5000,
       debug: (str) => {
-        console.warn(`[STOMP Debug] ${str}`);
+        
       },
       onConnect: () => {
         this.connected = true;
@@ -30,12 +30,12 @@ class ChatSocketService {
 
         this.client!.subscribe("/user/queue/messages", (frame: IMessage) => {
           try {
-            console.warn("🔔 [ChatSocket] RAW MESSAGE RECEIVED:", frame.body);
+            
             const msg: ChatMessageDto = JSON.parse(frame.body);
-            console.warn("🔔 [ChatSocket] PARSED MESSAGE:", msg);
+            
             this.messageHandlers.forEach((h) => h(msg));
           } catch (e) {
-            console.warn("[ChatSocket] Failed to parse incoming message", frame.body, e);
+            
           }
         });
 
@@ -44,7 +44,7 @@ class ChatSocketService {
             const status: TypingStatusDto = JSON.parse(frame.body);
             this.typingHandlers.forEach((h) => h(status));
           } catch {
-            console.warn("[ChatSocket] Failed to parse typing status", frame.body);
+            
           }
         });
       },
@@ -70,7 +70,7 @@ class ChatSocketService {
 
   sendMessage(dto: ChatMessageDto): void {
     if (!this.client?.active) {
-      console.warn("[ChatSocket] Cannot send — not connected.");
+      
       return;
     }
     this.client.publish({

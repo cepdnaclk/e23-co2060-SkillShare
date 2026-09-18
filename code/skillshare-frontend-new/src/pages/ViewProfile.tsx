@@ -44,7 +44,7 @@ const ViewProfile = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user: me, refreshUser } = useAuth();
-  const { openChat } = useChat();
+  const { openChat, openWidget } = useChat();
   const preselectedSkillId = location.state?.skillId;
 
   const [mentor, setMentor] = useState<User | null>(null);
@@ -127,18 +127,26 @@ const ViewProfile = () => {
   };
 
   const handleConnect = async () => {
-    if (!id) return;
+    if (!id || connLoading) return;
     setConnLoading(true);
     try {
-      if (connectionStatus.status === "NONE") {
+      const s = connectionStatus.status.toUpperCase();
+      if (s === "NONE") {
         await connectionsApi.sendRequest(id);
         toast.success("Connection request sent.");
         const newStatus = await connectionsApi.getStatus(id);
         setConnectionStatus(newStatus);
-      } else if (connectionStatus.status === "ACCEPTED" || connectionStatus.status === "PENDING") {
+      } else if (s === "PENDING_RECEIVED") {
         if (connectionStatus.connectionId) {
-          await connectionsApi.removeConnection(connectionStatus.connectionId);
-          toast.success("Connection removed.");
+          await connectionsApi.acceptRequest(connectionStatus.connectionId);
+          toast.success("Request accepted!");
+          const newStatus = await connectionsApi.getStatus(id);
+          setConnectionStatus(newStatus);
+        }
+      } else if (s.includes("PENDING") || s === "FRIENDS" || s === "ACCEPTED") {
+        if (connectionStatus.connectionId) {
+          await connectionsApi.rejectRequest(connectionStatus.connectionId);
+          toast.success(s === "FRIENDS" || s === "ACCEPTED" ? "Connection removed." : "Request cancelled.");
           setConnectionStatus({ status: "NONE", connectionId: null });
         }
       }
@@ -202,8 +210,18 @@ const ViewProfile = () => {
   // Connection button copy
   let connectLabel = "Connect";
   let ConnectIcon = UserPlus;
-  if (connectionStatus.status === "PENDING") { connectLabel = "Pending"; ConnectIcon = Clock4; }
-  else if (connectionStatus.status === "ACCEPTED") { connectLabel = "Connected"; ConnectIcon = UserCheck; }
+  const s = connectionStatus.status.toUpperCase();
+  
+  if (s === "PENDING_SENT" || s === "PENDING") { 
+    connectLabel = "Request Sent"; 
+    ConnectIcon = Clock4; 
+  } else if (s === "PENDING_RECEIVED") {
+    connectLabel = "Accept Request";
+    ConnectIcon = UserCheck;
+  } else if (s === "FRIENDS" || s === "ACCEPTED") { 
+    connectLabel = "Connected"; 
+    ConnectIcon = UserCheck; 
+  }
 
   return (
     <AppLayout>
@@ -276,8 +294,15 @@ const ViewProfile = () => {
                     className="gap-2"
                     onClick={() => {
                       if (!me?.id) return;
-                      const chatId = [me.id, mentor.id].sort().join("_");
-                      openChat(chatId, mentor.fullName);
+                      openChat({
+                        contactId: mentor.id,
+                        contactName: mentor.fullName,
+                        contactProfilePicture: mentor.profilePictureUrl || null,
+                        lastMessage: "",
+                        lastMessageTime: null,
+                        unreadCount: 0
+                      });
+                      openWidget();
                     }}
                   >
                     <MessageSquare className="w-4 h-4" /> Message

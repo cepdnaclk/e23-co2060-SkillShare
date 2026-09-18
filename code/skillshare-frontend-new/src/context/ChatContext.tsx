@@ -44,7 +44,7 @@ const ChatContext = createContext<ChatContextType | null>(null);
 export function ChatProvider({ children }: { children: ReactNode }) {
   const { user, token } = useAuth();
 
-  console.warn("[ChatProvider] Rendered. User present:", !!user, "Token present:", !!token);
+  
 
   const [isOpen, setIsOpen] = useState(false);
   const [view, setView] = useState<"inbox" | "chat">("inbox");
@@ -63,10 +63,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   // ── Connect WebSocket when user is logged in ─────────────────────────────
   useEffect(() => {
-    console.warn("[ChatProvider] useEffect triggered. Token:", token ? "Exists" : "Null");
+    
     if (!token || !userRef.current) return;
 
-    console.warn("[ChatProvider] Initiating WebSocket connection...");
+    
     chatSocketService.connect(token);
 
     const unsubMsg = chatSocketService.onMessage((dto: ChatMessageDto) => {
@@ -104,7 +104,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
-      console.warn("[ChatProvider] Cleaning up WebSocket connection...");
+      
       unsubMsg();
       unsubTyping();
       chatSocketService.disconnect();
@@ -166,6 +166,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       // Refresh inbox so unread badge clears
       refreshInbox();
     } catch {
+      import("sonner").then(m => m.toast.error("Failed to load message history."));
       setActiveConversation((prev) =>
         prev ? { ...prev, isLoadingHistory: false } : prev
       );
