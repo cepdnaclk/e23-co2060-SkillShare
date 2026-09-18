@@ -93,16 +93,23 @@ const Notifications = () => {
         {/* --- LEFT COLUMN: Main List --- */}
         <div className="flex-1 max-w-3xl w-full">
           <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} 
-            className="flex flex-col gap-1 mb-6 p-5 rounded-2xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400 text-white shadow-md"
+            className="flex flex-col gap-1 mb-6 p-6 rounded-xl bg-primary text-primary-foreground shadow-sm relative overflow-hidden"
+            style={{
+              background: "linear-gradient(135deg, hsl(245 58% 51%) 0%, hsl(245 58% 65%) 100%)",
+            }}
           >
-            <h1 className="text-2xl md:text-3xl font-heading font-bold tracking-tight">Notifications</h1>
-            <p className="text-white/90 text-sm">Stay updated with your latest sessions and alerts.</p>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight relative z-10">Notifications</h1>
+            <p className="text-primary-foreground/90 text-sm relative z-10">Stay updated with your latest sessions and alerts.</p>
+            {/* Decorative background shape */}
+            <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+              <Bell className="w-24 h-24 transform rotate-12" />
+            </div>
           </motion.div>
 
           <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-4" />
 
           {loading ? <SkeletonList count={4} /> : notifications.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground rounded-2xl border-2 border-dashed border-border/60 bg-card">
+            <div className="text-center py-16 text-muted-foreground rounded-xl border border-dashed border-border/60 bg-card">
               <Bell className="w-12 h-12 mx-auto mb-4 opacity-20" />
               <p className="font-medium text-foreground">All caught up!</p>
               <p className="text-sm">No new notifications right now.</p>
@@ -123,22 +130,22 @@ const Notifications = () => {
                       const tab = msg.includes("booked") || msg.includes("requested") || msg.includes("learn") ? "mentor" : "learner";
                       navigate("/sessions", { state: { tab } });
                     }}
-                    className={`p-5 rounded-2xl border-2 transition-all ${
+                    className={`p-5 rounded-xl border transition-all ${
                       isConnectionRequest ? "cursor-default" : "cursor-pointer"
                     } ${
-                      n.isRead ? "bg-card border-border hover:border-violet-500/30" : "bg-card border-violet-500/40 shadow-sm"
+                      n.isRead ? "bg-card border-border hover:border-border/80 hover:bg-secondary/30" : "bg-card border-primary/30 shadow-sm"
                     }`}
                   >
                     <div className="flex items-start gap-4">
-                      <div className={`w-10 h-10 rounded-xl ${cfg.bg} ${cfg.color} flex items-center justify-center flex-shrink-0`}>
-                        {isConnectionRequest ? <UserPlus className="w-4 h-4" /> : cfg.icon}
+                      <div className={`w-10 h-10 rounded-lg ${cfg.bg} ${cfg.color} flex items-center justify-center flex-shrink-0`}>
+                        {isConnectionRequest ? <UserPlus className="w-4.5 h-4.5" /> : cfg.icon}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={`text-sm ${n.isRead ? "text-muted-foreground" : "font-semibold text-foreground"}`}>
                           {n.message}
                         </p>
-                        <span className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5" /> {fmtTime(n.createdAt)}
+                        <span className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1.5">
+                          <Clock className="w-3 h-3" /> {fmtTime(n.createdAt)}
                         </span>
                         
                         {/* Inline Accept/Decline buttons for connection requests */}
@@ -152,7 +159,7 @@ const Notifications = () => {
                                 if (pending) handleAccept(pending);
                                 markAsRead(n.id);
                               }}
-                              className="h-8 rounded-xl bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600 px-4"
+                              className="h-8 rounded-lg bg-emerald-500 text-white text-xs font-semibold hover:bg-emerald-600 px-4"
                             >
                               <UserCheck className="w-3.5 h-3.5 mr-1" /> Accept
                             </Button>
@@ -165,7 +172,7 @@ const Notifications = () => {
                                 if (pending) handleDecline(pending);
                                 markAsRead(n.id);
                               }}
-                              className="h-8 rounded-xl text-xs font-bold text-rose-500 border-rose-200 hover:bg-rose-50 px-4"
+                              className="h-8 rounded-lg text-xs font-semibold text-rose-500 border-rose-200 hover:bg-rose-50 px-4"
                             >
                               <X className="w-3.5 h-3.5 mr-1" /> Decline
                             </Button>
@@ -185,32 +192,32 @@ const Notifications = () => {
           
           {/* Friend Requests Panel */}
           {pendingRequests.length > 0 && (
-            <div className="p-6 rounded-2xl bg-card border-2 border-blue-500/30 shadow-lg">
-              <h4 className="font-heading font-bold mb-4 flex items-center gap-2 text-blue-600">
+            <div className="p-6 rounded-xl bg-card border border-primary/20 shadow-sm">
+              <h4 className="font-semibold mb-4 flex items-center gap-2 text-primary">
                 <UserPlus className="w-5 h-5" /> Friend Requests
-                <span className="ml-auto w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] flex items-center justify-center font-bold">
+                <span className="ml-auto w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">
                   {pendingRequests.length}
                 </span>
               </h4>
               <div className="space-y-4">
                 {pendingRequests.map(conn => (
-                  <div key={conn.id} className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden">
+                  <div key={conn.id} className="flex flex-col gap-2.5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden">
                         {conn.sender.profilePictureUrl
                           ? <img src={conn.sender.profilePictureUrl} alt={conn.sender.fullName} className="w-full h-full object-cover rounded-full" />
                           : conn.sender.fullName.slice(0, 2).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-foreground truncate capitalize">{conn.sender.fullName}</p>
-                        <p className="text-[10px] text-muted-foreground">Lvl {conn.sender.level} • {conn.sender.xp} XP</p>
+                        <p className="text-sm font-semibold text-foreground truncate capitalize">{conn.sender.fullName}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Lvl {conn.sender.level} • {conn.sender.xp} XP</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
                       <Button
                         size="sm"
                         onClick={() => handleAccept(conn)}
-                        className="flex-1 h-8 rounded-xl bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600"
+                        className="flex-1 h-8 rounded-lg bg-emerald-500 text-white text-xs font-semibold hover:bg-emerald-600"
                       >
                         <UserCheck className="w-3.5 h-3.5 mr-1" /> Accept
                       </Button>
@@ -218,7 +225,7 @@ const Notifications = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => handleDecline(conn)}
-                        className="flex-1 h-8 rounded-xl text-xs font-bold text-rose-500 border-rose-200 hover:bg-rose-50"
+                        className="flex-1 h-8 rounded-lg text-xs font-semibold text-rose-500 border-rose-200 hover:bg-rose-50"
                       >
                         <X className="w-3.5 h-3.5 mr-1" /> Decline
                       </Button>
@@ -229,23 +236,23 @@ const Notifications = () => {
             </div>
           )}
 
-          <div className="p-6 rounded-2xl bg-card border-2 border-border/80 shadow-lg">
-            <h4 className="font-heading font-bold mb-4 flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-violet-500" /> Quick Actions
+          <div className="p-6 rounded-xl bg-card border border-border shadow-sm">
+            <h4 className="font-semibold mb-4 flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-primary" /> Quick Actions
             </h4>
             <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-start gap-2" onClick={load}>
+              <Button variant="outline" className="w-full justify-start gap-2 rounded-lg" onClick={load}>
                 <RefreshCw className="w-4 h-4" /> Refresh Inbox
               </Button>
               {unreadCount > 0 && (
-                <Button className="w-full justify-start gap-2 bg-gradient-to-r from-violet-500 to-purple-600 border-0 text-white" onClick={markAllRead}>
+                <Button className="w-full justify-start gap-2 rounded-lg" onClick={markAllRead}>
                   <Check className="w-4 h-4" /> Mark All Read
                 </Button>
               )}
             </div>
             <div className="mt-6 pt-6 border-t border-border text-center">
               <p className="text-sm font-semibold">{unreadCount} Unread</p>
-              <p className="text-xs text-muted-foreground">Stay on top of your sessions</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Stay on top of your sessions</p>
             </div>
           </div>
         </div>
