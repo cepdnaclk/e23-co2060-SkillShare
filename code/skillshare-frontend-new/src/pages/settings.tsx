@@ -45,9 +45,9 @@ const Settings = () => {
 
   const [activeTab, setActiveTab] = useState("account");
 
-  const [fullName, setFullName] = useState(user?.fullName ?? "Alex Johnson");
-  const [email] = useState(user?.email ?? "alex@example.com");
-  const [bio, setBio] = useState(user?.bio ?? "Lifelong learner. I teach guitar and web design.");
+  const [fullName, setFullName] = useState(user?.fullName ?? "");
+  const [email] = useState(user?.email ?? "");
+  const [bio, setBio] = useState(user?.bio ?? "");
 
   const [notifs, setNotifs] = useState<Record<string, boolean>>({ email: true, followers: true, courses: true });
   const [privacy, setPrivacy] = useState<Record<string, boolean>>({ publicProfile: true, openToRequests: true });
