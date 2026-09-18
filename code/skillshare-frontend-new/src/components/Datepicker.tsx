@@ -113,7 +113,7 @@ export const DatePicker = ({ value, onChange, placeholder = "mm/dd/yyyy" }: Date
                     onClick={() => { onChange(toValue(d)); setOpen(false); }}
                     className={`aspect-square rounded-lg text-xs flex items-center justify-center transition-colors ${
                       isSelected
-                        ? "bg-gradient-to-br from-violet-500 to-orange-400 text-white font-semibold"
+                        ? "bg-primary border-primary text-white font-semibold"
                         : isToday
                         ? "border-2 border-violet-400 text-violet-400 font-medium"
                         : inMonth

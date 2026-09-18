@@ -87,7 +87,7 @@ export const TimePicker = ({ value, onChange, placeholder = "--:-- --", openDire
                   onClick={() => update({ hour12: h })}
                   className={`w-full py-1.5 rounded-lg text-sm text-center transition-colors ${
                     parsed.hour12 === h
-                      ? "bg-gradient-to-br from-violet-500 to-orange-400 text-white font-semibold"
+                      ? "bg-primary border-primary text-white font-semibold"
                       : "text-foreground hover:bg-secondary"
                   }`}
                 >
@@ -104,7 +104,7 @@ export const TimePicker = ({ value, onChange, placeholder = "--:-- --", openDire
                   onClick={() => update({ minute: m })}
                   className={`w-full py-1.5 rounded-lg text-sm text-center transition-colors ${
                     parsed.minute === m
-                      ? "bg-gradient-to-br from-violet-500 to-orange-400 text-white font-semibold"
+                      ? "bg-primary border-primary text-white font-semibold"
                       : "text-foreground hover:bg-secondary"
                   }`}
                 >
@@ -121,7 +121,7 @@ export const TimePicker = ({ value, onChange, placeholder = "--:-- --", openDire
                   onClick={() => update({ meridiem: mer })}
                   className={`w-full py-1.5 rounded-lg text-sm text-center transition-colors ${
                     parsed.meridiem === mer
-                      ? "bg-gradient-to-br from-violet-500 to-orange-400 text-white font-semibold"
+                      ? "bg-primary border-primary text-white font-semibold"
                       : "text-foreground hover:bg-secondary"
                   }`}
                 >

@@ -56,7 +56,7 @@ const SignUp = () => {
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12 relative">
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-md relative z-10">
           <Link to="/" className="inline-flex items-center gap-2 mb-10">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <span className="font-heading font-bold text-xl">SkillShare</span>
@@ -113,7 +113,7 @@ const SignUp = () => {
                   </div>
                 )}
 
-                <Button type="submit" className="w-full h-11 bg-gradient-to-r from-violet-500 to-purple-600 hover:opacity-90 shadow-md font-semibold" disabled={isLoading}>
+                <Button type="submit" className="w-full h-11 font-semibold" disabled={isLoading}>
                   {isLoading ? "Processing..." : (isLogin ? "Sign In" : "Get Started")}
                 </Button>
               </form>
@@ -130,9 +130,9 @@ const SignUp = () => {
         </motion.div>
       </div>
 
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-violet-500/10 via-fuchsia-500/5 to-orange-500/5 p-12 items-center justify-center">
-        <div className="max-w-sm glass-card rounded-3xl p-8 border border-white/20 shadow-xl">
-           <Sparkles className="w-8 h-8 text-violet-500 mb-6" />
+      <div className="hidden lg:flex flex-1 bg-secondary/30 border-l border-border p-12 items-center justify-center">
+        <div className="max-w-sm bg-card rounded-3xl p-8 border border-border shadow-sm">
+           <Sparkles className="w-8 h-8 text-primary mb-6" />
            <h2 className="text-3xl font-bold mb-4 font-heading">Learn. Teach. Grow.</h2>
            <p className="text-muted-foreground leading-relaxed">Join thousands of students and mentors on the most intuitive skill-sharing platform.</p>
         </div>
