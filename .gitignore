@@ -1,2 +1,4 @@
 *.patch
 backup.sql
+.vscode/
+current_test.java
