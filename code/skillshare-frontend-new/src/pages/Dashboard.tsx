@@ -15,15 +15,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import {
-  sessionsApi,
-  feedbackApi,
-  userSkillsApi,
-  type Session,
-  type Feedback,
-  type UserSkill,
-  type ApiError,
-} from "@/lib/api";
+import { sessionsApi } from "@/api/sessions.api";
+import { feedbackApi } from "@/api/feedback.api";
+import { userSkillsApi } from "@/api/userSkills.api";
+import type { SessionResponse as Session, FeedbackResponse as Feedback, UserSkillDto as UserSkill } from "@/api/types";
+import type { ApiError } from "@/api/client";
 import { useAuth } from "@/context/AuthContext";
 import { SkeletonStats } from "@/components/SkeletonCard";
 import ErrorBanner from "@/components/ErrorBanner";

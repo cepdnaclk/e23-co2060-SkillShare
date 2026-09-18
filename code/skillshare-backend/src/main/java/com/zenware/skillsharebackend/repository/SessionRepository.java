@@ -64,4 +64,9 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
         @Param("newStatus") SessionStatus newStatus,
         @Param("expectedCurrentStatuses") List<SessionStatus> expectedCurrentStatuses
     );
+
+    @Query("SELECT COUNT(s) FROM Session s WHERE " +
+           "(s.mentor.id = :userId1 AND s.learner.id = :userId2) OR " +
+           "(s.mentor.id = :userId2 AND s.learner.id = :userId1)")
+    long countSharedSessions(@Param("userId1") UUID userId1, @Param("userId2") UUID userId2);
 }

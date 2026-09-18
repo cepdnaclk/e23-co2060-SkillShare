@@ -59,7 +59,7 @@ public class FeedbackService {
         } else if (giver.getId().equals(session.getMentor().getId())) {
             receiver = session.getLearner(); // Mentor is reviewing Learner
         } else {
-            throw new IllegalArgumentException("Security Violation: You were not a participant in this session!");
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You were not a participant in this session!");
         }
 
         // 4. DUPLICATE GUARD RAIL

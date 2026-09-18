@@ -1,7 +1,7 @@
 package com.zenware.skillsharebackend.controller;
 
 import com.zenware.skillsharebackend.dto.AvailabilityRequest;
-import com.zenware.skillsharebackend.entity.Availability;
+import com.zenware.skillsharebackend.dto.AvailabilityResponse;
 import com.zenware.skillsharebackend.service.AvailabilityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/availability")
@@ -18,7 +19,7 @@ public class AvailabilityController {
     private final AvailabilityService availabilityService;
 
     @PostMapping("/add")
-    public ResponseEntity<Availability> addAvailability(@RequestBody AvailabilityRequest request) {
+    public ResponseEntity<AvailabilityResponse> addAvailability(@Valid @RequestBody AvailabilityRequest request) {
         // LOGIC: try-catch is GONE!
         // Any error thrown by the service is caught by your GlobalExceptionHandler.
         return ResponseEntity.ok(availabilityService.addAvailability(request));
@@ -33,12 +34,12 @@ public class AvailabilityController {
     }
 
     @GetMapping("/mentor/{mentorId}")
-    public ResponseEntity<List<Availability>> getMentorSlots(@PathVariable UUID mentorId) {
+    public ResponseEntity<List<AvailabilityResponse>> getMentorSlots(@PathVariable UUID mentorId) {
         return ResponseEntity.ok(availabilityService.getMentorFreeSlots(mentorId));
     }
 
     @GetMapping("/my-slots")
-    public ResponseEntity<List<Availability>> getMyAvailabilities() {
+    public ResponseEntity<List<AvailabilityResponse>> getMyAvailabilities() {
         return ResponseEntity.ok(availabilityService.getMyAvailabilities());
     }
 }

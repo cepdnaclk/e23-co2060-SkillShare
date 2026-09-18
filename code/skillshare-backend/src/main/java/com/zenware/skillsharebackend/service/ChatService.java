@@ -1,5 +1,6 @@
 package com.zenware.skillsharebackend.service;
 
+import com.zenware.skillsharebackend.dto.ChatMessageResponse;
 import com.zenware.skillsharebackend.dto.RecentChatDto;
 import com.zenware.skillsharebackend.entity.ChatMessage;
 import com.zenware.skillsharebackend.entity.User;
@@ -31,11 +32,23 @@ public class ChatService {
     }
 
     // Fetch the chat history between the logged-in user and a target user
-    public Page<ChatMessage> getConversationHistory(UUID contactId, int page, int size) {
+    public Page<ChatMessageResponse> getConversationHistory(UUID contactId, int page, int size) {
         User currentUser = getAuthenticatedUser();
         // Create a page request (e.g., page 0, size 50)
         Pageable pageable = PageRequest.of(page, size);
-        return chatMessageRepository.findConversationHistory(currentUser.getId(), contactId, pageable);
+        Page<ChatMessage> messages = chatMessageRepository.findConversationHistory(currentUser.getId(), contactId, pageable);
+        return messages.map(this::mapToResponse);
+    }
+
+    private ChatMessageResponse mapToResponse(ChatMessage msg) {
+        return ChatMessageResponse.builder()
+                .id(msg.getId())
+                .senderId(msg.getSender().getId())
+                .receiverId(msg.getReceiver().getId())
+                .content(msg.getContent())
+                .isRead(msg.isRead())
+                .timestamp(msg.getTimestamp())
+                .build();
     }
 
     // Fetch the total unread message count for the notification bell

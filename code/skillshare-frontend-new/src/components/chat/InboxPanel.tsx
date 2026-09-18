@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from "date-fns";
-import type { RecentChat } from "@/lib/chatApi";
+import type { RecentChatDto as RecentChat } from "@/api/types";
 import { useChat } from "@/context/ChatContext";
 import { MessageSquare } from "lucide-react";
 

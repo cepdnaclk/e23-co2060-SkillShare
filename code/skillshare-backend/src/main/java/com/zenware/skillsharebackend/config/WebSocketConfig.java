@@ -15,13 +15,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Autowired
     private WebSocketAuthInterceptor authInterceptor;
 
+    @org.springframework.beans.factory.annotation.Value("${cors.allowed.origins}")
+    private java.util.List<String> allowedOrigins;
+
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // This is the URL the React frontend will use to open the connection.
-        // setAllowedOriginPatterns("*") prevents CORS blocks during local development.
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*");
-                //.withSockJS(); // Fallback for older browsers
+                .setAllowedOrigins(allowedOrigins.toArray(new String[0]));
     }
 
     @Override
@@ -39,16 +40,5 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(authInterceptor);
-    }
-
-    @Override
-    public void configureClientOutboundChannel(ChannelRegistration registration) {
-        registration.interceptors(new org.springframework.messaging.support.ChannelInterceptor() {
-            @Override
-            public org.springframework.messaging.Message<?> preSend(org.springframework.messaging.Message<?> message, org.springframework.messaging.MessageChannel channel) {
-                System.out.println("🚀 STOMP OUTBOUND: " + message);
-                return message;
-            }
-        });
     }
 }

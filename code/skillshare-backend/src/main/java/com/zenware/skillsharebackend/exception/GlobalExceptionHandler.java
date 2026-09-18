@@ -3,8 +3,11 @@ package com.zenware.skillsharebackend.exception;
 import com.zenware.skillsharebackend.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.validation.FieldError;
+import java.util.stream.Collectors;
 
 /**
  * LOGIC: The @RestControllerAdvice makes this class a global "Interceptor".
@@ -13,6 +16,17 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    // 0. Handle Unauthorized Access
+    @ExceptionHandler(UnauthorizedAccessException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorizedAccess(UnauthorizedAccessException ex) {
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.FORBIDDEN.value(),
+                "Access Denied",
+                ex.getMessage()
+        );
+        return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
+    }
 
     // 1. Handle Business Rule Violations (State Conflicts)
     // REASON: Catches things like "Not enough credits" or "Slot already booked" from SessionService!
@@ -49,17 +63,34 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
+    // 3.5. Handle DTO Validation Exceptions
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
+        String errorMessage = ex.getBindingResult().getFieldErrors().stream()
+                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.joining(", "));
+
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Validation Error",
+                errorMessage
+        );
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
     // 4. Handle Unexpected Server Crashes (The Safety Net)
     // LOGIC: This logs the full error to IntelliJ but shows the clean message in Postman for easier debugging.
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex) {
-        // This is crucial for you! It prints the red error text in your IntelliJ console.
-        ex.printStackTrace();
+        // Log the exception securely server-side
+        logger.error("Unexpected server error: ", ex);
 
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Server Error",
-                ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred on our end."
+                "An unexpected error occurred."
         );
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }

@@ -160,7 +160,7 @@ public class SessionService {
 
         // SECURITY GUARD: Only the mentor assigned to this session can accept/reject it
         if (!session.getMentor().getId().equals(authenticatedMentor.getId())) {
-            throw new IllegalStateException("Security Violation: Only the assigned mentor can update this session!");
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: Only the assigned mentor can update this session!");
         }
 
         if (newStatus != SessionStatus.ACCEPTED && newStatus != SessionStatus.REJECTED) {
@@ -291,7 +291,7 @@ public class SessionService {
             }
 
         } else {
-            throw new IllegalArgumentException("Security Violation: You are not part of this session!");
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You are not part of this session!");
         }
 
         // userRepository.save(learner);
@@ -325,7 +325,7 @@ public class SessionService {
         // SECURITY GUARD: Only the learner can mark it complete
         User authenticatedUser = getAuthenticatedUser();
         if (!session.getLearner().getId().equals(authenticatedUser.getId())) {
-            throw new IllegalStateException("Security Violation: Only the Learner can complete the session!");
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: Only the Learner can complete the session!");
         }
 
         int updated = sessionRepository.transitionSessionStatusAtomically(
@@ -358,7 +358,7 @@ public class SessionService {
     public List<SessionResponse> getLearnerSessions(UUID learnerId) {
         // SECURITY GUARD: You can only view your own history
         if (!getAuthenticatedUser().getId().equals(learnerId)) {
-            throw new IllegalStateException("Security Violation: You can only view your own classes!");
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You can only view your own classes!");
         }
         // CRITICAL FIX: Map to DTO inside @Transactional so lazy proxies are resolved
         // before the Hibernate session closes.
@@ -371,7 +371,7 @@ public class SessionService {
     @Transactional
     public List<SessionResponse> getMentorSessions(UUID mentorId) {
         if (!getAuthenticatedUser().getId().equals(mentorId)) {
-            throw new IllegalStateException("Security Violation: You can only view your own schedule!");
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You can only view your own schedule!");
         }
         // CRITICAL FIX: Map to DTO inside @Transactional so lazy proxies are resolved
         // before the Hibernate session closes.
@@ -429,7 +429,7 @@ public class SessionService {
 
         // 1. Security Check: Only the assigned Mentor can add the link
         if (!session.getMentor().getId().equals(currentUser.getId())) {
-            throw new IllegalStateException("Access Denied: Only the assigned mentor can add a meeting link.");
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Access Denied: Only the assigned mentor can add a meeting link.");
         }
 
         // 2. State Check: Don't let them add links to Cancel or Completed sessions

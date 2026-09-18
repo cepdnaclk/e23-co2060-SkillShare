@@ -1,7 +1,7 @@
 package com.zenware.skillsharebackend.controller;
 
+import com.zenware.skillsharebackend.dto.ChatMessageResponse;
 import com.zenware.skillsharebackend.dto.RecentChatDto;
-import com.zenware.skillsharebackend.entity.ChatMessage;
 import com.zenware.skillsharebackend.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +21,7 @@ public class ChatRestController {
 
     // 1. Fetch History (Called when the frontend opens a specific chat window)
     @GetMapping("/history/{contactId}")
-    public ResponseEntity<Page<ChatMessage>> getHistory(
+    public ResponseEntity<Page<ChatMessageResponse>> getHistory(
             @PathVariable UUID contactId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {

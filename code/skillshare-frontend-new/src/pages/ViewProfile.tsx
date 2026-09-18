@@ -24,18 +24,13 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { useChat } from "@/context/ChatContext";
-import {
-  usersApi,
-  userSkillsApi,
-  availabilityApi,
-  sessionsApi,
-  connectionsApi,
-  type User,
-  type UserSkill,
-  type Availability,
-  type ApiError,
-  type ConnectionDto,
-} from "@/lib/api";
+import { usersApi } from "@/api/users.api";
+import { userSkillsApi } from "@/api/userSkills.api";
+import { availabilityApi } from "@/api/availability.api";
+import { sessionsApi } from "@/api/sessions.api";
+import { connectionsApi } from "@/api/connections.api";
+import type { UserPrivateDto as User, UserSkillDto as UserSkill, AvailabilityResponse as Availability, ConnectionDto } from "@/api/types";
+import type { ApiError } from "@/api/client";
 import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";
 import {
@@ -675,8 +670,8 @@ const ViewProfile = () => {
                             await connectionsApi.sendRequest(mentor.id);
                             setConnectionStatus({ status: "PENDING_SENT", connectionId: null });
                             toast.success("Friend request sent!");
-                          } catch (e: any) {
-                            toast.error(e.message || "Failed to send request.");
+                          } catch (e: unknown) {
+                            toast.error((e as ApiError).message || "Failed to send request.");
                           } finally {
                             setConnLoading(false);
                           }
@@ -714,7 +709,7 @@ const ViewProfile = () => {
                               await connectionsApi.acceptRequest(connectionStatus.connectionId);
                               setConnectionStatus({ status: "FRIENDS", connectionId: connectionStatus.connectionId });
                               toast.success("You are now friends!");
-                            } catch (e: any) {
+                            } catch (e: unknown) {
                               toast.error("Failed to accept request.");
                             } finally {
                               setConnLoading(false);
@@ -733,7 +728,7 @@ const ViewProfile = () => {
                               await connectionsApi.rejectRequest(connectionStatus.connectionId);
                               setConnectionStatus({ status: "NONE", connectionId: null });
                               toast.success("Request declined.");
-                            } catch (e: any) {
+                            } catch (e: unknown) {
                               toast.error("Failed to decline request.");
                             } finally {
                               setConnLoading(false);
