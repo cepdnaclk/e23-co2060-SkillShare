@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
   darkMode: ["class"],
@@ -83,12 +84,14 @@ export default {
       borderRadius: {
         // Hierarchy in border radius:
         // pill   → skill tags, status badges, availability indicators (9999px)
+        // card   → dashboard cards (24px)
         // xl     → hero sections (20px)
         // lg     → modals, large panels (16px)
         // DEFAULT → cards, containers (12px)
         // md     → inputs, buttons (8px)
         // sm     → small chips, tight elements (6px)
         pill:  "var(--radius-pill)",
+        card:  "var(--radius-card)",
         xl:    "var(--radius-xl)",
         lg:    "var(--radius-lg)",
         DEFAULT:"var(--radius)",
@@ -141,5 +144,5 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 } satisfies Config;

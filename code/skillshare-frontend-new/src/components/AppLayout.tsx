@@ -204,15 +204,16 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       <div className="flex-1 flex flex-col md:ml-[240px] min-w-0">
 
         {/* Desktop top bar */}
-        <header className="hidden md:flex items-center justify-between h-16 px-6 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-20">
-          {/* Search bar */}
-          <button
-            onClick={() => navigate("/search")}
-            className="flex items-center gap-2.5 h-10 px-4 w-full max-w-md rounded-lg border border-border bg-card text-muted-foreground text-sm hover:border-primary/30 transition-colors"
-          >
-            <Search className="w-4 h-4 flex-shrink-0" />
-            <span>Search for skills, people, or topics...</span>
-          </button>
+        <div className="hidden md:block sticky top-4 z-20 px-6 w-full max-w-6xl mx-auto">
+          <header className="flex items-center justify-between h-14 px-5 rounded-2xl border border-border bg-card shadow-sm">
+            {/* Search bar */}
+            <button
+              onClick={() => navigate("/search")}
+              className="flex items-center gap-2.5 h-9 px-4 w-full max-w-sm rounded-lg border border-transparent bg-secondary/50 text-muted-foreground text-sm hover:border-primary/20 hover:bg-secondary transition-colors"
+            >
+              <Search className="w-4 h-4 flex-shrink-0" />
+              <span>Search for skills, people, or topics...</span>
+            </button>
 
           {/* Right controls */}
           <div className="flex items-center gap-3 ml-4">
@@ -252,6 +253,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             </Link>
           </div>
         </header>
+        </div>
 
         {/* Mobile header */}
         <header className="md:hidden border-b border-border bg-background h-14 px-4 flex items-center justify-between sticky top-0 z-40 flex-shrink-0">

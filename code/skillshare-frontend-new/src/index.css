@@ -20,7 +20,7 @@
     color-scheme: light;
 
     /* ── Surfaces ─────────────────────────── */
-    --background:             246 30% 97%;    /* Faint lavender-gray #F6F5FB */
+    --background:             231 33% 97%;    /* Faint lavender-gray #F5F6FC */
     --foreground:             230 25% 10%;    /* Near-black with slight blue */
 
     --card:                   0 0% 100%;      /* #FFFFFF */
@@ -30,7 +30,7 @@
     --popover-foreground:     230 25% 10%;
 
     /* ── Primary accent — Indigo-Blue ────── */
-    --primary:                245 58% 51%;    /* #4F46E5 — indigo to match reference */
+    --primary:                244 91% 65%;    /* #6257F5 — restricted indigo */
     --primary-foreground:     0 0% 100%;
 
     /* ── Secondary surface ────────────────── */
@@ -59,6 +59,7 @@
     --radius-sm:              0.5rem;         /* 8px — inputs, buttons */
     --radius-lg:              1rem;           /* 16px — modals, large panels */
     --radius-xl:              1.25rem;        /* 20px — hero sections */
+    --radius-card:            1.5rem;         /* 24px — dashboard cards */
     --radius-pill:            9999px;         /* skills, tags, status badges */
 
     /* ── Shadows (softer, more diffuse) ───── */
@@ -88,12 +89,12 @@
     /* ── Sidebar ──────────────────────────── */
     --sidebar-background:          0 0% 100%;   /* White sidebar */
     --sidebar-foreground:          230 20% 30%;
-    --sidebar-primary:             245 58% 51%;
+    --sidebar-primary:             244 91% 65%;
     --sidebar-primary-foreground:  0 0% 100%;
-    --sidebar-accent:              245 58% 96%;  /* Light indigo hover */
-    --sidebar-accent-foreground:   245 58% 40%;
+    --sidebar-accent:              244 58% 96%;  /* Light indigo hover */
+    --sidebar-accent-foreground:   244 91% 65%;
     --sidebar-border:              240 15% 91%;
-    --sidebar-ring:                245 58% 51%;
+    --sidebar-ring:                244 91% 65%;
   }
 
   .dark {
