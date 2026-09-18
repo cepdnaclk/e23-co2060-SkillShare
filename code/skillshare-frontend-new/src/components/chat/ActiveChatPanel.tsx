@@ -101,11 +101,11 @@ export default function ActiveChatPanel() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 px-3 py-3 border-b border-white/10 shrink-0">
+      <div className="flex items-center gap-3 px-3 py-3 border-b border-border shrink-0 bg-background">
         <button
           id="chat-back-btn"
           onClick={backToInbox}
-          className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/60 hover:text-white flex-shrink-0"
+          className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
           aria-label="Back to inbox"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -116,20 +116,20 @@ export default function ActiveChatPanel() {
           <img
             src={contactPicture}
             alt={contactName}
-            className="w-8 h-8 rounded-full object-cover ring-1 ring-white/10 flex-shrink-0"
+            className="w-8 h-8 rounded-full object-cover ring-1 ring-border flex-shrink-0"
           />
         ) : (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-orange-400 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary flex-shrink-0">
             {getInitials(contactName)}
           </div>
         )}
 
         <div className="min-w-0">
-          <p className="text-[13px] font-semibold text-white truncate leading-tight">
+          <p className="text-[13px] font-semibold text-foreground truncate leading-tight">
             {contactName}
           </p>
           {isTyping && (
-            <p className="text-[10px] text-violet-400 leading-tight animate-pulse">
+            <p className="text-[10px] text-primary leading-tight animate-pulse">
               typing…
             </p>
           )}
@@ -137,14 +137,14 @@ export default function ActiveChatPanel() {
       </div>
 
       {/* Message area - Added overflow-x-hidden here */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 py-3 space-y-1.5 min-h-0">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 py-3 space-y-1.5 min-h-0 bg-background">
         {isLoadingHistory ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex gap-1">
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
-                  className="w-2 h-2 rounded-full bg-white/30 animate-bounce"
+                  className="w-2 h-2 rounded-full bg-primary/30 animate-bounce"
                   style={{ animationDelay: `${i * 0.15}s` }}
                 />
               ))}
@@ -152,7 +152,7 @@ export default function ActiveChatPanel() {
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-white/30 text-xs text-center">
+            <p className="text-muted-foreground text-xs text-center">
               No messages yet.
               <br />
               Say hello! 👋
@@ -172,14 +172,14 @@ export default function ActiveChatPanel() {
                     <div
                       className={`px-3 py-2 rounded-2xl text-[12px] leading-relaxed shadow-sm break-words whitespace-pre-wrap ${
                         isOutgoing
-                          ? "bg-gradient-to-br from-violet-600 to-orange-500 text-white rounded-br-sm"
-                          : "bg-white/10 text-white/90 rounded-bl-sm"
+                          ? "bg-primary text-primary-foreground rounded-br-sm"
+                          : "bg-muted text-foreground rounded-bl-sm"
                       }`}
                     >
                       {msg.content}
                     </div>
                     <p
-                      className={`text-[9px] mt-0.5 text-white/30 ${
+                      className={`text-[9px] mt-0.5 text-muted-foreground ${
                         isOutgoing ? "text-right" : "text-left"
                       }`}
                     >
@@ -193,11 +193,11 @@ export default function ActiveChatPanel() {
             {/* Typing indicator bubble */}
             {isTyping && (
               <div className="flex justify-start w-full">
-                <div className="bg-white/10 px-3 py-2 rounded-2xl rounded-bl-sm flex gap-1 items-center">
+                <div className="bg-muted px-3 py-2 rounded-2xl rounded-bl-sm flex gap-1 items-center">
                   {[0, 1, 2].map((i) => (
                     <span
                       key={i}
-                      className="w-1.5 h-1.5 rounded-full bg-white/50 animate-bounce"
+                      className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce"
                       style={{ animationDelay: `${i * 0.15}s` }}
                     />
                   ))}
@@ -211,8 +211,8 @@ export default function ActiveChatPanel() {
       </div>
 
       {/* Input footer */}
-      <div className="px-3 pb-3 pt-2 border-t border-white/10 shrink-0">
-        <div className="flex items-center gap-2 bg-white/8 rounded-xl px-3 py-2 border border-white/10 focus-within:border-violet-500/50 transition-colors">
+      <div className="px-3 pb-3 pt-2 border-t border-border shrink-0 bg-background">
+        <div className="flex items-center gap-2 bg-muted/50 rounded-xl px-3 py-2 border border-border focus-within:border-primary/50 transition-colors">
           <input
             ref={inputRef}
             id="chat-message-input"
@@ -221,14 +221,14 @@ export default function ActiveChatPanel() {
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Type a message…"
-            className="flex-1 min-w-0 bg-transparent text-[12px] text-white placeholder-white/30 outline-none"
+            className="flex-1 min-w-0 bg-transparent text-[12px] text-foreground placeholder-muted-foreground outline-none"
             autoComplete="off"
           />
           <button
             id="chat-send-btn"
             onClick={handleSend}
             disabled={!inputValue.trim()}
-            className="p-1.5 rounded-lg bg-gradient-to-br from-violet-600 to-orange-500 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-opacity flex-shrink-0"
+            className="p-1.5 rounded-lg bg-primary text-primary-foreground disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-opacity flex-shrink-0"
             aria-label="Send message"
           >
             <Send className="w-3.5 h-3.5" />

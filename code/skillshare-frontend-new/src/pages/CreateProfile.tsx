@@ -31,9 +31,6 @@ const stagger = {
   show: { transition: { staggerChildren: 0.06 } },
 };
 
-// purple + orange family only, cycled for variety
-const SKILL_COLORS = ["bg-violet-500", "bg-orange-500", "bg-fuchsia-500", "bg-amber-500", "bg-purple-500"];
-
 // ─── Skill Search with debounce ──────────────────────────────
 let searchTimer: ReturnType<typeof setTimeout>;
 function useSkillSearch() {
@@ -62,55 +59,55 @@ const Step1 = ({ profile, setProfile, onNext }: {
   setProfile: (p: typeof profile) => void;
   onNext: () => void;
 }) => (
-  <motion.div key="step1" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} className="space-y-6">
-    <div>
-      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-4 shadow-lg shadow-violet-500/30">
-        <User className="w-6 h-6 text-white" />
+  <motion.div key="step1" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} className="space-y-6 bg-card p-8 rounded-xl shadow-sm border border-border">
+    <div className="text-center space-y-2">
+      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+        <User className="w-6 h-6 text-primary" />
       </div>
-      <h1 className="text-3xl font-heading font-bold mb-2">Tell us about yourself</h1>
+      <h1 className="text-2xl font-heading font-semibold">Tell us about yourself</h1>
       <p className="text-muted-foreground text-sm">This info appears on your public profile.</p>
     </div>
 
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
       <motion.div variants={fadeUp} className="space-y-1.5">
-        <Label className="flex items-center gap-1.5">
-          <School className="w-3.5 h-3.5 text-violet-400" /> University / Institution
+        <Label className="flex items-center gap-1.5 text-foreground">
+          <School className="w-3.5 h-3.5 text-primary" /> University / Institution
         </Label>
         <Input
           placeholder="e.g. University of Colombo"
           value={profile.university}
           onChange={(e) => setProfile({ ...profile, university: e.target.value })}
-          className="bg-secondary border-2 border-border focus-visible:border-violet-400 h-11"
+          className="bg-background rounded-xl h-11"
         />
       </motion.div>
       <motion.div variants={fadeUp} className="space-y-1.5">
-        <Label className="flex items-center gap-1.5">
-          <GraduationCap className="w-3.5 h-3.5 text-orange-400" /> Faculty / Major
+        <Label className="flex items-center gap-1.5 text-foreground">
+          <GraduationCap className="w-3.5 h-3.5 text-primary" /> Faculty / Major
         </Label>
         <Input
           placeholder="e.g. Computer Science"
           value={profile.major}
           onChange={(e) => setProfile({ ...profile, major: e.target.value })}
-          className="bg-secondary border-2 border-border focus-visible:border-orange-400 h-11"
+          className="bg-background rounded-xl h-11"
         />
       </motion.div>
       <motion.div variants={fadeUp} className="space-y-1.5">
-        <Label>Short Bio <span className="text-muted-foreground">(optional)</span></Label>
+        <Label className="text-foreground">Short Bio <span className="text-muted-foreground font-normal">(optional)</span></Label>
         <Textarea
           placeholder="Tell others what you're passionate about…"
           value={profile.bio}
           onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
           rows={3}
-          className="bg-secondary border-2 border-border resize-none"
+          className="bg-background rounded-xl resize-none"
         />
       </motion.div>
     </motion.div>
 
-    <div className="flex gap-3">
-      <Button variant="outline" onClick={onNext} className="flex-1 h-11">
+    <div className="flex gap-3 pt-4">
+      <Button variant="outline" onClick={onNext} className="flex-1 h-11 rounded-xl">
         Skip
       </Button>
-      <Button onClick={onNext} className="flex-1 h-11 gap-2 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400 hover:opacity-90 text-white border-0 disabled:opacity-40 disabled:bg-none disabled:bg-secondary disabled:text-muted-foreground" disabled={!profile.university}>
+      <Button onClick={onNext} className="flex-1 h-11 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl" disabled={!profile.university}>
         Continue <ArrowRight className="w-4 h-4" />
       </Button>
     </div>
@@ -147,12 +144,12 @@ const Step2 = ({ skills, setSkills, onNext, onBack, isSaving }: {
   };
 
   return (
-    <motion.div key="step2" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} className="space-y-6">
-      <div>
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-fuchsia-500 to-orange-400 flex items-center justify-center mb-4 shadow-lg shadow-fuchsia-500/30">
-          <Sparkles className="w-6 h-6 text-white" />
+    <motion.div key="step2" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} className="space-y-6 bg-card p-8 rounded-xl shadow-sm border border-border">
+      <div className="text-center space-y-2">
+        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+          <Sparkles className="w-6 h-6 text-primary" />
         </div>
-        <h1 className="text-3xl font-heading font-bold mb-2">Your Skills</h1>
+        <h1 className="text-2xl font-heading font-semibold">Your Skills</h1>
         <p className="text-muted-foreground text-sm">Add skills you can teach, and skills you want to learn.</p>
       </div>
 
@@ -162,14 +159,14 @@ const Step2 = ({ skills, setSkills, onNext, onBack, isSaving }: {
           <button
             key={t}
             onClick={() => { setActiveType(t); setTimeout(() => inputRef.current?.focus(), 50); }}
-            className={`relative flex-1 py-2 rounded-lg text-sm font-semibold transition-colors z-10 flex items-center justify-center gap-1.5 ${
-              activeType === t ? "text-white" : "text-muted-foreground"
+            className={`relative flex-1 py-2 rounded-lg text-sm font-medium transition-colors z-10 flex items-center justify-center gap-1.5 ${
+              activeType === t ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {activeType === t && (
               <motion.div
                 layoutId="typeToggle"
-                className={`absolute inset-0 rounded-lg -z-10 bg-gradient-to-r ${t === "TEACH" ? "from-violet-500 to-purple-600" : "from-orange-500 to-amber-400"}`}
+                className="absolute inset-0 rounded-lg -z-10 bg-primary"
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
             )}
@@ -190,14 +187,14 @@ const Step2 = ({ skills, setSkills, onNext, onBack, isSaving }: {
               value={query}
               onChange={(e) => { setQuery(e.target.value); search(e.target.value); }}
               onKeyDown={handleKeyDown}
-              className="pl-10 bg-secondary border-2 border-border h-11"
+              className="pl-10 bg-background rounded-xl h-11"
             />
           </div>
           <Button
             size="icon"
             onClick={() => addSkill(query)}
             disabled={!query.trim()}
-            className="h-11 w-11 bg-gradient-to-br from-violet-500 to-orange-400 hover:opacity-90 text-white border-0 disabled:opacity-40 disabled:bg-none disabled:bg-secondary"
+            className="h-11 w-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
           >
             <Plus className="w-4 h-4" />
           </Button>
@@ -210,14 +207,14 @@ const Step2 = ({ skills, setSkills, onNext, onBack, isSaving }: {
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              className="absolute top-full mt-1 left-0 right-0 z-50 bg-card border-2 border-border rounded-xl shadow-elevated overflow-hidden"
+              className="absolute top-full mt-1 left-0 right-0 z-50 bg-card border border-border rounded-xl shadow-md overflow-hidden"
             >
               {searching ? (
                 <div className="px-4 py-3 text-sm text-muted-foreground flex items-center gap-2">
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                    className="w-3.5 h-3.5 border-2 border-violet-500/30 border-t-violet-500 rounded-full"
+                    className="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full"
                   />
                   Searching…
                 </div>
@@ -241,16 +238,16 @@ const Step2 = ({ skills, setSkills, onNext, onBack, isSaving }: {
       {/* Popular Skills */}
       <div className="pt-2">
         <p className="text-xs text-muted-foreground mb-2">Popular Skills:</p>
-        <div className="flex flex-wrap gap-1.5">
-          {["React", "JavaScript", "Python", "Java", "UI/UX Design", "Machine Learning", "Marketing", "SEO"].map((skill, i) => (
-            <motion.div key={skill} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-              <Badge
-                className={`cursor-pointer text-white border-0 font-medium px-2.5 ${SKILL_COLORS[i % SKILL_COLORS.length]}`}
-                onClick={() => addSkill(skill)}
-              >
-                {skill}
-              </Badge>
-            </motion.div>
+        <div className="flex flex-wrap gap-2">
+          {["React", "JavaScript", "Python", "Java", "UI/UX Design", "Machine Learning", "Marketing", "SEO"].map((skill) => (
+            <Badge
+              key={skill}
+              variant="secondary"
+              className="cursor-pointer font-normal hover:bg-secondary/80 rounded-lg px-3 py-1"
+              onClick={() => addSkill(skill)}
+            >
+              {skill}
+            </Badge>
           ))}
         </div>
       </div>
@@ -258,16 +255,16 @@ const Step2 = ({ skills, setSkills, onNext, onBack, isSaving }: {
       {/* Added skills */}
       <AnimatePresence>
         {skills.length > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4 pt-2">
             {(["TEACH", "LEARN"] as const).map(type => {
               const group = skills.filter(s => s.type === type);
               if (!group.length) return null;
               return (
                 <div key={type}>
-                  <p className="text-xs text-muted-foreground mb-1.5">{type === "TEACH" ? "Teaching" : "Learning"}</p>
-                  <div className="flex flex-wrap gap-1.5">
+                  <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">{type === "TEACH" ? "Teaching" : "Learning"}</p>
+                  <div className="flex flex-wrap gap-2">
                     <AnimatePresence>
-                      {group.map((s, i) => (
+                      {group.map((s) => (
                         <motion.div
                           key={s.name + s.type}
                           initial={{ opacity: 0, scale: 0.8 }}
@@ -276,14 +273,14 @@ const Step2 = ({ skills, setSkills, onNext, onBack, isSaving }: {
                           layout
                         >
                           <Badge
-                            className={`gap-1 px-3 py-1 cursor-pointer text-white border-0 ${
+                            className={`gap-1.5 px-3 py-1.5 cursor-pointer border-0 font-normal rounded-lg ${
                               type === "TEACH"
-                                ? ["bg-violet-500", "bg-purple-500"][i % 2]
-                                : ["bg-orange-500", "bg-amber-500"][i % 2]
+                                ? "bg-primary/10 text-primary hover:bg-primary/20"
+                                : "bg-secondary text-foreground hover:bg-secondary/80"
                             }`}
                             onClick={() => removeSkill(s.name, s.type)}
                           >
-                            {s.name} <X className="w-3 h-3" />
+                            {s.name} <X className="w-3 h-3 opacity-70" />
                           </Badge>
                         </motion.div>
                       ))}
@@ -300,18 +297,18 @@ const Step2 = ({ skills, setSkills, onNext, onBack, isSaving }: {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center py-8 text-muted-foreground text-sm"
+          className="text-center py-8 text-muted-foreground text-sm border border-dashed border-border rounded-xl bg-secondary/30"
         >
           <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-30" />
           Add at least one skill to continue
         </motion.div>
       )}
 
-      <div className="flex gap-3">
-        <Button variant="outline" onClick={onBack} className="flex-1 h-11">
+      <div className="flex gap-3 pt-4">
+        <Button variant="outline" onClick={onBack} className="flex-1 h-11 rounded-xl">
           <ArrowLeft className="w-4 h-4 mr-2" /> Back
         </Button>
-        <Button onClick={onNext} className="flex-1 h-11 gap-2 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400 hover:opacity-90 text-white border-0 disabled:opacity-40 disabled:bg-none disabled:bg-secondary disabled:text-muted-foreground" disabled={skills.length === 0 || isSaving}>
+        <Button onClick={onNext} className="flex-1 h-11 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl" disabled={skills.length === 0 || isSaving}>
           {isSaving ? "Saving…" : <>Continue <ArrowRight className="w-4 h-4" /></>}
         </Button>
       </div>
@@ -320,14 +317,6 @@ const Step2 = ({ skills, setSkills, onNext, onBack, isSaving }: {
 };
 
 // ─── Step 3 ──────────────────────────────────────────────────
-// NOTE: fixed here — previously used bg-emerald-50 / bg-white / border-emerald-200,
-// which are hardcoded LIGHT colors that don't flip for dark mode. That's why the
-// card and inputs looked washed-out and barely visible on a dark background.
-// Now using opacity-based tints (bg-*-500/10, border-*-500/30) and theme-aware
-// bg-secondary/border-border for inputs, which adapt correctly in both modes.
-//
-// Also restructured: date is picked once, then start/end are plain time fields
-// instead of two separate full datetime pickers — clearer for a single-day slot.
 const Step3 = ({ onBack, onComplete, isSaving }: {
   onBack: () => void;
   onComplete: (start: string, end: string) => void;
@@ -343,40 +332,40 @@ const Step3 = ({ onBack, onComplete, isSaving }: {
   const showMismatch = Boolean(date && startTime && endTime) && !isValid;
 
   return (
-    <motion.div key="step3" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} className="space-y-6">
-      <div>
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center mb-4 shadow-lg shadow-orange-500/30">
-          <Clock className="w-6 h-6 text-white" />
+    <motion.div key="step3" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} className="space-y-6 bg-card p-8 rounded-xl shadow-sm border border-border">
+      <div className="text-center space-y-2">
+        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+          <Clock className="w-6 h-6 text-primary" />
         </div>
-        <h1 className="text-3xl font-heading font-bold mb-2">Set your availability</h1>
+        <h1 className="text-2xl font-heading font-semibold">Set your availability</h1>
         <p className="text-muted-foreground text-sm">Add a free time slot when you're available for skill-sharing sessions.</p>
       </div>
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="p-5 rounded-2xl bg-gradient-to-br from-violet-500/10 to-orange-400/10 border-2 border-orange-400/30 space-y-5"
+        className="p-5 rounded-xl bg-primary/5 border border-primary/20 space-y-5"
       >
         {/* Date */}
         <div className="space-y-1.5">
-          <Label className="flex items-center gap-1.5">
-            <CalendarDays className="w-3.5 h-3.5 text-violet-400" /> Date
+          <Label className="flex items-center gap-1.5 text-foreground">
+            <CalendarDays className="w-3.5 h-3.5 text-primary" /> Date
           </Label>
           <DatePicker value={date} onChange={setDate} />
         </div>
 
         {/* Time slot */}
         <div>
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
-            <Clock className="w-4 h-4 text-orange-400" /> Time slot
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-3">
+            <Clock className="w-4 h-4 text-primary" /> Time slot
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Start Time</Label>
+              <Label className="text-foreground">Start Time</Label>
               <TimePicker value={startTime} onChange={setStartTime} />
             </div>
             <div className="space-y-1.5">
-              <Label>End Time</Label>
+              <Label className="text-foreground">End Time</Label>
               <TimePicker value={endTime} onChange={setEndTime} openDirection="left" />
             </div>
           </div>
@@ -396,17 +385,17 @@ const Step3 = ({ onBack, onComplete, isSaving }: {
         </AnimatePresence>
       </motion.div>
 
-      <p className="text-xs text-muted-foreground">
+      <p className="text-sm text-center text-muted-foreground">
         You can skip this step and add more slots later from the Schedule page.
       </p>
 
-      <div className="flex gap-3">
-        <Button variant="outline" onClick={onBack} className="flex-1 h-11">
+      <div className="flex gap-3 pt-4">
+        <Button variant="outline" onClick={onBack} className="flex-1 h-11 rounded-xl">
           <ArrowLeft className="w-4 h-4 mr-2" /> Back
         </Button>
         <Button
           onClick={() => isValid ? onComplete(startDateTime, endDateTime) : onComplete("", "")}
-          className="flex-1 h-11 gap-2 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400 hover:opacity-90 text-white border-0 disabled:opacity-40 disabled:bg-none disabled:bg-secondary disabled:text-muted-foreground"
+          className="flex-1 h-11 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
           disabled={isSaving}
         >
           {isSaving ? "Setting up…" : <><Check className="w-4 h-4" /> {isValid ? "Complete Setup" : "Skip for Now"}</>}
@@ -466,26 +455,24 @@ const CreateProfile = () => {
     }
   };
 
-  const stepColors = ["from-violet-500 to-purple-600", "from-fuchsia-500 to-orange-400", "from-orange-500 to-amber-400"];
-
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="font-heading font-bold text-xl flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-orange-400 flex items-center justify-center">
-              <GraduationCap className="w-4.5 h-4.5 text-white" />
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="container mx-auto px-6 h-16 flex items-center justify-between max-w-4xl">
+          <Link to="/" className="font-heading font-semibold text-xl flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <GraduationCap className="w-5 h-5 text-primary" />
             </div>
-            Skill<span className="gradient-text">Share</span>
+            Skill<span className="text-primary">Share</span>
           </Link>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">Step {step} of 3</span>
-            <div className="flex gap-1">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-muted-foreground">Step {step} of 3</span>
+            <div className="flex gap-2">
               {[1, 2, 3].map(s => (
                 <motion.div
                   key={s}
                   layout
-                  className={`h-1.5 rounded-full ${s <= step ? `bg-gradient-to-r ${stepColors[s - 1]}` : "bg-border"}`}
+                  className={`h-2 rounded-full ${s <= step ? "bg-primary" : "bg-secondary"}`}
                   animate={{ width: s <= step ? 32 : 16 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 />
@@ -495,7 +482,7 @@ const CreateProfile = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-12 max-w-lg">
+      <main className="flex-1 container mx-auto px-6 py-12 max-w-lg flex flex-col justify-center">
         <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-6" />
         <AnimatePresence mode="wait">
           {step === 1 && (
@@ -528,3 +515,4 @@ const CreateProfile = () => {
 };
 
 export default CreateProfile;
+
