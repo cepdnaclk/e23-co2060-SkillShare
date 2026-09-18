@@ -66,14 +66,14 @@ function SessionRow({ session }: { session: Session }) {
   const badge = statusColor[session.status] ?? "text-muted-foreground";
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-border/40 last:border-0 group">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-border/40 last:border-0 group">
       <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 truncate mb-1 sm:mb-0">
         <span className="text-sm font-medium text-foreground">{session.skillName}</span>
         <span className="text-sm text-muted-foreground">with {session.mentorName}</span>
       </div>
       <div className="flex items-center gap-4">
         <span className="text-sm text-muted-foreground">{formatDate(session.startTime)}</span>
-        <span className={`text-[10px] uppercase font-bold tracking-wider ${badge}`}>
+        <span className={`text-[10px] uppercase font-semibold tracking-wider ${badge}`}>
           {session.status}
         </span>
       </div>
@@ -131,7 +131,7 @@ const Dashboard = () => {
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto px-6 py-10 flex flex-col min-h-[calc(100vh-4rem)]">
+      <div className="max-w-4xl mx-auto px-6 py-12 flex flex-col min-h-[calc(100vh-4rem)]">
         <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-8" />
 
         {/* ── 1. GREETING ───────────────────────────────────────── */}
@@ -158,12 +158,12 @@ const Dashboard = () => {
               {/* I CAN TEACH */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase text-muted-foreground">
+                  <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
                     I Can Teach
                   </h2>
                   <button
                     onClick={() => navigate("/create-profile", { state: { startStep: 2 } })}
-                    className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
+                    className="text-xs font-medium uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
                   >
                     Manage →
                   </button>
@@ -188,12 +188,12 @@ const Dashboard = () => {
               {/* I WANT TO LEARN */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase text-muted-foreground">
+                  <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
                     I Want To Learn
                   </h2>
                   <button
                     onClick={() => navigate("/create-profile", { state: { startStep: 2 } })}
-                    className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
+                    className="text-xs font-medium uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
                   >
                     Manage →
                   </button>
@@ -219,13 +219,13 @@ const Dashboard = () => {
             {/* ── 3. UPCOMING ───────────────────────────────────────── */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-[11px] font-bold tracking-[0.15em] uppercase text-muted-foreground">
+                <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
                   Upcoming
                 </h2>
                 {(upcomingLearner.length > 0 || upcomingMentor.length > 0) && (
                   <button
                     onClick={() => navigate("/sessions")}
-                    className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
+                    className="text-xs font-medium uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
                   >
                     View all →
                   </button>
