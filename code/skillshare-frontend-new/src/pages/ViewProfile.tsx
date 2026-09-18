@@ -223,11 +223,11 @@ const ViewProfile = () => {
             
             {isOwnProfile && (
               <label
-                className={`absolute bottom-0 right-0 w-8 h-8 rounded-full bg-background border border-border shadow-sm flex items-center justify-center cursor-pointer hover:bg-secondary transition-colors ${uploadingPic ? 'opacity-50 pointer-events-none' : ''}`}
+                className={`absolute bottom-0 right-0 w-8 h-8 rounded-full bg-background border border-border shadow-sm flex items-center justify-center cursor-pointer focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:bg-secondary transition-colors ${uploadingPic ? 'opacity-50 pointer-events-none' : ''}`}
                 title="Update picture"
               >
                 <Edit3 className="w-4 h-4 text-muted-foreground" />
-                <input type="file" accept="image/*" className="hidden" onChange={handleProfilePictureUpload} disabled={uploadingPic} />
+                <input type="file" accept="image/*" className="sr-only focus-visible:outline-none" onChange={handleProfilePictureUpload} disabled={uploadingPic} />
               </label>
             )}
           </div>

@@ -223,7 +223,7 @@ export default function ActiveChatPanel() {
           />
           <Button
             size="icon"
-            onClick={handleSend}
+            onClick={handleSend} aria-label="Send message"
             disabled={!inputValue.trim()}
             className="shrink-0 h-10 w-10 rounded-xl"
           >

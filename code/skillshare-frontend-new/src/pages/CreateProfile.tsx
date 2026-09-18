@@ -119,7 +119,7 @@ const SkillSection = ({
           {currentSkills.map(s => (
             <Badge key={s.name} variant={type === "TEACH" ? "secondary" : "outline"} className="gap-1 px-2.5 py-1 text-sm font-medium">
               {s.name}
-              <button onClick={() => onRemove(s.name, type)} className="hover:bg-muted-foreground/20 rounded-full p-0.5 ml-1">
+              <button onClick={() => onRemove(s.name, type)} aria-label={`Remove ${s.name}`} className="hover:bg-muted-foreground/20 rounded-full p-0.5 ml-1">
                 <X className="w-3 h-3" />
               </button>
             </Badge>

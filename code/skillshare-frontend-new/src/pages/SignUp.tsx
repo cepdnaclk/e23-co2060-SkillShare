@@ -98,7 +98,7 @@ const SignUp = () => {
                   <Label htmlFor="password">Password</Label>
                   <div className="relative">
                     <Input id="password" type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="bg-secondary border-2 h-11 rounded-xl pr-10" required />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-muted-foreground"><Eye className="w-4 h-4" /></button>
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label="Toggle password visibility" className="absolute right-3 top-3 text-muted-foreground"><Eye className="w-4 h-4" /></button>
                   </div>
                 </div>
 
@@ -107,7 +107,7 @@ const SignUp = () => {
                     <Label htmlFor="confirmPassword">Confirm Password</Label>
                     <div className="relative">
                       <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className={`bg-secondary border-2 h-11 rounded-xl pr-10 ${passwordMismatch ? "border-destructive" : ""}`} required />
-                      <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-3 text-muted-foreground"><Eye className="w-4 h-4" /></button>
+                      <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} aria-label="Toggle confirm password visibility" className="absolute right-3 top-3 text-muted-foreground"><Eye className="w-4 h-4" /></button>
                     </div>
                     {passwordMismatch && <p className="text-xs text-destructive">Passwords do not match.</p>}
                   </div>

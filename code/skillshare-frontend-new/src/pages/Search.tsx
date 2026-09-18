@@ -152,7 +152,7 @@ const Search = () => {
               className="pl-10 pr-10 bg-background border-border h-12 shadow-sm rounded-xl focus-visible:ring-1 focus-visible:ring-primary/20"
             />
             {query && (
-              <button onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1">
+              <button onClick={clearSearch} aria-label="Clear search" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1">
                 <X className="w-4 h-4" />
               </button>
             )}
@@ -213,7 +213,7 @@ const Search = () => {
               <Badge variant="secondary" className="gap-1.5 px-2.5 py-1 text-sm font-medium">
                 <BookOpen className="w-3.5 h-3.5" />
                 {selectedSkill.name}
-                <button onClick={clearSearch} className="hover:bg-muted-foreground/20 rounded-full p-0.5 ml-1">
+                <button onClick={clearSearch} aria-label="Remove filter" className="hover:bg-muted-foreground/20 rounded-full p-0.5 ml-1">
                   <X className="w-3 h-3" />
                 </button>
               </Badge>
@@ -230,7 +230,7 @@ const Search = () => {
                   className="pl-9 pr-9 bg-secondary/50 border-transparent focus-visible:border-border focus-visible:bg-background h-10 text-sm rounded-lg"
                 />
                 {nameFilter && (
-                  <button onClick={() => setNameFilter("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1">
+                  <button onClick={() => setNameFilter("")} aria-label="Clear name filter" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
