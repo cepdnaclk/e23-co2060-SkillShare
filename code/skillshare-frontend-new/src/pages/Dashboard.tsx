@@ -134,31 +134,11 @@ const Dashboard = () => {
       <div className="max-w-4xl mx-auto px-6 py-10 flex flex-col min-h-[calc(100vh-4rem)]">
         <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-8" />
 
-        {/* ── 1. GREETING & ACTIONS ─────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-12">
+        {/* ── 1. GREETING ───────────────────────────────────────── */}
+        <div className="mb-12">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             {greeting()}, {firstName}
           </h1>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate("/search")}
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              Explore →
-            </button>
-            <button
-              onClick={() => navigate("/sessions")}
-              className="text-sm font-medium text-primary hover:underline flex items-center gap-1.5"
-            >
-              Sessions
-              {upcomingMentor.length > 0 && (
-                <span className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-                  {upcomingMentor.length}
-                </span>
-              )}
-              →
-            </button>
-          </div>
         </div>
 
         {loading ? (
@@ -260,7 +240,7 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground py-1">
-                  No upcoming sessions.
+                  No upcoming sessions
                 </p>
               )}
             </div>
