@@ -31,16 +31,7 @@ const fadeIn = {
   show:   { opacity: 1, transition: { duration: 0.3, ease: "easeOut" } },
 };
 
-/* ─── Static skill data ───────────────────────────────────────────────────── */
-const teachSkills = [
-  "Python", "UI/UX Design", "Machine Learning", "Guitar",
-  "Photography", "Public Speaking", "Calculus", "React",
-];
 
-const learnSkills = [
-  "Video Editing", "Digital Marketing", "Data Analysis", "Piano",
-  "3D Modelling", "Game Dev", "Spanish", "Finance",
-];
 
 /* ─── How It Works steps ─────────────────────────────────────────────────── */
 const steps = [
@@ -313,64 +304,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ── 5. SKILLS STRIP ───────────────────────────────────────────────── */}
-      <section id="skills" className="py-24 bg-background border-t border-border">
-        <div className="max-w-6xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.28 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Find people through what they know
-            </h2>
-          </motion.div>
 
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-60px" }}
-            className="grid md:grid-cols-2 gap-12"
-          >
-            <motion.div variants={fadeUp} className="bg-card rounded-2xl p-8 border shadow-sm">
-              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-primary" /> People are teaching
-              </h3>
-              <div className="flex flex-wrap gap-2.5">
-                {[...teachSkills, "Figma", "TypeScript", "Yoga", "Statistics"].map((skill) => (
-                  <button
-                    key={skill}
-                    onClick={() => navigate("/signup")}
-                    className="skill-badge-teach inline-flex items-center h-8 text-sm px-4 rounded-full font-medium hover:opacity-80 transition-opacity bg-primary/5 text-primary border border-primary/20"
-                  >
-                    {skill}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-
-            <motion.div variants={fadeUp} className="bg-card rounded-2xl p-8 border shadow-sm">
-              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-                <Compass className="w-5 h-5 text-violet-500" /> People want to learn
-              </h3>
-              <div className="flex flex-wrap gap-2.5">
-                {[...learnSkills, "Cooking", "Cinematography", "Arabic", "Negotiation"].map((skill) => (
-                  <button
-                    key={skill}
-                    onClick={() => navigate("/signup")}
-                    className="skill-badge-learn inline-flex items-center h-8 text-sm px-4 rounded-full font-medium hover:opacity-80 transition-opacity bg-violet-500/5 text-violet-600 dark:text-violet-400 border border-violet-500/20"
-                  >
-                    {skill}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
 
       {/* ── 6. PEOPLE DISCOVERY ────────────────────────────────────────── */}
       <section className="py-24 bg-secondary/20">
