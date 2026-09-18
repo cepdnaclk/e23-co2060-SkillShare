@@ -1,44 +1,30 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import {
-  GraduationCap, Home, Settings as SettingsIcon, Moon, Sun,
-  Lock, Shield, AlertTriangle, Trash2, Save, Eye, EyeOff,
-} from "lucide-react";
+import { Link } from "react-router-dom";
+import { Eye, EyeOff, Save, Shield, Lock, Bell, User, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 14 },
-  show: { opacity: 1, y: 0 },
-};
-
-const stagger = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.06 } },
-};
-
 const NOTIF_ITEMS = [
-  { key: "email",     label: "Email notifications", desc: "Receive important updates by email." },
-  { key: "followers",  label: "New followers",       desc: "When someone follows your profile." },
-  { key: "courses",    label: "Course updates",      desc: "When a course you're enrolled in adds new lessons." },
+  { key: "email", label: "Email notifications", desc: "Receive important updates by email." },
+  { key: "followers", label: "New followers", desc: "When someone follows your profile." },
+  { key: "courses", label: "Course updates", desc: "When a course you're enrolled in adds new lessons." },
 ];
 
 const PRIVACY_ITEMS = [
-  { key: "publicProfile",  label: "Public profile",           desc: "Let other students find and view your profile." },
+  { key: "publicProfile", label: "Public profile", desc: "Let other students find and view your profile." },
   { key: "openToRequests", label: "Open to session requests", desc: "Allow anyone to request a session with you." },
 ];
 
 const Settings = () => {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
-  const isDark = theme !== "light";
 
   const [fullName, setFullName] = useState(user?.fullName ?? "Alex Johnson");
   const [email] = useState(user?.email ?? "alex@example.com");
@@ -58,11 +44,7 @@ const Settings = () => {
   const handleSaveAll = async () => {
     setSaving(true);
     try {
-      // TODO: wire these up to your real endpoints, e.g.:
-      // await usersApi.updateProfile({ fullName, bio });
-      // await usersApi.updateNotificationPrefs(notifs);
-      // await usersApi.updatePrivacyPrefs(privacy);
-      // if (currentPw && newPw) await usersApi.changePassword({ currentPw, newPw });
+      // Mock API call to preserve existing logic
       await new Promise(res => setTimeout(res, 600));
       toast.success("Settings saved");
     } catch {
@@ -73,151 +55,148 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-28">
-
-      {/* Top nav */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="font-heading font-bold text-lg flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-orange-400 flex items-center justify-center">
-              <GraduationCap className="w-4 h-4 text-white" />
-            </div>
-            Skill<span className="bg-gradient-to-r from-violet-400 to-orange-400 bg-clip-text text-transparent">Share</span>
-          </Link>
-
-          <div className="flex items-center gap-1">
-            <Link
-              to="/dashboard"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-            >
-              <Home className="w-4 h-4" /> Home
-            </Link>
-            <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-violet-500 to-orange-400 text-white">
-              <SettingsIcon className="w-4 h-4" /> Settings
-            </div>
-            <button
-              onClick={() => setTheme(isDark ? "light" : "dark")}
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors ml-1"
-              aria-label="Toggle theme"
-            >
-              {isDark ? <Moon className="w-4.5 h-4.5" /> : <Sun className="w-4.5 h-4.5" />}
-            </button>
+    <AppLayout>
+      <div className="p-6 md:p-10 max-w-3xl mx-auto flex flex-col min-h-[calc(100vh-4rem)]">
+        
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-2">Settings</h1>
+            <p className="text-muted-foreground text-sm">Manage your account preferences and settings.</p>
           </div>
+          <Button onClick={handleSaveAll} disabled={saving} className="shrink-0 gap-2 h-9 text-xs">
+            <Save className="w-3.5 h-3.5" />
+            {saving ? "Saving..." : "Save Changes"}
+          </Button>
         </div>
-      </header>
 
-      <div className="container mx-auto px-6 py-8 max-w-3xl">
-        <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-
-          {/* Profile */}
-          <motion.div variants={fadeUp} className="p-6 rounded-2xl bg-card border-2 border-border">
-            <h2 className="text-lg font-heading font-semibold mb-1">Profile</h2>
-            <p className="text-sm text-muted-foreground mb-5">This information is shown on your public profile.</p>
-
-            <div className="grid sm:grid-cols-2 gap-4 mb-4">
-              <div className="space-y-1.5">
-                <Label>Full name</Label>
-                <Input
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="bg-secondary border-2 border-border focus-visible:border-violet-400 h-11"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Email</Label>
-                <Input value={email} disabled className="bg-secondary border-2 border-border h-11 opacity-60" />
-              </div>
+        <div className="space-y-12">
+          
+          {/* Profile Section */}
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <User className="w-4 h-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">Account</h2>
             </div>
-            <div className="space-y-1.5">
-              <Label>Bio</Label>
-              <Textarea
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                rows={3}
-                className="bg-secondary border-2 border-border focus-visible:border-violet-400 resize-none"
-              />
-            </div>
-          </motion.div>
-
-          {/* Notifications */}
-          <motion.div variants={fadeUp} className="p-6 rounded-2xl bg-card border-2 border-border">
-            <h2 className="text-lg font-heading font-semibold mb-1">Notifications</h2>
-            <p className="text-sm text-muted-foreground mb-5">Decide what you want to be notified about.</p>
-
-            <div className="divide-y divide-border">
-              {NOTIF_ITEMS.map(item => (
-                <div key={item.key} className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
-                  <div>
-                    <p className="text-sm font-medium">{item.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
-                  </div>
-                  <Switch
-                    checked={notifs[item.key]}
-                    onCheckedChange={(v) => setNotifs(p => ({ ...p, [item.key]: v }))}
-                    className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-violet-500 data-[state=checked]:to-fuchsia-500"
+            
+            <div className="space-y-5">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full name</Label>
+                  <Input
+                    id="fullName"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="bg-background max-w-md"
                   />
                 </div>
-              ))}
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input 
+                    id="email"
+                    value={email} 
+                    disabled 
+                    className="bg-secondary/50 text-muted-foreground max-w-md cursor-not-allowed" 
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bio">Bio</Label>
+                <Textarea
+                  id="bio"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  rows={3}
+                  className="bg-background resize-none max-w-2xl"
+                />
+              </div>
             </div>
-          </motion.div>
+          </section>
+          
+          <hr className="border-border/60" />
 
-          {/* Privacy */}
-          <motion.div variants={fadeUp} className="p-6 rounded-2xl bg-card border-2 border-border">
-            <div className="flex items-center gap-2 mb-1">
-              <Shield className="w-4 h-4 text-orange-400" />
-              <h2 className="text-lg font-heading font-semibold">Privacy</h2>
+          {/* Preferences Section */}
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <Shield className="w-4 h-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">Privacy</h2>
             </div>
-            <p className="text-sm text-muted-foreground mb-5">Control who can see your profile and reach you.</p>
-
-            <div className="divide-y divide-border">
+            
+            <div className="space-y-4 max-w-2xl">
               {PRIVACY_ITEMS.map(item => (
-                <div key={item.key} className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
-                  <div>
-                    <p className="text-sm font-medium">{item.label}</p>
+                <div key={item.key} className="flex items-center justify-between gap-4 py-1">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">{item.label}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
                   </div>
                   <Switch
                     checked={privacy[item.key]}
                     onCheckedChange={(v) => setPrivacy(p => ({ ...p, [item.key]: v }))}
-                    className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-orange-500 data-[state=checked]:to-amber-400"
                   />
                 </div>
               ))}
             </div>
-          </motion.div>
+          </section>
 
-          {/* Security */}
-          <motion.div variants={fadeUp} className="p-6 rounded-2xl bg-card border-2 border-border">
-            <div className="flex items-center gap-2 mb-1">
-              <Lock className="w-4 h-4 text-violet-400" />
-              <h2 className="text-lg font-heading font-semibold">Password</h2>
+          <hr className="border-border/60" />
+
+          {/* Notifications Section */}
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <Bell className="w-4 h-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">Notifications</h2>
             </div>
-            <p className="text-sm text-muted-foreground mb-5">Update your password to keep your account secure.</p>
+            
+            <div className="space-y-4 max-w-2xl">
+              {NOTIF_ITEMS.map(item => (
+                <div key={item.key} className="flex items-center justify-between gap-4 py-1">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">{item.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
+                  </div>
+                  <Switch
+                    checked={notifs[item.key]}
+                    onCheckedChange={(v) => setNotifs(p => ({ ...p, [item.key]: v }))}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
 
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>Current password</Label>
+          <hr className="border-border/60" />
+
+          {/* Security Section */}
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <Lock className="w-4 h-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">Security</h2>
+            </div>
+            
+            <div className="grid sm:grid-cols-2 gap-4 max-w-2xl">
+              <div className="space-y-2">
+                <Label htmlFor="currentPw">Current password</Label>
                 <div className="relative">
                   <Input
+                    id="currentPw"
                     type={showCurrent ? "text" : "password"}
                     value={currentPw}
                     onChange={(e) => setCurrentPw(e.target.value)}
-                    className="bg-secondary border-2 border-border pr-10 h-11"
+                    className="bg-background pr-10"
                   />
                   <button type="button" onClick={() => setShowCurrent(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                     {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>New password</Label>
+              <div className="space-y-2">
+                <Label htmlFor="newPw">New password</Label>
                 <div className="relative">
                   <Input
+                    id="newPw"
                     type={showNew ? "text" : "password"}
                     value={newPw}
                     onChange={(e) => setNewPw(e.target.value)}
                     placeholder="Min. 8 characters"
-                    className="bg-secondary border-2 border-border pr-10 h-11"
+                    className="bg-background pr-10"
                   />
                   <button type="button" onClick={() => setShowNew(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                     {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -225,54 +204,65 @@ const Settings = () => {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </section>
 
-          {/* Danger zone */}
-          <motion.div variants={fadeUp} className="p-6 rounded-2xl bg-destructive/5 border-2 border-destructive/30">
-            <div className="flex items-center gap-2 mb-1">
-              <AlertTriangle className="w-4 h-4 text-destructive" />
-              <h2 className="text-lg font-heading font-semibold text-destructive">Danger zone</h2>
+          <hr className="border-border/60" />
+
+          {/* Appearance Section */}
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">Appearance</h2>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">Permanently delete your account and all of your data.</p>
-
-            {!confirmingDelete ? (
-              <Button
-                onClick={() => setConfirmingDelete(true)}
-                className="gap-2 bg-gradient-to-r from-red-500 to-orange-500 hover:opacity-90 text-white border-0"
-              >
-                <Trash2 className="w-4 h-4" /> Delete account
-              </Button>
-            ) : (
-              <div className="flex items-center gap-3">
-                <Button
-                  onClick={() => toast.error("Account deletion isn't wired to the API yet.")}
-                  className="gap-2 bg-destructive hover:bg-destructive/90 text-white border-0"
-                >
-                  <Trash2 className="w-4 h-4" /> Confirm delete
-                </Button>
-                <Button variant="ghost" onClick={() => setConfirmingDelete(false)}>Cancel</Button>
+            
+            <div className="flex items-center justify-between gap-4 py-1 max-w-2xl">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">Dark mode</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Toggle dark and light themes.</p>
               </div>
-            )}
-          </motion.div>
-        </motion.div>
-      </div>
+              <Switch
+                checked={theme === "dark"}
+                onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
+              />
+            </div>
+          </section>
 
-      {/* Floating save button */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="fixed bottom-6 right-6 z-40"
-      >
-        <Button
-          onClick={handleSaveAll}
-          disabled={saving}
-          className="gap-2 h-12 px-6 rounded-xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400 hover:opacity-90 text-white border-0 shadow-xl shadow-violet-500/30"
-        >
-          <Save className="w-4 h-4" /> {saving ? "Saving…" : "Save changes"}
-        </Button>
-      </motion.div>
-    </div>
+          <hr className="border-border/60" />
+
+          {/* Danger Zone */}
+          <section>
+            <h2 className="text-sm font-semibold tracking-wider uppercase text-red-500 mb-4">Danger Zone</h2>
+            
+            <div className="max-w-2xl">
+              <div className="mb-4">
+                <p className="text-sm font-medium text-foreground">Delete account</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Permanently delete your account and all of your data. This cannot be undone.</p>
+              </div>
+              
+              {!confirmingDelete ? (
+                <Button
+                  variant="outline"
+                  onClick={() => setConfirmingDelete(true)}
+                  className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-red-900/50 dark:hover:bg-red-950"
+                >
+                  Delete account
+                </Button>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="destructive"
+                    onClick={() => toast.error("Account deletion isn't wired to the API yet.")}
+                  >
+                    Confirm delete
+                  </Button>
+                  <Button variant="ghost" onClick={() => setConfirmingDelete(false)}>Cancel</Button>
+                </div>
+              )}
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </AppLayout>
   );
 };
 
