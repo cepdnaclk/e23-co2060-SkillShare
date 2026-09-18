@@ -171,7 +171,7 @@ const ViewProfile = () => {
   if (loading) {
     return (
       <AppLayout>
-        <div className="p-6 md:p-10 max-w-4xl mx-auto space-y-8">
+        <div className="p-4 sm:p-6 md:p-10 max-w-4xl mx-auto space-y-8">
           <SkeletonList count={1} />
           <div className="grid md:grid-cols-2 gap-8 mt-12">
             <SkeletonList count={2} />
@@ -207,7 +207,7 @@ const ViewProfile = () => {
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto px-6 py-12 flex flex-col min-h-[calc(100vh-4rem)]">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12 flex flex-col min-h-[calc(100vh-4rem)]">
         <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-8" />
 
         {/* ── 1. PROFILE IDENTITY ───────────────────────────────────────── */}

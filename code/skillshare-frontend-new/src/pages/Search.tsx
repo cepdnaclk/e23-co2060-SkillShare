@@ -132,7 +132,7 @@ const Search = () => {
 
   return (
     <AppLayout>
-      <div className="p-6 md:p-10 max-w-4xl mx-auto flex flex-col min-h-[calc(100vh-4rem)]">
+      <div className="p-4 sm:p-6 md:p-10 max-w-4xl mx-auto flex flex-col min-h-[calc(100vh-4rem)]">
         
         <div className="mb-10">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-2">Explore</h1>

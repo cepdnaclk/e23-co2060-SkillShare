@@ -30,7 +30,7 @@ export default function FloatingChatWidget() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ type: "tween", duration: 0.2 }}
-            className="w-[340px] h-[520px] rounded-2xl overflow-hidden shadow-2xl flex flex-col bg-background border border-border"
+            className="w-[calc(100vw-3rem)] sm:w-[340px] h-[520px] max-h-[calc(100vh-8rem)] rounded-2xl overflow-hidden shadow-2xl flex flex-col bg-background border border-border"
           >
             {/* Close button (top-right) */}
             <button

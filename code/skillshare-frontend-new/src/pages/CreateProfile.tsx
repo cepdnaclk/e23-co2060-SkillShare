@@ -202,7 +202,7 @@ const CreateProfile = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto px-6 py-12 md:py-20">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 md:py-12 md:py-20">
         
         <div className="mb-10 text-center sm:text-left">
           <h1 className="text-3xl font-semibold tracking-tight text-foreground mb-3">Complete your profile</h1>

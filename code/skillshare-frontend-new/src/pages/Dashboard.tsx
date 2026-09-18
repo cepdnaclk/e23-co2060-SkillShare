@@ -131,7 +131,7 @@ const Dashboard = () => {
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto px-6 py-12 flex flex-col min-h-[calc(100vh-4rem)]">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12 flex flex-col min-h-[calc(100vh-4rem)]">
         <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-8" />
 
         {/* ── 1. GREETING ───────────────────────────────────────── */}
