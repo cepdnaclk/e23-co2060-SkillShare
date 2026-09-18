@@ -177,24 +177,7 @@ const Landing = () => {
         </motion.div>
       </section>
 
-      {/* ── STATS BAR ──────────────────────────────────────────────────────── */}
-      <section className="border-y border-border bg-card/50">
-        <div className="max-w-7xl mx-auto px-6 py-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4 divide-x-0 md:divide-x divide-border">
-            {[
-              { label: "Students", value: "500+" },
-              { label: "Sessions", value: "1,200+" },
-              { label: "Skills", value: "100+" },
-              { label: "Average Rating", value: "4.9 ★" },
-            ].map((stat, i) => (
-              <div key={i} className="flex flex-col items-center justify-center text-center px-4">
-                <p className="text-3xl font-bold text-foreground mb-1 tracking-tight">{stat.value}</p>
-                <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+
 
       {/* ── 3. TEACH ↔ LEARN ─────────────────────────────────────────────── */}
       <section className="py-24 bg-background">
@@ -391,9 +374,7 @@ const Landing = () => {
 
       {/* ── 6. PEOPLE DISCOVERY ────────────────────────────────────────── */}
       <section className="py-24 bg-secondary/20">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            
+        <div className="max-w-3xl mx-auto px-6 text-center">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -407,7 +388,7 @@ const Landing = () => {
                 On SkillShare, skills are how you introduce yourself. What you can teach tells people who you are. What you want to learn tells people what you're looking for.
               </p>
 
-              <ul className="space-y-4">
+              <ul className="space-y-4 max-w-lg mx-auto text-left">
                 {[
                   { icon: BookOpen,       text: "Browse what others can teach" },
                   { icon: Users,          text: "Find someone whose skills match what you need" },
@@ -423,66 +404,6 @@ const Landing = () => {
                 ))}
               </ul>
             </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 12 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.35 }}
-              className="relative mx-auto w-full max-w-md"
-            >
-              {/* Abstract decorative blobs behind card */}
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl -z-10" />
-              <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-violet-500/20 rounded-full blur-3xl -z-10" />
-              
-              <div className="rounded-2xl border bg-card shadow-xl p-8">
-                <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-violet-500 flex items-center justify-center text-lg font-bold text-white shadow-inner flex-shrink-0">
-                    AJ
-                  </div>
-                  <div>
-                    <p className="text-lg font-semibold">Alex Johnson</p>
-                    <p className="text-sm text-muted-foreground">Engineering Student</p>
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <div>
-                    <p className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-3">
-                      I can teach
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {["Python", "Machine Learning", "Data Structures"].map((s) => (
-                        <span key={s} className="inline-flex items-center h-6 text-xs px-3 rounded-full font-medium bg-primary/10 text-primary">
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-3">
-                      I want to learn
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {["UI/UX Design", "Video Editing"].map((s) => (
-                        <span key={s} className="inline-flex items-center h-6 text-xs px-3 rounded-full font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400">
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Button
-                    className="w-full mt-4 h-11 rounded-xl text-base font-medium shadow-sm"
-                    onClick={() => navigate("/signup")}
-                  >
-                    Connect with Alex
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
         </div>
       </section>
 
