@@ -8,6 +8,9 @@ import {
   Layers,
   Search,
   Calendar,
+  Star,
+  Zap,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -77,9 +80,9 @@ function SectionLabel({
   }[color];
 
   return (
-    <div className="flex items-center gap-2 mb-3">
+    <div className="flex items-center gap-2.5 mb-3">
       <div
-        className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0"
+        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
         style={
           styles.bg
             ? { background: styles.bg, border: `1px solid ${styles.border}` }
@@ -87,13 +90,13 @@ function SectionLabel({
         }
       >
         <Icon
-          className="w-3 h-3"
+          className="w-3.5 h-3.5"
           aria-hidden
           style={styles.text ? { color: styles.text } : undefined}
         />
       </div>
       <p
-        className="text-[11px] font-semibold tracking-[0.1em] uppercase"
+        className="text-xs font-semibold tracking-wide uppercase"
         style={
           styles.text
             ? { color: styles.text }
@@ -115,7 +118,7 @@ function SkillPill({
 }) {
   const cls = variant === "teach" ? "skill-badge-teach" : "skill-badge-learn";
   return (
-    <span className={`${cls} inline-flex items-center h-6 text-xs px-2.5 font-medium`}>
+    <span className={`${cls} inline-flex items-center h-7 text-xs px-3 font-medium`}>
       {name}
     </span>
   );
@@ -134,18 +137,23 @@ function SessionRow({ session }: { session: Session }) {
     statusColor[session.status] ?? "text-muted-foreground bg-secondary border-border";
 
   return (
-    <div className="flex items-center justify-between gap-3 py-3 border-b border-border last:border-0">
-      <div className="min-w-0">
-        <p className="text-sm font-medium truncate">{session.skillName}</p>
-        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-          <Clock className="w-3 h-3 flex-shrink-0" aria-hidden />
-          {formatDate(session.startTime)}
-          <span className="text-border mx-0.5">·</span>
-          {session.mentorName}
-        </p>
+    <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-card border border-border hover:shadow-sm transition-shadow">
+      <div className="min-w-0 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <BookOpen className="w-4 h-4 text-primary" aria-hidden />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold truncate">{session.skillName}</p>
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
+            <Clock className="w-3 h-3 flex-shrink-0" aria-hidden />
+            {formatDate(session.startTime)}
+            <span className="text-border">·</span>
+            {session.mentorName}
+          </p>
+        </div>
       </div>
       <span
-        className={`inline-flex items-center h-5 px-2 text-[10px] font-medium rounded-full border flex-shrink-0 ${badge}`}
+        className={`inline-flex items-center h-6 px-2.5 text-[11px] font-medium rounded-full border flex-shrink-0 ${badge}`}
       >
         {session.status.charAt(0) + session.status.slice(1).toLowerCase()}
       </span>
@@ -203,9 +211,14 @@ const Dashboard = () => {
   const upcomingMentor = mentorSessions.filter((s) => s.status === "PENDING");
   const firstName = user?.fullName?.split(" ")[0] ?? "there";
 
+  /* ── Stats for cards ─────────────────────────────────────── */
+  const avgRating = feedback.length > 0
+    ? (feedback.reduce((sum, f) => sum + (f.rating ?? 0), 0) / feedback.length).toFixed(1)
+    : "—";
+
   return (
     <AppLayout>
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-6 py-8">
 
         <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-6" />
 
@@ -214,20 +227,82 @@ const Dashboard = () => {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
-          className="mb-8"
+          className="mb-8 flex items-start justify-between"
         >
-          <h1 className="text-2xl font-bold tracking-[-0.02em] text-foreground">
-            {greeting()}, {firstName}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            What are you sharing or learning today?
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              {greeting()}, {firstName} 👋
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1.5">
+              Keep learning, keep sharing. Small skills make a big impact.
+            </p>
+          </div>
+          <p className="hidden md:block text-sm text-muted-foreground italic max-w-[200px] text-right leading-snug">
+            "A skill shared is a opportunity multiplied."
+            <span className="block text-xs mt-1 not-italic">— SkillShare</span>
           </p>
         </motion.div>
 
-        {/* ── 2. TEACH ↔ LEARN ──────────────────────────────────── */}
+        {/* ── 2. STAT CARDS ──────────────────────────────────────── */}
         {loading ? (
           <SkeletonStats />
         ) : (
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+          >
+            {[
+              { icon: BookOpen, label: "Skills Learned", value: String(learnSkills.length), iconBg: "bg-primary/10", iconColor: "text-primary" },
+              { icon: Zap, label: "Active Requests", value: String(upcomingMentor.length), iconBg: "bg-amber-500/10", iconColor: "text-amber-500" },
+              { icon: Calendar, label: "Upcoming Sessions", value: String(upcomingLearner.length), iconBg: "bg-emerald-500/10", iconColor: "text-emerald-500" },
+              { icon: Star, label: "Your Rating", value: avgRating, iconBg: "bg-violet-500/10", iconColor: "text-violet-500" },
+            ].map((stat) => (
+              <motion.div
+                key={stat.label}
+                variants={fadeUp}
+                className="rounded-xl border border-border bg-card p-5 hover:shadow-sm transition-shadow"
+              >
+                <div className={`w-10 h-10 rounded-lg ${stat.iconBg} flex items-center justify-center mb-3`}>
+                  <stat.icon className={`w-5 h-5 ${stat.iconColor}`} aria-hidden />
+                </div>
+                <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+
+        {/* ── 3. BANNER ────────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.05 }}
+          className="mb-8 rounded-xl overflow-hidden relative"
+          style={{
+            background: "linear-gradient(135deg, hsl(245 58% 35%) 0%, hsl(230 50% 45%) 50%, hsl(220 60% 50%) 100%)",
+          }}
+        >
+          <div className="px-8 py-8 sm:py-10 relative z-10">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
+              Grow your skills. Help others grow.
+            </h2>
+            <p className="text-sm text-white/70 mb-5 max-w-md">
+              Join a community of learners and creators.
+            </p>
+            <Button
+              variant="outline"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 gap-2"
+              onClick={() => navigate("/search")}
+            >
+              Explore Skills <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </motion.div>
+
+        {/* ── 4. TEACH ↔ LEARN ──────────────────────────────────── */}
+        {!loading && (
           <motion.div
             variants={stagger}
             initial="hidden"
@@ -237,7 +312,7 @@ const Dashboard = () => {
             {/* I CAN TEACH */}
             <motion.div
               variants={fadeUp}
-              className="rounded-lg border p-4"
+              className="rounded-xl border p-5"
               style={{
                 background: "hsl(var(--teach-bg))",
                 borderColor: "hsl(var(--teach-border))",
@@ -247,7 +322,7 @@ const Dashboard = () => {
 
               {teachSkills.length > 0 ? (
                 <>
-                  <div className="flex flex-wrap gap-1.5 mb-3">
+                  <div className="flex flex-wrap gap-2 mb-3">
                     {teachSkills.map((s) => (
                       <SkillPill
                         key={`${s.skillId}-${s.skillType}`}
@@ -260,7 +335,7 @@ const Dashboard = () => {
                     onClick={() =>
                       navigate("/create-profile", { state: { startStep: 2 } })
                     }
-                    className="text-xs font-medium"
+                    className="text-xs font-medium hover:underline"
                     style={{ color: "hsl(var(--teach-text))" }}
                   >
                     Manage skills →
@@ -272,7 +347,7 @@ const Dashboard = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 text-xs flex-shrink-0"
+                    className="h-8 text-xs flex-shrink-0"
                     onClick={() =>
                       navigate("/create-profile", { state: { startStep: 2 } })
                     }
@@ -286,7 +361,7 @@ const Dashboard = () => {
             {/* I WANT TO LEARN */}
             <motion.div
               variants={fadeUp}
-              className="rounded-lg border p-4"
+              className="rounded-xl border p-5"
               style={{
                 background: "hsl(var(--learn-bg))",
                 borderColor: "hsl(var(--learn-border))",
@@ -296,7 +371,7 @@ const Dashboard = () => {
 
               {learnSkills.length > 0 ? (
                 <>
-                  <div className="flex flex-wrap gap-1.5 mb-3">
+                  <div className="flex flex-wrap gap-2 mb-3">
                     {learnSkills.map((s) => (
                       <SkillPill
                         key={`${s.skillId}-${s.skillType}`}
@@ -309,7 +384,7 @@ const Dashboard = () => {
                     onClick={() =>
                       navigate("/create-profile", { state: { startStep: 2 } })
                     }
-                    className="text-xs font-medium"
+                    className="text-xs font-medium hover:underline"
                     style={{ color: "hsl(var(--learn-text))" }}
                   >
                     Manage goals →
@@ -321,7 +396,7 @@ const Dashboard = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 text-xs flex-shrink-0"
+                    className="h-8 text-xs flex-shrink-0"
                     onClick={() =>
                       navigate("/create-profile", { state: { startStep: 2 } })
                     }
@@ -334,16 +409,16 @@ const Dashboard = () => {
           </motion.div>
         )}
 
-        {/* ── 3. QUICK ACTIONS ──────────────────────────────────── */}
+        {/* ── 5. QUICK ACTIONS ──────────────────────────────────── */}
         <motion.div
           variants={stagger}
           initial="hidden"
           animate="show"
-          className="grid sm:grid-cols-2 gap-3 mb-8"
+          className="grid sm:grid-cols-2 gap-4 mb-8"
         >
           <motion.div
             variants={fadeUp}
-            className="flex items-center justify-between p-3.5 rounded-lg border border-border bg-card hover:bg-secondary/30 transition-colors cursor-pointer group"
+            className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:shadow-sm transition-all cursor-pointer group"
             onClick={() => navigate("/search")}
             role="button"
             tabIndex={0}
@@ -351,20 +426,20 @@ const Dashboard = () => {
             aria-label="Explore people and skills"
           >
             <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Search className="w-3.5 h-3.5 text-primary" aria-hidden />
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Search className="w-4 h-4 text-primary" aria-hidden />
               </div>
               <div>
-                <p className="text-sm font-medium">Explore</p>
+                <p className="text-sm font-semibold">Explore</p>
                 <p className="text-xs text-muted-foreground">Find people through their skills</p>
               </div>
             </div>
-            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" aria-hidden />
+            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" aria-hidden />
           </motion.div>
 
           <motion.div
             variants={fadeUp}
-            className="flex items-center justify-between p-3.5 rounded-lg border border-border bg-card hover:bg-secondary/30 transition-colors cursor-pointer group"
+            className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:shadow-sm transition-all cursor-pointer group"
             onClick={() => navigate("/sessions")}
             role="button"
             tabIndex={0}
@@ -372,14 +447,14 @@ const Dashboard = () => {
             aria-label="View sessions"
           >
             <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Layers className="w-3.5 h-3.5 text-primary" aria-hidden />
+              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                <Layers className="w-4 h-4 text-amber-500" aria-hidden />
               </div>
               <div>
-                <p className="text-sm font-medium">
+                <p className="text-sm font-semibold">
                   Sessions
                   {upcomingMentor.length > 0 && (
-                    <span className="ml-2 inline-flex items-center h-4 px-1.5 text-[10px] font-semibold rounded-full bg-primary text-primary-foreground">
+                    <span className="ml-2 inline-flex items-center h-5 px-2 text-[10px] font-semibold rounded-full bg-primary text-primary-foreground">
                       {upcomingMentor.length}
                     </span>
                   )}
@@ -391,49 +466,47 @@ const Dashboard = () => {
                 </p>
               </div>
             </div>
-            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" aria-hidden />
+            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" aria-hidden />
           </motion.div>
         </motion.div>
 
-        {/* ── 4. UPCOMING ───────────────────────────────────────── */}
+        {/* ── 6. UPCOMING ───────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.1 }}
           className="mb-8"
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-muted-foreground" aria-hidden />
-              <h2 className="text-sm font-semibold text-foreground">Upcoming</h2>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <Calendar className="w-[18px] h-[18px] text-muted-foreground" aria-hidden />
+              <h2 className="text-base font-semibold text-foreground">Upcoming Sessions</h2>
             </div>
             {upcomingLearner.length > 0 && (
               <button
                 onClick={() => navigate("/sessions")}
-                className="text-xs text-primary hover:underline font-medium"
+                className="text-xs text-primary hover:underline font-medium flex items-center gap-1"
               >
-                View all
+                View all <ArrowRight className="w-3 h-3" />
               </button>
             )}
           </div>
 
           {loading ? (
-            <div className="h-16 rounded-lg bg-secondary animate-pulse" />
+            <div className="h-20 rounded-xl bg-secondary animate-pulse" />
           ) : upcomingLearner.length > 0 ? (
-            <div className="rounded-lg border border-border bg-card overflow-hidden">
+            <div className="space-y-3">
               {upcomingLearner.slice(0, 4).map((s) => (
-                <div key={s.id} className="px-4">
-                  <SessionRow session={s} />
-                </div>
+                <SessionRow key={s.id} session={s} />
               ))}
             </div>
           ) : (
-            <div className="flex items-center justify-between px-4 py-4 rounded-lg border border-border bg-card">
+            <div className="flex items-center justify-between px-5 py-5 rounded-xl border border-border bg-card">
               <p className="text-sm text-muted-foreground">No upcoming sessions.</p>
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 text-xs flex-shrink-0"
+                className="h-8 text-xs flex-shrink-0"
                 onClick={() => navigate("/search")}
               >
                 Find someone
@@ -442,7 +515,7 @@ const Dashboard = () => {
           )}
         </motion.div>
 
-        {/* ── 5. ACCOUNT SUMMARY (secondary) ───────────────────── */}
+        {/* ── 7. ACCOUNT SUMMARY (secondary) ───────────────────── */}
         {!loading && user && (
           <motion.div
             initial={{ opacity: 0 }}
