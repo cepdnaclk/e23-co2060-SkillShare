@@ -21,13 +21,15 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import OAuth2RedirectHandler from "@/components/OAuth2RedirectHandler";
 
+import { ThemeProvider } from "@/context/ThemeContext";
+
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 });
 
-
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <ThemeProvider>
+    <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <ChatProvider>
         <TooltipProvider>
@@ -79,7 +81,8 @@ const App = () => (
       </TooltipProvider>
     </ChatProvider>
     </AuthProvider>
-  </QueryClientProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;

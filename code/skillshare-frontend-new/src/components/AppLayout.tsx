@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Home,
   Search,
@@ -12,6 +13,8 @@ import {
   GraduationCap,
   Menu,
   X,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -25,7 +28,6 @@ const navItems = [
   { path: "/search",        icon: Search,       label: "Explore" },
   { path: "/sessions",      icon: Layers,       label: "Sessions" },
   { path: "/my-schedule",   icon: Calendar,     label: "Schedule" },
-  
   { path: "/notifications", icon: Bell,         label: "Notifications" },
   { path: "/settings",      icon: SettingsIcon, label: "Settings" },
 ];
@@ -36,6 +38,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   const { user, logout } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem("skillshare-sidebar") === "true");
+
+  useEffect(() => {
+    localStorage.setItem("skillshare-sidebar", String(isCollapsed));
+  }, [isCollapsed]);
 
   useEffect(() => {
     notificationsApi.getUnreadCount()
@@ -43,7 +50,6 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       .catch(() => {});
   }, [location.pathname]);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
@@ -60,34 +66,64 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
   return (
     <div className="min-h-screen bg-background flex">
-
-      {/* ── Sidebar (desktop) ──────────────────────────────────────── */}
-      <aside className="hidden md:flex flex-col w-60 border-r border-border bg-background fixed top-0 bottom-0 left-0 z-30">
-
-        {/* Wordmark */}
-        <div className="h-14 px-4 border-b border-border flex items-center flex-shrink-0">
-          <Link
-            to="/dashboard"
-            className="flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
+      <aside className={cn("hidden md:flex flex-col border-r border-border bg-background fixed top-0 bottom-0 left-0 z-30 transition-all duration-200", isCollapsed ? "w-16" : "w-60")}>
+        <div className={cn("h-14 border-b border-border flex items-center flex-shrink-0 relative", isCollapsed ? "px-0 justify-center" : "px-4 justify-between")}>
+          <div className="flex items-center gap-2 overflow-hidden">
+            <Link to="/dashboard" className="flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md">
+              <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center flex-shrink-0">
+                <GraduationCap className="w-4 h-4 text-primary-foreground" />
+              </div>
+              {!isCollapsed && (
+                <span className="font-semibold text-base whitespace-nowrap">
+                  <span className="text-foreground">Skill</span>
+                  <span className="text-primary">Share</span>
+                </span>
+              )}
+            </Link>
+          </div>
+          <button 
+            onClick={() => setIsCollapsed(!isCollapsed)} 
+            className={cn("flex-shrink-0 text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-secondary", isCollapsed ? "absolute -right-3 top-4 bg-background border border-border shadow-sm rounded-full z-40 w-6 h-6 flex items-center justify-center" : "")} 
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center flex-shrink-0">
-              <GraduationCap className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="font-semibold text-base">
-              <span className="text-foreground">Skill</span>
-              <span className="text-primary">Share</span>
-            </span>
-          </Link>
+            {isCollapsed ? <PanelLeftOpen className="w-3.5 h-3.5" /> : <PanelLeftClose className="w-4 h-4" />}
+          </button>
         </div>
 
-        {/* Scrollable nav + bottom section */}
         <div className="flex-1 overflow-y-auto min-h-0 flex flex-col py-3 px-2">
-
-          {/* Main navigation */}
           <nav className="space-y-0.5" aria-label="Main navigation">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
               const isNotif = item.path === "/notifications";
+              
+              if (isCollapsed) {
+                return (
+                  <Tooltip key={item.path} delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        to={item.path}
+                        aria-label={item.label}
+                        aria-current={isActive ? "page" : undefined}
+                        className={cn(
+                          "flex items-center justify-center h-10 w-10 mx-auto rounded-md text-sm font-medium transition-colors relative",
+                          isActive
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        )}
+                      >
+                        <item.icon className="w-5 h-5 flex-shrink-0" aria-hidden />
+                        {isNotif && unreadCount > 0 && (
+                          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary" />
+                        )}
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="font-medium">
+                      {item.label} {isNotif && unreadCount > 0 && `(${unreadCount})`}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              }
+              
               return (
                 <Link
                   key={item.path}
@@ -115,61 +151,85 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             })}
           </nav>
 
-          {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Bottom: credits + profile + sign out */}
           <div className="border-t border-border pt-3 space-y-0.5">
-
-            {/* Credits chip */}
             {user && (
-              <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
-                <Coins className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" aria-hidden />
-                <span className="font-medium text-foreground">{user.credits ?? 0}</span>
-                <span>credits</span>
-              </div>
+              isCollapsed ? (
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center justify-center h-10 w-10 mx-auto rounded-md text-xs text-muted-foreground hover:bg-secondary">
+                      <Coins className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    {user.credits ?? 0} credits
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+                  <Coins className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" aria-hidden />
+                  <span className="font-medium text-foreground">{user.credits ?? 0}</span>
+                  <span>credits</span>
+                </div>
+              )
             )}
 
-            {/* Profile link */}
-            <Link
-              to={user?.id ? `/profile/${user.id}` : "/dashboard"}
-              aria-current={isProfileActive ? "page" : undefined}
-              className={cn(
-                "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-150",
-                isProfileActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-              )}
-            >
-              <div
-                className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-bold flex-shrink-0"
-                aria-hidden
+            {isCollapsed ? (
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Link to={user?.id ? `/profile/${user.id}` : "/dashboard"} aria-label="My profile" className={cn("flex items-center justify-center h-10 w-10 mx-auto rounded-md transition-colors", isProfileActive ? "bg-primary/10" : "hover:bg-secondary")}>
+                    <div className="w-6 h-6 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-bold flex-shrink-0">{getInitials(user?.fullName ?? "")}</div>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">My Profile</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Link
+                to={user?.id ? `/profile/${user.id}` : "/dashboard"}
+                aria-current={isProfileActive ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-150",
+                  isProfileActive
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                )}
               >
-                {getInitials(user?.fullName ?? "")}
-              </div>
-              <span className="truncate">{user?.fullName ?? "My Profile"}</span>
-            </Link>
+                <div
+                  className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-bold flex-shrink-0"
+                  aria-hidden
+                >
+                  {getInitials(user?.fullName ?? "")}
+                </div>
+                <span className="truncate">{user?.fullName ?? "My Profile"}</span>
+              </Link>
+            )}
 
-            {/* Sign out */}
-            <button
-              onClick={handleLogout}
-              aria-label="Sign out"
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors duration-150"
-            >
-              <LogOut className="w-4 h-4 flex-shrink-0" aria-hidden />
-              Sign out
-            </button>
+            {isCollapsed ? (
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <button onClick={handleLogout} aria-label="Sign out" className="flex items-center justify-center h-10 w-10 mx-auto rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
+                    <LogOut className="w-5 h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Sign out</TooltipContent>
+              </Tooltip>
+            ) : (
+              <button
+                onClick={handleLogout}
+                aria-label="Sign out"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors duration-150"
+              >
+                <LogOut className="w-4 h-4 flex-shrink-0" aria-hidden />
+                Sign out
+              </button>
+            )}
           </div>
         </div>
       </aside>
 
-      {/* ── Main content area ──────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col md:ml-60 min-w-0">
-
-        {/* Mobile header */}
+      <div className={cn("flex-1 flex flex-col min-w-0 transition-all duration-200", isCollapsed ? "md:ml-16" : "md:ml-60")}>
         <header className="md:hidden border-b border-border bg-background h-14 px-4 flex items-center justify-between sticky top-0 z-40 flex-shrink-0">
-
-          {/* Mobile wordmark */}
           <Link to="/dashboard" className="flex items-center gap-2 focus:outline-none">
             <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center flex-shrink-0">
               <GraduationCap className="w-4 h-4 text-primary-foreground" />
@@ -180,9 +240,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             </span>
           </Link>
 
-          {/* Mobile right controls */}
           <div className="flex items-center gap-2">
-            {/* Credits */}
             {user && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Coins className="w-3.5 h-3.5" aria-hidden />
@@ -190,7 +248,6 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               </div>
             )}
 
-            {/* Avatar */}
             <Link
               to={user?.id ? `/profile/${user.id}` : "/dashboard"}
               aria-label="My profile"
@@ -200,7 +257,6 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               </div>
             </Link>
 
-            {/* Hamburger */}
             <button
               onClick={() => setMobileMenuOpen((v) => !v)}
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
@@ -212,16 +268,13 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
         </header>
 
-        {/* Mobile slide-out menu */}
         {mobileMenuOpen && (
           <div className="md:hidden fixed inset-0 z-50 flex">
-            {/* Backdrop */}
             <div
               className="absolute inset-0 bg-background/80 backdrop-blur-sm"
               onClick={() => setMobileMenuOpen(false)}
               aria-hidden
             />
-            {/* Panel */}
             <nav
               className="relative ml-auto w-64 h-full bg-background border-l border-border flex flex-col py-4 px-3 shadow-lg"
               aria-label="Mobile navigation"
@@ -257,7 +310,6 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 })}
               </div>
 
-              {/* Bottom actions */}
               <div className="border-t border-border pt-3 space-y-0.5">
                 <Link
                   to={user?.id ? `/profile/${user.id}` : "/dashboard"}
@@ -280,11 +332,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
         )}
 
-        {/* Page content */}
         <main className="flex-1 overflow-auto">
           {children}
         </main>
-
       </div>
     </div>
   );
