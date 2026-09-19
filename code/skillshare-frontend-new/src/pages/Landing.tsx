@@ -502,10 +502,10 @@ const Landing = () => {
             {/* Avatar + name */}
             <div className="flex items-center gap-3 mb-5 pb-4 border-b border-border">
               <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center text-sm font-semibold text-primary flex-shrink-0">
-                AJ
+                IB
               </div>
               <div>
-                <p className="text-sm font-semibold leading-tight">Alex Johnson</p>
+                <p className="text-sm font-semibold leading-tight">Irusha Bandara</p>
                 <p className="text-xs text-muted-foreground">Engineering Student</p>
               </div>
             </div>
@@ -520,7 +520,7 @@ const Landing = () => {
                   I can teach
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {["Python", "Machine Learning", "Data Structures"].map((s) => (
+                  {["Python", "Machine Learning", "Data Structures", "Calculus", "React"].map((s) => (
                     <span key={s} className="skill-badge-teach inline-flex items-center h-5 text-[11px] px-2 font-medium">
                       {s}
                     </span>
@@ -537,7 +537,7 @@ const Landing = () => {
                   I want to learn
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {["UI/UX Design", "Video Editing"].map((s) => (
+                  {["Photography", "Digital Marketing", "Piano", "Spanish", "Finance", "Video Editing"].map((s) => (
                     <span key={s} className="skill-badge-learn inline-flex items-center h-5 text-[11px] px-2 font-medium">
                       {s}
                     </span>
@@ -551,7 +551,7 @@ const Landing = () => {
                 className="w-full mt-1"
                 onClick={() => navigate("/signup")}
               >
-                Connect with Alex
+                Connect with Irusha
               </Button>
             </div>
           </motion.div>
