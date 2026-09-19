@@ -167,7 +167,7 @@ export const SkillPickerModal = ({ open, onOpenChange, type, onAdd, existingTeac
                         <Badge 
                           key={t.skillId} 
                           variant="outline"
-                          onClick={() => { if (!isConflict && !isAdded && !isSubmitting) handleSelect(t.name); }}
+                          onClick={() => { if (!isConflict && !isAdded && !isSubmitting) handleSelect(t.skillName || t.name || ""); }}
                           className={`px-3 py-1.5 transition-all ${isAdded ? "bg-primary text-primary-foreground border-primary" : isConflict ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-secondary hover:scale-105 active:scale-95"}`}
                         >
                           {t.skillName || t.name}

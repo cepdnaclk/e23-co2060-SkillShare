@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, GraduationCap, Moon, Sun, Monitor, Shield, Bell, Key, Plus, X } from "lucide-react";
+import { BookOpen, GraduationCap, Moon, Sun, Monitor, Shield, Bell, Key, Plus, X, User } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { SkillPickerModal } from "@/components/SkillPickerModal";
 import { toast } from "sonner";
