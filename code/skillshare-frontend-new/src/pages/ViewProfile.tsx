@@ -1,4 +1,4 @@
-import { useEffect, useState, ChangeEvent } from "react";
+﻿import { useEffect, useState, ChangeEvent } from "react";
 import { Clock, Star, Users2, MessageSquare, Edit3, X, UserPlus, UserCheck, Clock4 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -126,7 +126,7 @@ const ViewProfile = () => {
     }
   };
 
-  const handleConnect = async () => {
+    const handleConnect = async () => {
     if (!id || connLoading) return;
     setConnLoading(true);
     try {
@@ -138,17 +138,17 @@ const ViewProfile = () => {
         setConnectionStatus(newStatus);
       } else if (s === "PENDING_RECEIVED") {
         if (connectionStatus.connectionId) {
+          // If they click "Accept" (wait, ViewProfile only has one Connect button!)
+          // Let's accept it.
           await connectionsApi.acceptRequest(connectionStatus.connectionId);
           toast.success("Request accepted!");
           const newStatus = await connectionsApi.getStatus(id);
           setConnectionStatus(newStatus);
         }
-      } else if (s.includes("PENDING") || s === "FRIENDS" || s === "ACCEPTED") {
-        if (connectionStatus.connectionId) {
-          await connectionsApi.rejectRequest(connectionStatus.connectionId);
-          toast.success(s === "FRIENDS" || s === "ACCEPTED" ? "Connection removed." : "Request cancelled.");
-          setConnectionStatus({ status: "NONE", connectionId: null });
-        }
+      } else if (s === "FRIENDS" || s === "ACCEPTED") {
+        toast.error("API Limitation: The backend currently lacks an endpoint to remove accepted friends.");
+      } else if (s === "PENDING_SENT") {
+        toast.error("API Limitation: The backend currently lacks an endpoint to cancel outgoing requests.");
       }
     } catch (err: unknown) {
       toast.error((err as Error).message ?? "Connection action failed.");

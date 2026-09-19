@@ -159,9 +159,9 @@ const Dashboard = () => {
     const loadAll = async () => {
       try {
         const [mentoring, learning, fbs, skillsRes] = await Promise.all([
-          sessionsApi.getMyMentoring(),
-          sessionsApi.getMyLearning(),
-          feedbackApi.getMyFeedback(),
+          sessionsApi.getMentorSessions(user.id),
+          sessionsApi.getLearnerSessions(user.id),
+          feedbackApi.getForUser(user.id),
           userSkillsApi.getByUser(user.id),
         ]);
         

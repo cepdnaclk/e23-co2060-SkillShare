@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { Search, X, Check, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,7 @@ interface SkillPickerModalProps {
   existingLearn: string[];
 }
 
-const normalize = (s: string) => s.trim().toLowerCase();
+const normalize = (s?: string | null) => (s || "").trim().toLowerCase();
 
 export const SkillPickerModal = ({ open, onOpenChange, type, onAdd, existingTeach, existingLearn }: SkillPickerModalProps) => {
   const [query, setQuery] = useState("");
@@ -155,7 +155,7 @@ export const SkillPickerModal = ({ open, onOpenChange, type, onAdd, existingTeac
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Suggested Skills</p>
                   <div className="flex flex-wrap gap-2">
                     {trending.slice(0, 10).map(t => {
-                      const normalized = normalize(t.name);
+                      const normalized = normalize(t.skillName || t.name);
                       const isConflict = type === "TEACH" 
                         ? existingLearn.some(s => normalize(s) === normalized)
                         : existingTeach.some(s => normalize(s) === normalized);
@@ -170,7 +170,7 @@ export const SkillPickerModal = ({ open, onOpenChange, type, onAdd, existingTeac
                           onClick={() => { if (!isConflict && !isAdded && !isSubmitting) handleSelect(t.name); }}
                           className={`px-3 py-1.5 transition-all ${isAdded ? "bg-primary text-primary-foreground border-primary" : isConflict ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-secondary hover:scale-105 active:scale-95"}`}
                         >
-                          {t.name}
+                          {t.skillName || t.name}
                         </Badge>
                       );
                     })}

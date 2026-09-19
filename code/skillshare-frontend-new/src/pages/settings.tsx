@@ -13,7 +13,7 @@ import { SkillPickerModal } from "@/components/SkillPickerModal";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
-const normalizeSkill = (s: string) => s.trim().toLowerCase();
+const normalizeSkill = (s?: string | null) => (s || "").trim().toLowerCase();
 
 const Settings = () => {
   const { user } = useAuth();
@@ -51,9 +51,9 @@ const Settings = () => {
     toast.success("Skill added.");
   };
 
-  const handleRemoveSkill = async (skillId: number) => {
+  const handleRemoveSkill = async (skillId: string, skillType: string) => {
     try {
-      await userSkillsApi.remove(skillId);
+      await userSkillsApi.remove(skillId, skillType);
       await fetchSkills();
       toast.success("Skill removed.");
     } catch {
@@ -197,7 +197,7 @@ const Settings = () => {
                         <motion.div key={skill.skillId} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-sm font-medium group">
                           {skill.skillName}
                           <button 
-                            onClick={() => handleRemoveSkill(skill.skillId)}
+                            onClick={() => handleRemoveSkill(skill.skillId, skill.skillType)}
                             className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-primary/20 transition-colors opacity-60 group-hover:opacity-100"
                           >
                             <X className="w-3 h-3" />
@@ -230,7 +230,7 @@ const Settings = () => {
                         <motion.div key={skill.skillId} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[hsl(var(--chart-4))]/10 text-[hsl(var(--chart-4))] border border-[hsl(var(--chart-4))]/20 text-sm font-medium group">
                           {skill.skillName}
                           <button 
-                            onClick={() => handleRemoveSkill(skill.skillId)}
+                            onClick={() => handleRemoveSkill(skill.skillId, skill.skillType)}
                             className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-[hsl(var(--chart-4))]/20 transition-colors opacity-60 group-hover:opacity-100"
                           >
                             <X className="w-3 h-3" />

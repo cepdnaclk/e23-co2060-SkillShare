@@ -449,7 +449,9 @@ export interface UserPublicDto {
 
 export interface TrendingSkillDto {
   skillId: number;
-  name: string;
+  skillName?: string;
+  name?: string;
   category?: string;
-  sessionCount: number;
+  sessionCount?: number;
+  totalSessions?: number;
 }
