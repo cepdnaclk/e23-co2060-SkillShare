@@ -123,7 +123,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setInbox(chats);
       setTotalUnread(count);
     } catch {
-      // silent — badge simply won't update
+      // silent - badge simply won't update
     } finally {
       setIsLoadingInbox(false);
     }
@@ -189,7 +189,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         content: content.trim(),
       };
 
-      // Optimistic update — append to local state immediately
+      // Optimistic update - append to local state immediately
       const optimisticMsg: ChatHistoryMessage = {
         id: crypto.randomUUID(),
         sender: { id: user.id, fullName: user.fullName, email: user.email },

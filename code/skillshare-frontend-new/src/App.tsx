@@ -41,7 +41,7 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/signup" element={<SignUp />} />
 
-            {/* GitHub OAuth2 redirect handler — must be public (not behind ProtectedRoute)
+            {/* GitHub OAuth2 redirect handler - must be public (not behind ProtectedRoute)
                 because the JWT arrives here for the first time and auth state is not yet set. */}
             <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
             {/* Protected routes */}

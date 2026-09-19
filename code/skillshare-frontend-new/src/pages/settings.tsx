@@ -1,127 +1,73 @@
-import { useState, useEffect } from "react";
-import { Save, User, X, Plus, Sparkles, BookOpen, GraduationCap } from "lucide-react";
-import { Button } from "@/components/ui/button";
+﻿import { useEffect, useState } from "react";
+import AppLayout from "@/components/AppLayout";
+import { userSkillsApi, type UserSkill } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import ErrorBanner from "@/components/ErrorBanner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import AppLayout from "@/components/AppLayout";
-import { useAuth } from "@/context/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BookOpen, GraduationCap, Moon, Sun, Monitor, Shield, Bell, Key, Plus, X } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
-import { usersApi, userSkillsApi, trendingApi, type UserSkill, type TrendingSkillDto } from "@/lib/api";
+import { SkillPickerModal } from "@/components/SkillPickerModal";
+import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 const normalizeSkill = (s: string) => s.trim().toLowerCase();
 
 const Settings = () => {
-  const { user, refreshUser } = useAuth();
+  const { user } = useAuth();
   const { theme, setTheme } = useTheme();
-
-  const [fullName, setFullName] = useState(user?.fullName ?? "");
-  const [email] = useState(user?.email ?? "");
-  const [bio, setBio] = useState(user?.bio ?? "");
-
-  const [saving, setSaving] = useState(false);
   
-  // Skills State
   const [skills, setSkills] = useState<UserSkill[]>([]);
-  const [trendingSkills, setTrendingSkills] = useState<TrendingSkillDto[]>([]);
-  
-  const [teachInput, setTeachInput] = useState("");
-  const [learnInput, setLearnInput] = useState("");
-  const [skillLoading, setSkillLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      setFullName(user.fullName ?? "");
-      setBio(user.bio ?? "");
-      fetchSkills();
-    }
-  }, [user]);
-  
-  useEffect(() => {
-    trendingApi.getTopSharingSkills()
-      .then(res => setTrendingSkills(res))
-      .catch(() => {});
-  }, []);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerType, setPickerType] = useState<"TEACH" | "LEARN">("TEACH");
 
   const fetchSkills = async () => {
     if (!user) return;
     try {
       const res = await userSkillsApi.getByUser(user.id);
       setSkills(res);
-    } catch {
-      toast.error("Failed to load skills.");
+    } catch (err: unknown) {
+      setError((err as Error).message || "Failed to load skills.");
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchSkills();
+  }, [user?.id]);
 
   const teachSkills = skills.filter(s => s.skillType === "TEACH");
   const learnSkills = skills.filter(s => s.skillType === "LEARN");
 
   const handleAddSkill = async (name: string, type: "TEACH" | "LEARN") => {
-    if (!name.trim()) return;
-    const normalized = normalizeSkill(name);
-    
-    // Check conflicts
-    const oppositeType = type === "TEACH" ? "LEARN" : "TEACH";
-    const oppositeSkills = type === "TEACH" ? learnSkills : teachSkills;
-    
-    if (oppositeSkills.some(s => normalizeSkill(s.skillName) === normalized)) {
-      toast.error(`You cannot add "${name.trim()}" to ${type === "TEACH" ? "Teach" : "Learn"} because it is already in your ${oppositeType === "TEACH" ? "Teach" : "Learn"} list.`);
-      return;
-    }
-    
-    const sameList = type === "TEACH" ? teachSkills : learnSkills;
-    if (sameList.some(s => normalizeSkill(s.skillName) === normalized)) {
-      toast.error(`You already added "${name.trim()}".`);
-      return;
-    }
-
-    setSkillLoading(true);
-    try {
-      await userSkillsApi.add(name.trim(), type);
-      await fetchSkills();
-      if (type === "TEACH") setTeachInput("");
-      else setLearnInput("");
-      toast.success("Skill added.");
-    } catch {
-      toast.error("Failed to add skill.");
-    } finally {
-      setSkillLoading(false);
-    }
+    await userSkillsApi.add(name, type);
+    await fetchSkills();
+    toast.success("Skill added.");
   };
 
-  const handleRemoveSkill = async (id: string, type: string) => {
+  const handleRemoveSkill = async (skillId: number) => {
     try {
-      await userSkillsApi.remove(id, type);
-      setSkills(skills.filter(s => s.id !== id));
+      await userSkillsApi.remove(skillId);
+      await fetchSkills();
       toast.success("Skill removed.");
     } catch {
       toast.error("Failed to remove skill.");
     }
   };
 
-  const handleSaveAll = async () => {
-    setSaving(true);
-    try {
-      if (bio !== user?.bio) {
-        await usersApi.updateMyBio(bio);
-        await refreshUser();
-      }
-      toast.success("Settings saved");
-    } catch {
-      toast.error("Failed to save settings");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (!user) {
+  if (loading) {
     return (
       <AppLayout>
-        <div className="p-4 sm:p-6 md:p-10 max-w-3xl mx-auto flex items-center justify-center min-h-[50vh]">
-          <p className="text-muted-foreground text-sm">Loading settings...</p>
+        <div className="p-6 max-w-4xl mx-auto space-y-6 animate-pulse">
+          <div className="h-8 w-48 bg-secondary/50 rounded-md"></div>
+          <div className="h-64 bg-secondary/30 rounded-xl"></div>
+          <div className="h-64 bg-secondary/30 rounded-xl"></div>
         </div>
       </AppLayout>
     );
@@ -129,220 +75,187 @@ const Settings = () => {
 
   return (
     <AppLayout>
-      <div className="p-4 sm:p-6 md:p-10 max-w-4xl mx-auto flex flex-col min-h-[calc(100vh-4rem)]">
-        
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-2">Settings</h1>
-            <p className="text-muted-foreground text-sm">Manage your account preferences and skills.</p>
-          </div>
-          <Button onClick={handleSaveAll} disabled={saving} className="shrink-0 gap-2 h-9 text-xs">
-            <Save className="w-3.5 h-3.5" />
-            {saving ? "Saving..." : "Save Changes"}
-          </Button>
+      <div className="p-6 md:p-10 max-w-4xl mx-auto space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Settings</h1>
+          <p className="text-muted-foreground">Manage your account preferences and profile details.</p>
         </div>
 
-        <div className="space-y-12">
+        <ErrorBanner error={error} onDismiss={() => setError(null)} />
+
+        <div className="grid md:grid-cols-[240px_1fr] gap-8 items-start">
           
-          {/* Profile Section */}
-          <section>
-            <div className="flex items-center gap-2 mb-4">
-              <User className="w-4 h-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">Account</h2>
-            </div>
+          {/* SIDE NAVIGATION (Visual only for now) */}
+          <nav className="hidden md:flex flex-col gap-1 text-sm font-medium sticky top-24">
+            <button className="flex items-center gap-2 px-3 py-2 bg-secondary text-foreground rounded-lg justify-start">
+              <User className="w-4 h-4" /> Profile
+            </button>
+            <button className="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors rounded-lg justify-start">
+              <Shield className="w-4 h-4" /> Security
+            </button>
+            <button className="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors rounded-lg justify-start">
+              <Bell className="w-4 h-4" /> Notifications
+            </button>
+          </nav>
+
+          <div className="space-y-8">
             
-            <div className="space-y-5">
-              <div className="grid sm:grid-cols-2 gap-4">
+            {/* PROFILE DETAILS */}
+            <Card className="border-border/60 shadow-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">Profile Details</CardTitle>
+                <CardDescription>
+                  Your basic profile information.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Full name</Label>
-                  <Input
-                    id="fullName"
-                    value={fullName}
-                    disabled
-                    className="bg-secondary/50 max-w-md cursor-not-allowed text-muted-foreground"
-                  />
-                  <p className="text-[10px] text-muted-foreground">Name change is not currently supported.</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label>Full Name</Label>
                   <Input 
-                    id="email"
-                    value={email} 
+                    value={user?.fullName || ""} 
                     disabled 
-                    className="bg-secondary/50 max-w-md cursor-not-allowed text-muted-foreground" 
+                    className="bg-secondary/30 opacity-70 cursor-not-allowed max-w-md" 
                   />
+                  <p className="text-xs text-muted-foreground mt-1">Name changes are not supported.</p>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  rows={3}
-                  className="bg-background resize-none max-w-2xl"
-                  placeholder="Write a short bio about yourself..."
-                />
-              </div>
-            </div>
-          </section>
-
-          <hr className="border-border/60" />
-
-          {/* Skills Section */}
-          <section>
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-4 h-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">Skills</h2>
-            </div>
-            
-            <div className="grid md:grid-cols-2 gap-8 max-w-4xl">
-              {/* TEACH SKILLS */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-primary">
-                  <GraduationCap className="w-4 h-4" />
-                  <h3 className="font-medium text-sm">I can teach</h3>
-                </div>
-                <div className="flex gap-2">
+                <div className="space-y-2">
+                  <Label>Email Address</Label>
                   <Input 
-                    value={teachInput}
-                    onChange={(e) => setTeachInput(e.target.value)}
-                    placeholder="e.g. React, Guitar, Spanish..."
-                    className="flex-1"
-                    onKeyDown={(e) => e.key === "Enter" && handleAddSkill(teachInput, "TEACH")}
+                    value={user?.email || ""} 
+                    disabled 
+                    className="bg-secondary/30 opacity-70 cursor-not-allowed max-w-md" 
                   />
-                  <Button disabled={!teachInput.trim() || skillLoading} onClick={() => handleAddSkill(teachInput, "TEACH")} variant="secondary" size="icon" className="shrink-0">
-                    <Plus className="w-4 h-4" />
+                  <p className="text-xs text-muted-foreground mt-1">Email is linked to your authentication provider.</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* APPEARANCE */}
+            <Card className="border-border/60 shadow-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">Appearance</CardTitle>
+                <CardDescription>
+                  Customize the theme of the application.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-3">
+                  <Button 
+                    variant={theme === "light" ? "default" : "outline"}
+                    onClick={() => setTheme("light")}
+                    className="gap-2"
+                  >
+                    <Sun className="w-4 h-4" /> Light
+                  </Button>
+                  <Button 
+                    variant={theme === "dark" ? "default" : "outline"}
+                    onClick={() => setTheme("dark")}
+                    className="gap-2"
+                  >
+                    <Moon className="w-4 h-4" /> Dark
+                  </Button>
+                  <Button 
+                    variant={theme === "system" ? "default" : "outline"}
+                    onClick={() => setTheme("system")}
+                    className="gap-2"
+                  >
+                    <Monitor className="w-4 h-4" /> System
                   </Button>
                 </div>
-                
-                {trendingSkills.length > 0 && (
-                  <div className="pt-2">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Recommended</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {trendingSkills.slice(0, 5).map(ts => {
-                        const isConflict = learnSkills.some(s => normalizeSkill(s.skillName) === normalizeSkill(ts.name));
-                        const isAdded = teachSkills.some(s => normalizeSkill(s.skillName) === normalizeSkill(ts.name));
-                        return (
-                          <Badge 
-                            key={`teach-trend-${ts.name}`} 
-                            variant="outline" 
-                            className={`cursor-pointer transition-colors ${isConflict ? "opacity-50 cursor-not-allowed" : isAdded ? "bg-primary/10 text-primary border-primary/20" : "hover:bg-secondary"}`}
-                            onClick={() => {
-                              if (!isConflict && !isAdded) handleAddSkill(ts.name, "TEACH");
-                            }}
-                          >
-                            {ts.name}
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+              </CardContent>
+            </Card>
 
-                <div className="pt-4 border-t border-border/50">
+            {/* SKILLS */}
+            <Card className="border-border/60 shadow-sm">
+              <CardHeader className="pb-4 border-b border-border/40">
+                <CardTitle className="text-lg">My Skills</CardTitle>
+                <CardDescription>
+                  Manage what you can teach and what you want to learn.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-border/40">
+                
+                {/* TEACH */}
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="w-5 h-5 text-primary" />
+                      <h3 className="font-semibold text-foreground tracking-tight">I Can Teach</h3>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => { setPickerType("TEACH"); setPickerOpen(true); }} className="h-8 gap-1">
+                      <Plus className="w-3.5 h-3.5" /> Add
+                    </Button>
+                  </div>
+
                   {teachSkills.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-4 bg-secondary/20 rounded-md border border-dashed border-border">No skills added yet.</p>
+                    <div className="text-center py-8 bg-secondary/20 rounded-xl border border-dashed border-border">
+                      <p className="text-sm text-muted-foreground">No teaching skills added.</p>
+                    </div>
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {teachSkills.map(skill => (
-                        <Badge key={skill.id} variant="default" className="pl-3 pr-1 py-1 gap-1 flex items-center bg-primary text-primary-foreground">
+                        <motion.div key={skill.skillId} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-sm font-medium group">
                           {skill.skillName}
-                          <button onClick={() => handleRemoveSkill(skill.id!, "TEACH")} className="hover:bg-background/20 p-0.5 rounded-full transition-colors" aria-label="Remove skill">
+                          <button 
+                            onClick={() => handleRemoveSkill(skill.skillId)}
+                            className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-primary/20 transition-colors opacity-60 group-hover:opacity-100"
+                          >
                             <X className="w-3 h-3" />
                           </button>
-                        </Badge>
+                        </motion.div>
                       ))}
                     </div>
                   )}
                 </div>
-              </div>
 
-              {/* LEARN SKILLS */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-[hsl(var(--chart-4))]">
-                  <BookOpen className="w-4 h-4" />
-                  <h3 className="font-medium text-sm">I want to learn</h3>
-                </div>
-                <div className="flex gap-2">
-                  <Input 
-                    value={learnInput}
-                    onChange={(e) => setLearnInput(e.target.value)}
-                    placeholder="e.g. Machine Learning, Piano..."
-                    className="flex-1"
-                    onKeyDown={(e) => e.key === "Enter" && handleAddSkill(learnInput, "LEARN")}
-                  />
-                  <Button disabled={!learnInput.trim() || skillLoading} onClick={() => handleAddSkill(learnInput, "LEARN")} variant="secondary" size="icon" className="shrink-0">
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-                
-                {trendingSkills.length > 0 && (
-                  <div className="pt-2">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Recommended</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {trendingSkills.slice(0, 5).map(ts => {
-                        const isConflict = teachSkills.some(s => normalizeSkill(s.skillName) === normalizeSkill(ts.name));
-                        const isAdded = learnSkills.some(s => normalizeSkill(s.skillName) === normalizeSkill(ts.name));
-                        return (
-                          <Badge 
-                            key={`learn-trend-${ts.name}`} 
-                            variant="outline" 
-                            className={`cursor-pointer transition-colors ${isConflict ? "opacity-50 cursor-not-allowed" : isAdded ? "bg-[hsl(var(--chart-4))]/10 text-[hsl(var(--chart-4))] border-[hsl(var(--chart-4))]/20" : "hover:bg-secondary"}`}
-                            onClick={() => {
-                              if (!isConflict && !isAdded) handleAddSkill(ts.name, "LEARN");
-                            }}
-                          >
-                            {ts.name}
-                          </Badge>
-                        );
-                      })}
+                {/* LEARN */}
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-[hsl(var(--chart-4))]" />
+                      <h3 className="font-semibold text-foreground tracking-tight">I Want To Learn</h3>
                     </div>
+                    <Button variant="outline" size="sm" onClick={() => { setPickerType("LEARN"); setPickerOpen(true); }} className="h-8 gap-1">
+                      <Plus className="w-3.5 h-3.5" /> Add
+                    </Button>
                   </div>
-                )}
 
-                <div className="pt-4 border-t border-border/50">
                   {learnSkills.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-4 bg-secondary/20 rounded-md border border-dashed border-border">No skills added yet.</p>
+                    <div className="text-center py-8 bg-secondary/20 rounded-xl border border-dashed border-border">
+                      <p className="text-sm text-muted-foreground">No learning goals added.</p>
+                    </div>
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {learnSkills.map(skill => (
-                        <Badge key={skill.id} variant="secondary" className="pl-3 pr-1 py-1 gap-1 flex items-center bg-[hsl(var(--chart-4))]/15 text-[hsl(var(--chart-4))] hover:bg-[hsl(var(--chart-4))]/25 border-0">
+                        <motion.div key={skill.skillId} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[hsl(var(--chart-4))]/10 text-[hsl(var(--chart-4))] border border-[hsl(var(--chart-4))]/20 text-sm font-medium group">
                           {skill.skillName}
-                          <button onClick={() => handleRemoveSkill(skill.id!, "LEARN")} className="hover:bg-background/20 p-0.5 rounded-full transition-colors" aria-label="Remove skill">
+                          <button 
+                            onClick={() => handleRemoveSkill(skill.skillId)}
+                            className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-[hsl(var(--chart-4))]/20 transition-colors opacity-60 group-hover:opacity-100"
+                          >
                             <X className="w-3 h-3" />
                           </button>
-                        </Badge>
+                        </motion.div>
                       ))}
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
-          </section>
 
-          <hr className="border-border/60" />
+              </CardContent>
+            </Card>
 
-          {/* Appearance Section */}
-          <section>
-            <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">Appearance</h2>
-            </div>
-            
-            <div className="flex items-center justify-between gap-4 py-1 max-w-2xl">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-foreground">Dark mode</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Toggle dark and light themes.</p>
-              </div>
-              <Switch
-                checked={theme === "dark"}
-                onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
-              />
-            </div>
-          </section>
-
+          </div>
         </div>
       </div>
+      
+      <SkillPickerModal 
+        open={pickerOpen} 
+        onOpenChange={setPickerOpen} 
+        type={pickerType} 
+        onAdd={handleAddSkill}
+        existingTeach={teachSkills.map(s => s.skillName)}
+        existingLearn={learnSkills.map(s => s.skillName)}
+      />
     </AppLayout>
   );
 };

@@ -1,5 +1,5 @@
 // ============================================================
-// Central API Client — auto-injects JWT, parses errors uniformly
+// Central API Client - auto-injects JWT, parses errors uniformly
 // ============================================================
 
 const BASE_URL = import.meta.env.VITE_API_URL;
@@ -192,7 +192,7 @@ export const availabilityApi = {
 
 export const sessionsApi = {
   // FIXED: Only sends skillId + availabilityId as UUID strings.
-  // learnerId is removed — the backend extracts it securely from the JWT token.
+  // learnerId is removed - the backend extracts it securely from the JWT token.
   book: (skillId: string, availabilityId: string) =>
       apiFetch<Session>("/api/sessions/book", {
         method: "POST",
@@ -379,7 +379,7 @@ export interface Availability {
 
 export type SessionStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "COMPLETED" | "EXPIRED" | "CANCELLED";
 
-// Matches the backend SessionResponse DTO — flat, no lazy proxies
+// Matches the backend SessionResponse DTO - flat, no lazy proxies
 export interface Session {
   id: string;
   learnerId: string;

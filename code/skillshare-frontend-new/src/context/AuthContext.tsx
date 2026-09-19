@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /** After receiving a JWT, we need to also hydrate the user object.
    *  Strategy: the JWT sub claim is the user's email. We use the
-   *  token to call GET /api/users/{id} — but first we need the id.
+   *  token to call GET /api/users/{id} - but first we need the id.
    *  Since the backend returns the token but not the user on login/register,
    *  we store the partial info from the token and let pages fetch full profile.
    *  We use a lightweight JWT decode to get the email and store it as a "stub" user.
@@ -162,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /**
    * Called by OAuth2RedirectHandler after the backend redirects back with ?token=...
    * Stores the JWT, decodes the userId from the payload, fetches the full user
-   * profile, and syncs everything into global state — identical to a normal login.
+   * profile, and syncs everything into global state - identical to a normal login.
    */
   const loginWithToken = useCallback(async (jwt: string) => {
     setIsLoading(true);
@@ -218,7 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return completeUser;
       });
     } catch {
-      // silent — don't log out on a profile refresh failure
+      // silent - don't log out on a profile refresh failure
     }
   }, []);
 

@@ -1,3 +1,4 @@
+﻿import { InteractiveDots } from "@/components/InteractiveDots";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -47,7 +48,7 @@ const steps = [
   {
     num: "01",
     title: "Share",
-    desc: "Tell people what you can teach — any skill, any level.",
+    desc: "Tell people what you can teach - any skill, any level.",
   },
   {
     num: "02",
@@ -76,7 +77,7 @@ const Landing = () => {
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
 
-          {/* Wordmark — no gap between Skill and Share */}
+          {/* Wordmark - no gap between Skill and Share */}
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             className="flex items-center gap-2 font-semibold text-base select-none focus:outline-none"
@@ -121,9 +122,9 @@ const Landing = () => {
 
       {/* ── 2. HERO ───────────────────────────────────────────────────────── */}
       <section className="relative max-w-6xl mx-auto px-6 pt-20 pb-16">
-        {/* Dot-grid texture — barely visible */}
-        <div className="absolute inset-0 dot-grid opacity-[0.35] pointer-events-none" aria-hidden />
-        {/* Extremely subtle primary-blue atmospheric centre — stays almost white */}
+        {/* Dot-grid texture - barely visible */}
+        <InteractiveDots />
+        {/* Extremely subtle primary-blue atmospheric centre - stays almost white */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -146,7 +147,7 @@ const Landing = () => {
             Peer-to-peer skill sharing
           </motion.p>
 
-          {/* Primary statement — the product identity */}
+          {/* Primary statement - the product identity */}
           <motion.h1
             variants={fadeUp}
             className="text-[clamp(2.25rem,6vw,3.75rem)] font-bold leading-[1.08] tracking-[-0.025em] text-foreground mb-3"
@@ -156,7 +157,7 @@ const Landing = () => {
             <span className="text-primary">to teach.</span>
           </motion.h1>
 
-          {/* Secondary statement — echoes, slightly smaller */}
+          {/* Secondary statement - echoes, slightly smaller */}
           <motion.p
             variants={fadeUp}
             className="text-[clamp(1.25rem,3.5vw,1.875rem)] font-semibold leading-snug tracking-[-0.02em] text-muted-foreground mb-8"
@@ -164,7 +165,7 @@ const Landing = () => {
             Everyone has something to learn.
           </motion.p>
 
-          {/* Supporting copy — one sentence, no jargon */}
+          {/* Supporting copy - one sentence, no jargon */}
           <motion.p
             variants={fadeUp}
             className="text-sm sm:text-base text-muted-foreground max-w-sm mx-auto mb-10 leading-relaxed"
@@ -194,7 +195,7 @@ const Landing = () => {
             </Button>
           </motion.div>
 
-          {/* Popular skills — very subtle, no interactive affordance */}
+          {/* Popular skills - very subtle, no interactive affordance */}
           <motion.div variants={fadeUp} className="flex flex-wrap gap-1.5 justify-center">
             <span className="text-xs text-muted-foreground/60 self-center mr-1">Popular:</span>
             {["Python", "UI/UX Design", "Photography", "Guitar", "Public Speaking", "Machine Learning"].map((skill) => (
@@ -209,7 +210,7 @@ const Landing = () => {
         </motion.div>
       </section>
 
-      {/* ── 3. TEACH ↔ LEARN — the conceptual centerpiece ─────────────────── */}
+      {/* ── 3. TEACH ↔ LEARN - the conceptual centerpiece ─────────────────── */}
       <section className="border-y border-border bg-secondary/25">
         <div className="max-w-6xl mx-auto px-6 py-20">
 
@@ -232,7 +233,7 @@ const Landing = () => {
             </p>
           </motion.div>
 
-          {/* Two-sided layout — cards with connector */}
+          {/* Two-sided layout - cards with connector */}
           <motion.div
             variants={stagger}
             initial="hidden"
@@ -276,7 +277,7 @@ const Landing = () => {
               </div>
             </motion.div>
 
-            {/* Connector — centered bidirectional symbol */}
+            {/* Connector - centered bidirectional symbol */}
             <motion.div
               variants={fadeIn}
               className="flex items-center justify-center py-4 md:py-0"
@@ -335,7 +336,7 @@ const Landing = () => {
             transition={{ duration: 0.4, delay: 0.15 }}
             className="text-center text-xs text-muted-foreground mt-8"
           >
-            You're not locked into one role — teach what you know, learn what you don't.
+            You're not locked into one role - teach what you know, learn what you don't.
           </motion.p>
         </div>
       </section>
@@ -479,7 +480,7 @@ const Landing = () => {
               {[
                 { icon: BookOpen,       text: "Browse what others can teach" },
                 { icon: Users,          text: "Find someone whose skills match what you need" },
-                { icon: ArrowLeftRight, text: "Offer something in return — or just connect" },
+                { icon: ArrowLeftRight, text: "Offer something in return - or just connect" },
                 { icon: MessageSquare,  text: "Chat, agree on a time, and exchange knowledge" },
               ].map((item) => (
                 <li key={item.text} className="flex items-center gap-3 text-sm text-foreground">
@@ -490,7 +491,7 @@ const Landing = () => {
             </ul>
           </motion.div>
 
-          {/* Profile card — peer, not mentor */}
+          {/* Profile card - peer, not mentor */}
           <motion.div
             initial={{ opacity: 0, x: 12 }}
             whileInView={{ opacity: 1, x: 0 }}

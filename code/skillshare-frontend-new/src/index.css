@@ -1,8 +1,8 @@
 /*
- * index.css — SkillShare Global Design Tokens
+ * index.css - SkillShare Global Design Tokens
  *
  * Design system: Apple × Linear × Modern Educational Platform
- * Accent: #2563EB (professional blue — phase 1 token, subject to brand review)
+ * Accent: #2563EB (professional blue - phase 1 token, subject to brand review)
  * Typography: Inter (single modern sans-serif)
  * Philosophy: whitespace > decoration, hierarchy through scale/weight/spacing
  */
@@ -29,7 +29,7 @@
     --popover:                0 0% 100%;
     --popover-foreground:     0 0% 7%;
 
-    /* ── Primary accent — Professional Blue ─ */
+    /* ── Primary accent - Professional Blue ─ */
     --primary:                221 83% 53%;    /* #2563EB */
     --primary-foreground:     0 0% 100%;
 
@@ -41,7 +41,7 @@
     --muted:                  0 0% 96%;
     --muted-foreground:       0 0% 54%;       /* #8A8A8A */
 
-    /* ── Accent (hover tint — calm blue) ─── */
+    /* ── Accent (hover tint - calm blue) ─── */
     --accent:                 221 83% 96%;    /* very light blue tint */
     --accent-foreground:      221 83% 40%;    /* deep blue text on accent bg */
 
@@ -55,10 +55,10 @@
     --ring:                   221 83% 53%;    /* matches primary */
 
     /* ── Radius scale ─────────────────────── */
-    --radius:                 0.5rem;         /* 8px — cards, dialogs, containers */
-    --radius-sm:              0.375rem;       /* 6px — inputs, buttons */
-    --radius-lg:              0.75rem;        /* 12px — modals, large panels */
-    --radius-xl:              1rem;           /* 16px — hero sections */
+    --radius:                 0.5rem;         /* 8px - cards, dialogs, containers */
+    --radius-sm:              0.375rem;       /* 6px - inputs, buttons */
+    --radius-lg:              0.75rem;        /* 12px - modals, large panels */
+    --radius-xl:              1rem;           /* 16px - hero sections */
     --radius-pill:            9999px;         /* skills, tags, status badges */
 
     /* ── Shadows (clean, no glow) ─────────── */
@@ -109,7 +109,7 @@
     --popover:                0 0% 9%;
     --popover-foreground:     0 0% 96%;
 
-    /* ── Primary accent — brightened for dark bg ── */
+    /* ── Primary accent - brightened for dark bg ── */
     --primary:                221 83% 62%;    /* slightly lighter blue */
     --primary-foreground:     0 0% 100%;
 
@@ -121,7 +121,7 @@
     --muted:                  0 0% 10%;
     --muted-foreground:       0 0% 63%;       /* #A1A1A1 */
 
-    /* ── Accent (hover tint — dark blue) ─── */
+    /* ── Accent (hover tint - dark blue) ─── */
     --accent:                 221 83% 15%;
     --accent-foreground:      221 83% 75%;
 
@@ -178,7 +178,7 @@
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
     font-feature-settings: "cv11", "ss01", "ss03";
-    /* No gradient overlay — hierarchy through whitespace and type */
+    /* No gradient overlay - hierarchy through whitespace and type */
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -219,7 +219,7 @@
   }
 
   /* ── Subtle surface card (replaces heavy glassmorphism) ── */
-  /* Kept as .glass-card for backward compat — now renders clean surface */
+  /* Kept as .glass-card for backward compat - now renders clean surface */
   .glass-card {
     background: hsl(var(--card));
     border: 1px solid hsl(var(--border));
@@ -227,7 +227,7 @@
   }
 
   /* ── Hover elevation (replaces glow-border) ── */
-  /* Kept as .glow-border for backward compat — now a clean elevation */
+  /* Kept as .glow-border for backward compat - now a clean elevation */
   .glow-border {
     transition: box-shadow 0.2s ease, border-color 0.2s ease;
   }
@@ -237,7 +237,7 @@
   }
 
   /* ── Solid accent text (replaces multi-color gradient text) ── */
-  /* Kept as .gradient-text for backward compat — now solid primary */
+  /* Kept as .gradient-text for backward compat - now solid primary */
   .gradient-text {
     color: hsl(var(--primary));
   }
@@ -264,7 +264,7 @@
   .status-completed { @apply bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800/40; }
   .status-expired   { @apply bg-zinc-100 text-zinc-500 border border-zinc-200 dark:bg-zinc-900/50 dark:text-zinc-500 dark:border-zinc-800; }
 
-  /* ── Skeleton shimmer (functional — loading states) ── */
+  /* ── Skeleton shimmer (functional - loading states) ── */
   .skeleton-shimmer {
     background: linear-gradient(
       90deg,

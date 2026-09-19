@@ -1,3 +1,4 @@
+﻿import { motion } from "framer-motion";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -332,9 +333,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
         )}
 
-        <main className="flex-1 overflow-auto">
+        <motion.main key={location.pathname} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: "easeOut" }} className="flex-1 overflow-auto bg-background">
           {children}
-        </main>
+        </motion.main>
       </div>
     </div>
   );
