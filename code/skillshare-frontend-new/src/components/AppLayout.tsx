@@ -1,4 +1,4 @@
-﻿import { motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -231,39 +231,46 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       </aside>
 
       <div className={cn("flex-1 flex flex-col min-w-0 transition-all duration-200", isCollapsed ? "md:ml-16" : "md:ml-60")}>
-        <header className="md:hidden border-b border-border bg-background h-14 px-4 flex items-center justify-between sticky top-0 z-40 flex-shrink-0">
-          <Link to="/dashboard" className="flex items-center gap-2 focus:outline-none">
-            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center flex-shrink-0">
-              <GraduationCap className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="font-semibold text-base">
-              <span className="text-foreground">Skill</span>
-              <span className="text-primary">Share</span>
-            </span>
-          </Link>
+        <header className="border-b border-border bg-background h-14 px-4 md:px-6 flex items-center justify-between sticky top-0 z-40 flex-shrink-0">
+          <div className="flex items-center">
+            {/* Mobile Logo */}
+            <Link to="/dashboard" className="md:hidden flex items-center gap-2 focus:outline-none">
+              <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center flex-shrink-0">
+                <GraduationCap className="w-4 h-4 text-primary-foreground" />
+              </div>
+              <span className="font-semibold text-base">
+                <span className="text-foreground">Skill</span>
+                <span className="text-primary">Share</span>
+              </span>
+            </Link>
+          </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* Credit Indicator - Visible everywhere */}
             {user && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Coins className="w-3.5 h-3.5" aria-hidden />
-                <span className="font-medium text-foreground">{user.credits ?? 0}</span>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold border border-primary/20 shadow-sm">
+                <Coins className="w-4 h-4" aria-hidden />
+                <span>{user.credits ?? 0} <span className="hidden sm:inline">Credits</span></span>
               </div>
             )}
 
+            {/* Profile Avatar - Mobile only since desktop has it in sidebar */}
             <Link
               to={user?.id ? `/profile/${user.id}` : "/dashboard"}
               aria-label="My profile"
+              className="md:hidden"
             >
               <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-semibold border border-primary/15">
                 {getInitials(user?.fullName ?? "")}
               </div>
             </Link>
 
+            {/* Mobile Menu Toggle */}
             <button
               onClick={() => setMobileMenuOpen((v) => !v)}
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
-              className="w-8 h-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              className="md:hidden w-8 h-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
