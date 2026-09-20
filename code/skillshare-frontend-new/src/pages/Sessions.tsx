@@ -211,10 +211,10 @@ const Sessions = () => {
     setActionLoading(s.id);
     try {
       if (action === "accept") {
-        await sessionsApi.accept(s.id);
+        await sessionsApi.updateStatus(s.id, "ACCEPTED");
         toast.success("Session accepted.");
       } else if (action === "reject") {
-        await sessionsApi.reject(s.id);
+        await sessionsApi.updateStatus(s.id, "REJECTED");
         toast.success("Session rejected.");
       } else if (action === "complete") {
         await sessionsApi.complete(s.id);
@@ -241,11 +241,15 @@ const Sessions = () => {
   const isPast = (st: string) => ["COMPLETED", "REJECTED", "CANCELLED", "EXPIRED"].includes(st);
   const isUpcoming = (st: string) => ["PENDING", "ACCEPTED"].includes(st);
 
-  const upcomingLearner = learnerSessions.filter(s => isUpcoming(s.status));
-  const pastLearner = learnerSessions.filter(s => isPast(s.status));
+  // BUG-06: Sort deterministically — upcoming: earliest first; past: most-recent first.
+  const byStartAsc  = (a: Session, b: Session) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+  const byStartDesc = (a: Session, b: Session) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime();
 
-  const upcomingMentor = mentorSessions.filter(s => isUpcoming(s.status));
-  const pastMentor = mentorSessions.filter(s => isPast(s.status));
+  const upcomingLearner = learnerSessions.filter(s => isUpcoming(s.status)).sort(byStartAsc);
+  const pastLearner     = learnerSessions.filter(s => isPast(s.status)).sort(byStartDesc);
+
+  const upcomingMentor = mentorSessions.filter(s => isUpcoming(s.status)).sort(byStartAsc);
+  const pastMentor     = mentorSessions.filter(s => isPast(s.status)).sort(byStartDesc);
 
   return (
     <AppLayout>

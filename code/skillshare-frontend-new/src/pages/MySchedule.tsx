@@ -38,7 +38,7 @@ const MySchedule = () => {
     }
     setLoading(true);
     Promise.all([
-      availabilityApi.getMentorSlots(user.id),
+      availabilityApi.getMyAvailabilities(),  // BUG-07: use authenticated user's own endpoint
       sessionsApi.getMentorSessions(user.id),
     ])
       .then(([slotsData, sessionsData]) => {
@@ -66,10 +66,9 @@ const MySchedule = () => {
     try {
       await availabilityApi.add(start.toISOString(), end.toISOString());
       toast.success("Availability added!");
-      if (user?.id) {
-        const freshSlots = await availabilityApi.getMentorSlots(user.id);
-        setSlots(freshSlots);
-      }
+      // BUG-07: refresh via authenticated endpoint, not public mentor-slots
+      const freshSlots = await availabilityApi.getMyAvailabilities();
+      setSlots(freshSlots);
       setShowForm(false);
       setStartTime("");
       setEndTime("");
@@ -82,7 +81,7 @@ const MySchedule = () => {
 
   const handleRemoveSlot = async (id: number) => {
     try {
-      await availabilityApi.remove(String(id));
+      await availabilityApi.delete(String(id));  // BUG-02: was remove(), API only exports delete()
       setSlots((prev) => prev.filter((s) => s.id !== id));
       toast.success("Slot removed.");
     } catch (err: unknown) {

@@ -91,6 +91,9 @@ export interface TrendingSkillDto {
   totalSessions: number;
 }
 
+/** @alias BUG-03 fix — settings.tsx imported UserSkill; canonical type is UserSkillDto */
+export type UserSkill = UserSkillDto;
+
 // --- AVAILABILITY ---
 export interface AvailabilityRequest {
   startTime: string; // LocalDateTime string e.g. "2026-09-17T15:30:00"
@@ -105,6 +108,9 @@ export interface AvailabilityResponse {
   isBooked: boolean;
   activeSessionId: string | null; // UUID (nullable)
 }
+
+/** @alias BUG-04 fix — MySchedule.tsx imported Availability; canonical type is AvailabilityResponse */
+export type Availability = AvailabilityResponse;
 
 // --- SESSIONS ---
 export interface SessionRequest {
@@ -129,6 +135,9 @@ export interface SessionResponse {
   creditValue: number;
   createdAt: string;
 }
+
+/** @alias Sessions.tsx and MySchedule.tsx imported Session; canonical type is SessionResponse */
+export type Session = SessionResponse;
 
 // --- FEEDBACK ---
 export interface FeedbackRequest {
