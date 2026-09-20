@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-// Card — primary surface container
+// Card - primary surface container
 // Uses `rounded-lg` (12px) for containers per the border-radius hierarchy.
 // Shadow is xs (barely perceptible lift) by default; use shadow-md for elevated cards.
 const Card = React.forwardRef<

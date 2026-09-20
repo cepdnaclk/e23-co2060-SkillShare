@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 /**
  * OAuth2RedirectHandler
  *
- * Mounted at /oauth2/redirect — the exact path the Spring backend sends the
+ * Mounted at /oauth2/redirect - the exact path the Spring backend sends the
  * browser to after a successful GitHub OAuth2 login.
  *
  * Flow:
@@ -84,7 +84,7 @@ const OAuth2RedirectHandler = () => {
           Authenticating with GitHub…
         </h2>
         <p style={{ margin: "0.5rem 0 0", fontSize: "0.95rem", color: "#94a3b8" }}>
-          Hang tight — we're logging you in securely.
+          Hang tight - we're logging you in securely.
         </p>
       </div>
     </div>

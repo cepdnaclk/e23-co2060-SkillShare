@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
-// Badge — pill-shaped for semantic tags per border-radius hierarchy:
+// Badge - pill-shaped for semantic tags per border-radius hierarchy:
 //   - skills, categories, status, availability → rounded-pill (9999px)
 //   - use className override for container-style badges if needed
 const badgeVariants = cva(
@@ -12,19 +12,19 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        // Solid primary — default tag
+        // Solid primary - default tag
         default:
           "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-        // Muted secondary — lower visual weight
+        // Muted secondary - lower visual weight
         secondary:
           "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        // Destructive — errors, blocked states
+        // Destructive - errors, blocked states
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        // Outline — neutral, bordered tag
+        // Outline - neutral, bordered tag
         outline:
           "text-foreground border-border",
-        // Subtle — very light fill for skill tags (use with skill-badge-teach/learn utilities)
+        // Subtle - very light fill for skill tags (use with skill-badge-teach/learn utilities)
         subtle:
           "border-transparent bg-primary/10 text-primary hover:bg-primary/15",
       },

@@ -17,17 +17,19 @@ import MySchedule from "./pages/MySchedule";
 import Notifications from "./pages/Notifications";
 import Sessions from "./pages/Sessions";
 import Settings from "./pages/Settings";
-import Leaderboard from "./pages/Leaderboard";
+
 import NotFound from "./pages/NotFound";
 import OAuth2RedirectHandler from "@/components/OAuth2RedirectHandler";
+
+import { ThemeProvider } from "@/context/ThemeContext";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 });
 
-
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <ThemeProvider>
+    <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <ChatProvider>
         <TooltipProvider>
@@ -39,7 +41,7 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/signup" element={<SignUp />} />
 
-            {/* GitHub OAuth2 redirect handler — must be public (not behind ProtectedRoute)
+            {/* GitHub OAuth2 redirect handler - must be public (not behind ProtectedRoute)
                 because the JWT arrives here for the first time and auth state is not yet set. */}
             <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
             {/* Protected routes */}
@@ -70,9 +72,7 @@ const App = () => (
             <Route path="/settings" element={
               <ProtectedRoute><Settings /></ProtectedRoute>
             } />
-            <Route path="/leaderboard" element={
-              <ProtectedRoute><Leaderboard /></ProtectedRoute>
-            } />
+
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -81,7 +81,8 @@ const App = () => (
       </TooltipProvider>
     </ChatProvider>
     </AuthProvider>
-  </QueryClientProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;

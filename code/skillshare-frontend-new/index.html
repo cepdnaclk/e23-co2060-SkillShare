@@ -15,6 +15,15 @@
     <!-- Inter font — preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('skillshare-theme');
+          var isDark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches) || saved === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (isDark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
   </head>
 
   <body>

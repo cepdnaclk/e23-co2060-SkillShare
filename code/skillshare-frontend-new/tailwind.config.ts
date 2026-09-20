@@ -1,3 +1,4 @@
+import tailwindcssAnimate from "tailwindcss-animate";
 import type { Config } from "tailwindcss";
 
 export default {
@@ -83,11 +84,10 @@ export default {
       borderRadius: {
         // Hierarchy in border radius:
         // pill   → skill tags, status badges, availability indicators (9999px)
-        // xl     → hero sections (20px)
-        // lg     → modals, large panels (16px)
-        // DEFAULT → cards, containers (12px)
-        // md     → inputs, buttons (8px)
-        // sm     → small chips, tight elements (6px)
+        // lg     → cards, modals, large containers (12px)
+        // DEFAULT → standard containers (8px)
+        // md     → inputs, buttons (6px)
+        // sm     → small chips, tight elements (4px)
         pill:  "var(--radius-pill)",
         xl:    "var(--radius-xl)",
         lg:    "var(--radius-lg)",
@@ -141,5 +141,5 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 } satisfies Config;

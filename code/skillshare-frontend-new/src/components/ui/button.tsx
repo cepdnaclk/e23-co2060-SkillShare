@@ -10,22 +10,22 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Solid primary — used for primary CTAs
+        // Solid primary - used for primary CTAs
         default:
           "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 active:scale-[0.98]",
-        // Destructive — used for delete/remove actions
+        // Destructive - used for delete/remove actions
         destructive:
           "bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90 active:scale-[0.98]",
-        // Outline — secondary actions, clearly bordered
+        // Outline - secondary actions, clearly bordered
         outline:
           "border border-border bg-background hover:bg-secondary hover:text-foreground active:scale-[0.98]",
-        // Secondary — subtle fill, lower visual weight than primary
+        // Secondary - subtle fill, lower visual weight than primary
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/70 active:scale-[0.98]",
-        // Ghost — minimal, for navigation and icon actions
+        // Ghost - minimal, for navigation and icon actions
         ghost:
           "hover:bg-accent hover:text-accent-foreground active:scale-[0.98]",
-        // Link — inline text action
+        // Link - inline text action
         link:
           "text-primary underline-offset-4 hover:underline p-0 h-auto",
       },

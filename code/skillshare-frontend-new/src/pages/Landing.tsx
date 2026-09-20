@@ -1,3 +1,4 @@
+﻿import { InteractiveDots } from "@/components/InteractiveDots";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -9,11 +10,10 @@ import {
   Users,
   ArrowLeftRight,
   MessageSquare,
-  PlayCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "@/hooks/useTheme";
+import { useTheme } from "@/context/ThemeContext";
 
 /* ─── Animation variants ─────────────────────────────────────────────────── */
 const fadeUp = {
@@ -31,6 +31,16 @@ const fadeIn = {
   show:   { opacity: 1, transition: { duration: 0.3, ease: "easeOut" } },
 };
 
+/* ─── Static skill data ───────────────────────────────────────────────────── */
+const teachSkills = [
+  "Python", "UI/UX Design", "Machine Learning", "Guitar",
+  "Photography", "Public Speaking", "Calculus", "React",
+];
+
+const learnSkills = [
+  "Video Editing", "Digital Marketing", "Data Analysis", "Piano",
+  "3D Modelling", "Game Dev", "Spanish", "Finance",
+];
 
 
 /* ─── How It Works steps ─────────────────────────────────────────────────── */
@@ -38,7 +48,7 @@ const steps = [
   {
     num: "01",
     title: "Share",
-    desc: "Tell people what you can teach — any skill, any level.",
+    desc: "Tell people what you can teach - any skill, any level.",
   },
   {
     num: "02",
@@ -61,158 +71,205 @@ const Landing = () => {
   const isDark = theme === "dark";
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+
       {/* ── 1. NAVIGATION ─────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          
-          {/* Logo */}
+      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+
+          {/* Wordmark - no gap between Skill and Share */}
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="flex items-center gap-2.5 font-bold text-lg select-none focus:outline-none"
+            className="flex items-center gap-2 font-semibold text-base select-none focus:outline-none"
           >
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center flex-shrink-0 shadow-sm">
-              <GraduationCap className="w-5 h-5 text-primary-foreground" />
+            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center flex-shrink-0">
+              <GraduationCap className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span className="tracking-tight">
+            <span>
               <span className="text-foreground">Skill</span>
               <span className="text-primary">Share</span>
             </span>
           </button>
 
-          {/* Center Nav */}
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
-            <button onClick={() => document.getElementById("skills")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-primary transition-colors">Explore</button>
-            <button onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })} className="hover:text-primary transition-colors">How it works</button>
-            <button className="hover:text-primary transition-colors">About</button>
-          </nav>
-
           {/* Right nav */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setTheme(isDark ? "light" : "dark")}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors duration-150"
+              className="w-8 h-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors duration-150"
               aria-label="Toggle theme"
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
-            <div className="hidden sm:flex items-center gap-2">
-              <Button
-                variant="ghost"
-                className="text-muted-foreground hover:text-foreground font-medium rounded-full px-5"
-                onClick={() => navigate("/signup", { state: { tab: "signin" } })}
-              >
-                Log in
-              </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => navigate("/signup", { state: { tab: "signin" } })}
+            >
+              Log in
+            </Button>
 
-              <Button
-                className="font-medium rounded-full px-6 shadow-sm"
-                onClick={() => navigate("/signup", { state: { tab: "signup" } })}
-              >
-                Sign up
-              </Button>
-            </div>
+            <Button
+              size="sm"
+              onClick={() => navigate("/signup", { state: { tab: "signup" } })}
+            >
+              Get started
+            </Button>
           </div>
         </div>
       </header>
 
       {/* ── 2. HERO ───────────────────────────────────────────────────────── */}
-      <section className="relative max-w-7xl mx-auto px-6 pt-24 pb-20 lg:pt-32 lg:pb-28">
-        {/* Decorative background blur */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
+      <section className="relative max-w-6xl mx-auto px-6 pt-20 pb-16">
+        {/* Dot-grid texture - barely visible */}
+        <InteractiveDots />
+        {/* Extremely subtle primary-blue atmospheric centre - stays almost white */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse 60% 50% at 50% 40%, hsl(var(--primary) / 0.045) 0%, transparent 70%)",
+          }}
+          aria-hidden
+        />
 
         <motion.div
           variants={stagger}
           initial="hidden"
           animate="show"
-          className="relative z-10 max-w-3xl mx-auto text-center"
+          className="relative z-10 max-w-2xl mx-auto text-center"
         >
-          <motion.h1
-            variants={fadeUp}
-            className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-foreground mb-6 leading-[1.1]"
-          >
-            Learn. Teach.<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-violet-500">
-              Grow Together.
-            </span>
-          </motion.h1>
-
+          {/* Eyebrow */}
           <motion.p
             variants={fadeUp}
-            className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed"
+            className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground mb-10"
           >
-            A peer-to-peer skill sharing platform for university students. Share what you know. Learn what you love.
+            Peer-to-peer skill sharing
           </motion.p>
 
+          {/* Primary statement - the product identity */}
+          <motion.h1
+            variants={fadeUp}
+            className="text-[clamp(2.25rem,6vw,3.75rem)] font-bold leading-[1.08] tracking-[-0.025em] text-foreground mb-3"
+          >
+            Everyone has something
+            <br />
+            <span className="text-primary">to teach.</span>
+          </motion.h1>
+
+          {/* Secondary statement - echoes, slightly smaller */}
+          <motion.p
+            variants={fadeUp}
+            className="text-[clamp(1.25rem,3.5vw,1.875rem)] font-semibold leading-snug tracking-[-0.02em] text-muted-foreground mb-8"
+          >
+            Everyone has something to learn.
+          </motion.p>
+
+          {/* Supporting copy - one sentence, no jargon */}
+          <motion.p
+            variants={fadeUp}
+            className="text-sm sm:text-base text-muted-foreground max-w-sm mx-auto mb-10 leading-relaxed"
+          >
+            Share what you know. Learn from someone else.
+          </motion.p>
+
+          {/* CTA buttons */}
           <motion.div
             variants={fadeUp}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            className="flex flex-col sm:flex-row gap-2.5 justify-center mb-10"
           >
             <Button
               size="lg"
-              className="gap-2 px-8 h-12 rounded-full text-base font-medium shadow-md shadow-primary/20 w-full sm:w-auto"
+              className="gap-2 px-8"
               onClick={() => navigate("/signup", { state: { tab: "signup" } })}
             >
-              Get Started <ArrowRight className="w-4 h-4" />
+              Get started <ArrowRight className="w-4 h-4" />
             </Button>
             <Button
               variant="outline"
               size="lg"
-              className="gap-2 px-8 h-12 rounded-full text-base font-medium w-full sm:w-auto hover:bg-secondary/50"
-              onClick={() => {}}
+              className="px-8"
+              onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
             >
-              <PlayCircle className="w-5 h-5 text-primary" /> Watch Video
+              How it works
             </Button>
+          </motion.div>
+
+          {/* Popular skills - very subtle, no interactive affordance */}
+          <motion.div variants={fadeUp} className="flex flex-wrap gap-1.5 justify-center">
+            <span className="text-xs text-muted-foreground/60 self-center mr-1">Popular:</span>
+            {["Python", "UI/UX Design", "Photography", "Guitar", "Public Speaking", "Machine Learning"].map((skill) => (
+              <span
+                key={skill}
+                className="text-xs px-2.5 py-1 h-6 rounded-full border border-border/60 text-muted-foreground/70 select-none"
+              >
+                {skill}
+              </span>
+            ))}
           </motion.div>
         </motion.div>
       </section>
 
+      {/* ── 3. TEACH ↔ LEARN - the conceptual centerpiece ─────────────────── */}
+      <section className="border-y border-border bg-secondary/25">
+        <div className="max-w-6xl mx-auto px-6 py-20">
 
-
-      {/* ── 3. TEACH ↔ LEARN ─────────────────────────────────────────────── */}
-      <section className="py-24 bg-background">
-        <div className="max-w-6xl mx-auto px-6">
+          {/* Section header */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.28 }}
-            className="text-center mb-16"
+            className="text-center mb-12"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Every person is both a teacher and a learner
+            <p className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground mb-3">
+              One profile. Two sides.
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-[-0.02em] mb-3">
+              Every person is both a teacher and a learner.
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Share what you know and discover what you want to learn. You're not locked into one role.
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              Share what you know and discover what you want to learn.
             </p>
           </motion.div>
 
+          {/* Two-sided layout - cards with connector */}
           <motion.div
             variants={stagger}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: "-60px" }}
-            className="grid md:grid-cols-[1fr_auto_1fr] gap-6 md:gap-8 items-center"
+            className="grid md:grid-cols-[1fr_64px_1fr] gap-3 md:gap-0 items-stretch"
           >
+            {/* I Can Teach */}
             <motion.div
               variants={fadeUp}
-              className="rounded-2xl border bg-card p-8 shadow-sm hover:shadow-md transition-shadow"
+              className="rounded-lg border p-6 sm:p-7"
+              style={{
+                background: "hsl(var(--teach-bg))",
+                borderColor: "hsl(var(--teach-border))",
+              }}
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-primary/10 rounded-xl">
-                  <BookOpen className="w-6 h-6 text-primary" />
-                </div>
+              <div className="flex items-center gap-2.5 mb-5">
+                <BookOpen
+                  className="w-4 h-4 flex-shrink-0"
+                  style={{ color: "hsl(var(--teach-text))" }}
+                />
                 <div>
-                  <h3 className="text-lg font-semibold">I Can Teach</h3>
-                  <p className="text-sm text-muted-foreground">Skills I share with others</p>
+                  <p
+                    className="text-[11px] font-semibold tracking-[0.1em] uppercase leading-none mb-0.5"
+                    style={{ color: "hsl(var(--teach-text))" }}
+                  >
+                    I Can Teach
+                  </p>
+                  <p className="text-xs text-muted-foreground">Skills I share with others</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                {["Python", "Guitar"].map((skill) => (
+                {teachSkills.map((skill) => (
                   <span
                     key={skill}
-                    className="skill-badge-teach inline-flex items-center h-7 text-xs px-3 rounded-full font-medium"
+                    className="skill-badge-teach inline-flex items-center h-6 text-xs px-2.5 font-medium"
                   >
                     {skill}
                   </span>
@@ -220,33 +277,49 @@ const Landing = () => {
               </div>
             </motion.div>
 
+            {/* Connector - centered bidirectional symbol */}
             <motion.div
               variants={fadeIn}
-              className="hidden md:flex flex-col items-center gap-2"
+              className="flex items-center justify-center py-4 md:py-0"
             >
-              <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-muted-foreground shadow-sm">
-                <ArrowLeftRight className="w-5 h-5" />
+              <div className="flex flex-col items-center gap-1 text-muted-foreground/50">
+                <div className="hidden md:block w-px h-8 bg-border" />
+                <div className="w-8 h-8 rounded-full border border-border bg-background flex items-center justify-center">
+                  <ArrowLeftRight className="w-3.5 h-3.5 text-muted-foreground" />
+                </div>
+                <div className="hidden md:block w-px h-8 bg-border" />
               </div>
             </motion.div>
 
+            {/* I Want to Learn */}
             <motion.div
               variants={fadeUp}
-              className="rounded-2xl border bg-card p-8 shadow-sm hover:shadow-md transition-shadow"
+              className="rounded-lg border p-6 sm:p-7"
+              style={{
+                background: "hsl(var(--learn-bg))",
+                borderColor: "hsl(var(--learn-border))",
+              }}
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-violet-500/10 rounded-xl">
-                  <Compass className="w-6 h-6 text-violet-500" />
-                </div>
+              <div className="flex items-center gap-2.5 mb-5">
+                <Compass
+                  className="w-4 h-4 flex-shrink-0"
+                  style={{ color: "hsl(var(--learn-text))" }}
+                />
                 <div>
-                  <h3 className="text-lg font-semibold">I Want to Learn</h3>
-                  <p className="text-sm text-muted-foreground">Skills I want from others</p>
+                  <p
+                    className="text-[11px] font-semibold tracking-[0.1em] uppercase leading-none mb-0.5"
+                    style={{ color: "hsl(var(--learn-text))" }}
+                  >
+                    I Want to Learn
+                  </p>
+                  <p className="text-xs text-muted-foreground">Skills I want from others</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                {["Video Editing", "Spanish"].map((skill) => (
+                {learnSkills.map((skill) => (
                   <span
                     key={skill}
-                    className="skill-badge-learn inline-flex items-center h-7 text-xs px-3 rounded-full font-medium"
+                    className="skill-badge-learn inline-flex items-center h-6 text-xs px-2.5 font-medium"
                   >
                     {skill}
                   </span>
@@ -254,141 +327,293 @@ const Landing = () => {
               </div>
             </motion.div>
           </motion.div>
+
+          {/* Bottom note */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+            className="text-center text-xs text-muted-foreground mt-8"
+          >
+            You're not locked into one role - teach what you know, learn what you don't.
+          </motion.p>
         </div>
       </section>
 
       {/* ── 4. HOW IT WORKS ───────────────────────────────────────────────── */}
-      <section id="how-it-works" className="py-24 bg-secondary/30">
-        <div className="max-w-6xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.28 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Three steps to your next exchange
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Getting started is easy. Build your profile and start connecting.
-            </p>
-          </motion.div>
-
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-60px" }}
-            className="grid md:grid-cols-3 gap-8"
-          >
-            {steps.map((step, i) => (
-              <motion.div
-                key={step.num}
-                variants={fadeUp}
-                className="bg-card rounded-2xl p-8 border shadow-sm relative overflow-hidden"
-              >
-                <div className="text-[100px] font-black absolute -top-10 -right-6 text-muted/20 select-none pointer-events-none">
-                  {step.num}
-                </div>
-                <div className="relative z-10">
-                  <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center font-bold text-lg mb-6">
-                    {step.num}
-                  </div>
-                  <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed">{step.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-
-
-      {/* ── 6. PEOPLE DISCOVERY ────────────────────────────────────────── */}
-      <section className="py-24 bg-secondary/20">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.28 }}
-            >
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-6">
-                Meet people through what they know.
-              </h2>
-              <p className="text-lg text-muted-foreground leading-relaxed mb-8">
-                On SkillShare, skills are how you introduce yourself. What you can teach tells people who you are. What you want to learn tells people what you're looking for.
-              </p>
-
-              <ul className="space-y-4 max-w-lg mx-auto text-left">
-                {[
-                  { icon: BookOpen,       text: "Browse what others can teach" },
-                  { icon: Users,          text: "Find someone whose skills match what you need" },
-                  { icon: ArrowLeftRight, text: "Offer something in return — or just connect" },
-                  { icon: MessageSquare,  text: "Chat, agree on a time, and exchange knowledge" },
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-4 text-base font-medium">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <item.icon className="w-4 h-4 text-primary" />
-                    </div>
-                    {item.text}
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-        </div>
-      </section>
-
-      {/* ── 7. FINAL CTA ──────────────────────────────────────────────────── */}
-      <section className="py-24 relative overflow-hidden bg-primary text-primary-foreground">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-        
+      <section id="how-it-works" className="max-w-6xl mx-auto px-6 py-20">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.28 }}
-          className="max-w-4xl mx-auto px-6 text-center relative z-10"
+          className="mb-14"
         >
-          <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
-            Ready to share your skills?
-          </h2>
-          <p className="text-xl text-primary-foreground/80 leading-relaxed mb-10 max-w-2xl mx-auto">
-            Join our community of university students learning from each other every day.
+          <p className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground mb-3">
+            How it works
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              size="lg"
-              variant="secondary"
-              className="gap-2 px-10 h-14 rounded-full text-lg font-semibold text-primary hover:bg-white shadow-lg"
-              onClick={() => navigate("/signup", { state: { tab: "signup" } })}
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-[-0.02em] max-w-xs">
+            Three steps to your next exchange.
+          </h2>
+        </motion.div>
+
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-60px" }}
+          className="grid sm:grid-cols-3 gap-px bg-border rounded-lg overflow-hidden"
+        >
+          {steps.map((step, i) => (
+            <motion.div
+              key={step.num}
+              variants={fadeUp}
+              className="bg-background p-8 flex flex-col"
             >
-              Get started for free <ArrowRight className="w-5 h-5" />
-            </Button>
+              {/* Step number */}
+              <span className="text-[44px] font-bold leading-none text-border/80 mb-6 select-none tabular-nums">
+                {step.num}
+              </span>
+
+              <h3 className="text-base font-semibold mb-2">{step.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
+            </motion.div>
+          ))}
+        </motion.div>
+      </section>
+
+      {/* ── 5. SKILLS STRIP ───────────────────────────────────────────────── */}
+      <section className="border-t border-border bg-secondary/20">
+        <div className="max-w-6xl mx-auto px-6 py-16">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.28 }}
+            className="mb-10"
+          >
+            <p className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground mb-3">
+              What people share
+            </p>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-[-0.02em]">
+              Find people through what they know.
+            </h2>
+          </motion.div>
+
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-60px" }}
+            className="grid sm:grid-cols-2 gap-8"
+          >
+            {/* Teaching */}
+            <motion.div variants={fadeUp}>
+              <p
+                className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-3"
+                style={{ color: "hsl(var(--teach-text))" }}
+              >
+                People are teaching
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {[...teachSkills, "Figma", "TypeScript", "Yoga", "Statistics"].map((skill) => (
+                  <button
+                    key={skill}
+                    onClick={() => navigate("/signup")}
+                    className="skill-badge-teach inline-flex items-center h-6 text-xs px-2.5 font-medium hover:opacity-75 transition-opacity"
+                  >
+                    {skill}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Learning */}
+            <motion.div variants={fadeUp}>
+              <p
+                className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-3"
+                style={{ color: "hsl(var(--learn-text))" }}
+              >
+                People want to learn
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {[...learnSkills, "Cooking", "Cinematography", "Arabic", "Negotiation"].map((skill) => (
+                  <button
+                    key={skill}
+                    onClick={() => navigate("/signup")}
+                    className="skill-badge-learn inline-flex items-center h-6 text-xs px-2.5 font-medium hover:opacity-75 transition-opacity"
+                  >
+                    {skill}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── 6. PEOPLE DISCOVERY ────────────────────────────────────────── */}
+      <section className="max-w-6xl mx-auto px-6 py-20">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+
+          {/* Text side */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.28 }}
+          >
+            <p className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground mb-4">
+              How people connect
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-[-0.02em] mb-4">
+              Meet people through what they know.
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-8 max-w-sm">
+              On SkillShare, skills are how you introduce yourself.
+              What you can teach tells people who you are.
+              What you want to learn tells people what you're looking for.
+            </p>
+
+            <ul className="space-y-3.5">
+              {[
+                { icon: BookOpen,       text: "Browse what others can teach" },
+                { icon: Users,          text: "Find someone whose skills match what you need" },
+                { icon: ArrowLeftRight, text: "Offer something in return - or just connect" },
+                { icon: MessageSquare,  text: "Chat, agree on a time, and exchange knowledge" },
+              ].map((item) => (
+                <li key={item.text} className="flex items-center gap-3 text-sm text-foreground">
+                  <item.icon className="w-4 h-4 text-primary flex-shrink-0" />
+                  {item.text}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+
+          {/* Profile card - peer, not mentor */}
+          <motion.div
+            initial={{ opacity: 0, x: 12 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.35 }}
+            className="rounded-lg border border-border bg-card shadow-xs p-6 max-w-sm md:ml-auto"
+          >
+            {/* Avatar + name */}
+            <div className="flex items-center gap-3 mb-5 pb-4 border-b border-border">
+              <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center text-sm font-semibold text-primary flex-shrink-0">
+                IB
+              </div>
+              <div>
+                <p className="text-sm font-semibold leading-tight">Irusha Bandara</p>
+                <p className="text-xs text-muted-foreground">Engineering Student</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Can teach */}
+              <div>
+                <p
+                  className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-2"
+                  style={{ color: "hsl(var(--teach-text))" }}
+                >
+                  I can teach
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["Python", "Machine Learning", "Data Structures", "Calculus", "React"].map((s) => (
+                    <span key={s} className="skill-badge-teach inline-flex items-center h-5 text-[11px] px-2 font-medium">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Wants to learn */}
+              <div>
+                <p
+                  className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-2"
+                  style={{ color: "hsl(var(--learn-text))" }}
+                >
+                  I want to learn
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["Photography", "Digital Marketing", "Piano", "Spanish", "Finance", "Video Editing"].map((s) => (
+                    <span key={s} className="skill-badge-learn inline-flex items-center h-5 text-[11px] px-2 font-medium">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full mt-1"
+                onClick={() => navigate("/signup")}
+              >
+                Connect with Irusha
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+
+      {/* ── 7. FINAL CTA ──────────────────────────────────────────────────── */}
+      <section className="border-t border-border">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.28 }}
+          className="max-w-6xl mx-auto px-6 py-24"
+        >
+          <div className="max-w-lg">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-[-0.025em] mb-4 leading-[1.1]">
+              Have something<br />to share?
+            </h2>
+            <p className="text-muted-foreground text-base leading-relaxed mb-8">
+              Someone out there may be looking for exactly what you know.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                size="lg"
+                className="gap-2 px-8"
+                onClick={() => navigate("/signup", { state: { tab: "signup" } })}
+              >
+                Get started <ArrowRight className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="px-8"
+                onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
+              >
+                Explore skills
+              </Button>
+            </div>
           </div>
         </motion.div>
       </section>
 
       {/* ── 8. FOOTER ─────────────────────────────────────────────────────── */}
-      <footer className="bg-background border-t border-border py-12">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3 select-none">
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center flex-shrink-0 shadow-sm">
-              <GraduationCap className="w-5 h-5 text-primary-foreground" />
+      <footer className="border-t border-border">
+        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2 select-none">
+            <div className="w-5 h-5 rounded bg-primary flex items-center justify-center flex-shrink-0">
+              <GraduationCap className="w-3 h-3 text-primary-foreground" />
             </div>
-            <span className="text-lg font-bold tracking-tight">
+            <span className="text-sm font-semibold">
               <span className="text-foreground">Skill</span>
               <span className="text-primary">Share</span>
             </span>
           </div>
-          <p className="text-sm font-medium text-muted-foreground">
-            © {new Date().getFullYear()} SkillShare. Built for students, by students.
+          <p className="text-xs text-muted-foreground">
+            © 2026 SkillShare. Built for students, by students.
           </p>
         </div>
       </footer>
+
     </div>
   );
 };

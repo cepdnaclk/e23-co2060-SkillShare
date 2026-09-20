@@ -1,15 +1,14 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search as SearchIcon, Filter, X, ChevronRight, BookOpen, Star, Flame, Users2 } from "lucide-react";
+import { Search as SearchIcon, X, ChevronRight, BookOpen, Star, Users2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { skillsApi as publicSkillsApi } from "@/api/skills.api";
+import { skillsApi } from "@/api/skills.api";
 import { userSkillsApi } from "@/api/userSkills.api";
 import { trendingApi } from "@/api/dashboard.api";
-import type { Skill, UserSkillDto as UserSkill, UserSearchResponse, UserPublicDto } from "@/api/types";
+import { type Skill, type UserSkill, type UserSearchResponse, type UserPublicDto } from "@/api/types";
+
 import { SkeletonList } from "@/components/SkeletonCard";
 import ErrorBanner from "@/components/ErrorBanner";
 
@@ -32,25 +31,41 @@ const CATEGORY_MAPPER: Record<string, string> = {
   "Business & Finance": "Marketing"
 };
 
+const getInitials = (name: string) =>
+  name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+
 const Search = () => {
   const navigate = useNavigate();
 
-  // ── Main search bar ─────────────────────────
+  // Search state
   const [query, setQuery] = useState("");
   const [matchedSkills, setMatchedSkills] = useState<Skill[]>([]);
   const [matchedUsers, setMatchedUsers] = useState<UserSearchResponse[]>([]);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
   const [mentors, setMentors] = useState<UserSkill[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
   const [nameFilter, setNameFilter] = useState("");
   const [loadingSkills, setLoadingSkills] = useState(false);
   const [loadingMentors, setLoadingMentors] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ── Custom Trending states ───
+  // Trending state
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [trendMentors, setTrendMentors] = useState<UserPublicDto[]>([]);
   const [trendMentorsLoading, setTrendMentorsLoading] = useState(false);
+  
+  // Ref for autocomplete click outside
+  const autocompleteRef = useRef<HTMLDivElement>(null);
+  const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(event.target as Node)) {
+        setIsAutocompleteOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Fetch trending mentors automatically whenever the selected category changes
   useEffect(() => {
@@ -63,7 +78,6 @@ const Search = () => {
         .catch(() => setTrendMentors([]))
         .finally(() => setTrendMentorsLoading(false));
     } else if (!selectedCategory) {
-      // Clear data if nothing has been chosen yet
       setTrendMentors([]);
     }
   }, [selectedCategory, selectedSkill, query]);
@@ -71,13 +85,14 @@ const Search = () => {
   // Search skills by query (debounced)
   const handleQueryChange = useCallback((q: string) => {
     setQuery(q);
+    setIsAutocompleteOpen(true);
     clearTimeout(searchTimer);
     if (!q.trim()) { setMatchedSkills([]); setMatchedUsers([]); return; }
     searchTimer = setTimeout(async () => {
       setLoadingSkills(true);
       try {
         const [skills, users] = await Promise.all([
-          publicSkillsApi.search(q),
+          skillsApi.search(q),
           userSkillsApi.searchProfiles(q)
         ]);
         setMatchedSkills(skills);
@@ -94,6 +109,7 @@ const Search = () => {
     setSelectedSkill(skill);
     setMatchedSkills([]);
     setQuery(skill.name);
+    setIsAutocompleteOpen(false);
     setLoadingMentors(true);
     setError(null);
     try {
@@ -107,279 +123,252 @@ const Search = () => {
   }, []);
 
   const clearSearch = () => {
-    setQuery(""); setMatchedSkills([]); setSelectedSkill(null); setMentors([]); setError(null); setNameFilter("");
+    setQuery(""); 
+    setMatchedSkills([]); 
+    setSelectedSkill(null); 
+    setMentors([]); 
+    setError(null); 
+    setNameFilter("");
+    setIsAutocompleteOpen(false);
   };
 
-  const getInitials = (name: string) =>
-    name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "U";
-
-  const handleCategoryClick = (cat: string) => {
-    if (selectedCategory === cat) {
-      setSelectedCategory(null);
-    } else {
-      setSelectedCategory(cat);
-    }
-  };
-
-  const showEmptyState = !selectedSkill && !query;
+  const showEmptyState = !selectedSkill && !query && !selectedCategory;
 
   return (
     <AppLayout>
-      <div className="p-6 md:p-8 max-w-5xl mx-auto pb-24 md:pb-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-3xl font-heading font-bold text-foreground">Explore</h1>
-          </div>
-          <p className="text-muted-foreground text-base mb-6">Discover skills and connect with mentors</p>
-        </motion.div>
+      <div className="p-4 sm:p-6 md:p-10 max-w-4xl mx-auto flex flex-col min-h-[calc(100vh-4rem)]">
+        
+        <div className="mb-10">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-2">Explore</h1>
+          <p className="text-muted-foreground text-sm">Discover skills and people to connect with.</p>
+        </div>
 
         {/* Search bar */}
-        <div className="relative mb-6">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                id="skill-search-input"
-                placeholder="Search for a skill (e.g. Python, React, UI/UX)…"
-                value={query}
-                onChange={(e) => handleQueryChange(e.target.value)}
-                className="pl-12 pr-10 bg-card rounded-xl border-border focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary h-14 text-base shadow-sm"
-              />
-              {query && (
-                <button onClick={clearSearch} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                  <X className="w-5 h-5" />
-                </button>
-              )}
-            </div>
-            <Button
-              size="icon"
-              className={`h-14 w-14 rounded-xl border ${
-                showFilters
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-card text-muted-foreground hover:text-foreground border-border shadow-sm"
-              }`}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="w-5 h-5" />
-            </Button>
-          </div>
-
-          {/* Skill suggestion dropdown */}
-          <AnimatePresence>
-            {(matchedUsers.length > 0 || matchedSkills.length > 0 || loadingSkills) && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                className="absolute top-full mt-2 left-0 right-16 z-50 bg-card border border-border rounded-xl shadow-lg overflow-hidden"
-              >
-                {matchedUsers.map(user => (
-                  <button
-                    key={user.id}
-                    onClick={() => navigate(`/profile/${user.id}`)}
-                    className="w-full text-left px-5 py-3.5 text-sm hover:bg-muted/50 flex items-center justify-between"
-                  >
-                    <div>
-                      <span className="font-medium text-foreground">{user.fullName}</span>
-                      <span className="ml-2 text-xs text-primary">User</span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                ))}
-                {loadingSkills ? (
-                  <div className="px-5 py-3.5 text-sm text-muted-foreground">Searching…</div>
-                ) : (
-                  matchedSkills.slice(0, 8).map(skill => (
-                    <button
-                      key={skill.id}
-                      onClick={() => selectSkill(skill)}
-                      className="w-full text-left px-5 py-3.5 text-sm hover:bg-muted/50 transition-colors flex items-center justify-between group"
-                    >
-                      <div>
-                        <span className="font-medium text-foreground">{skill.name}</span>
-                        {skill.category && (
-                          <span className="ml-2 text-xs text-muted-foreground">{skill.category}</span>
-                        )}
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </button>
-                  ))
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Category Pills */}
-        <div className="flex overflow-x-auto pb-4 mb-4 gap-2 scrollbar-none">
-          {TREND_CATEGORIES.map(cat => (
-            <button
-              key={cat}
-              onClick={() => handleCategoryClick(cat)}
-              className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
-                selectedCategory === cat 
-                  ? "bg-primary text-primary-foreground border-primary" 
-                  : "bg-card text-foreground border-border hover:border-primary/50"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* Selected skill header */}
-        <AnimatePresence>
-          {selectedSkill && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mb-6">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Showing mentors for:</span>
-                <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 border-0 gap-1 px-3 py-1 text-sm rounded-full">
-                  <BookOpen className="w-3.5 h-3.5" /> {selectedSkill.name}
-                  <button onClick={clearSearch} className="ml-1 hover:text-primary-foreground hover:bg-primary rounded-full p-0.5 transition-colors"><X className="w-3.5 h-3.5" /></button>
-                </Badge>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Name filter */}
-        {selectedSkill && mentors.length > 0 && (
-          <div className="relative mb-6">
-            <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="relative mb-8" ref={autocompleteRef}>
+          <div className="relative">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              id="name-filter-input"
-              placeholder="Filter results by mentor name…"
-              value={nameFilter}
-              onChange={(e) => setNameFilter(e.target.value)}
-              className="pl-11 pr-10 bg-card rounded-xl border-border h-12 text-sm shadow-sm"
+              id="skill-search-input"
+              placeholder="Search for a skill (e.g. React) or a person..."
+              value={query}
+              onFocus={() => setIsAutocompleteOpen(true)}
+              onChange={(e) => handleQueryChange(e.target.value)}
+              className="pl-10 pr-10 bg-background border-border h-12 shadow-sm rounded-xl focus-visible:ring-1 focus-visible:ring-primary/20"
             />
-            {nameFilter && (
-              <button onClick={() => setNameFilter("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            {query && (
+              <button onClick={clearSearch} aria-label="Clear search" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1">
                 <X className="w-4 h-4" />
               </button>
+            )}
+          </div>
+
+          {/* Autocomplete Dropdown */}
+          {isAutocompleteOpen && (matchedUsers.length > 0 || matchedSkills.length > 0 || loadingSkills) && (
+            <div className="absolute top-full mt-2 left-0 right-0 z-50 bg-background border border-border rounded-xl shadow-sm overflow-hidden max-h-80 overflow-y-auto">
+              {matchedUsers.length > 0 && (
+                <div className="py-2">
+                  <div className="px-4 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">People</div>
+                  {matchedUsers.map(user => (
+                    <button
+                      key={user.id}
+                      onClick={() => navigate(`/profile/${user.id}`)}
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-secondary flex items-center justify-between"
+                    >
+                      <span className="font-medium text-foreground">{user.fullName}</span>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground opacity-50" />
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {(matchedSkills.length > 0 || loadingSkills) && (
+                <div className="py-2 border-t border-border/50">
+                  <div className="px-4 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Skills</div>
+                  {loadingSkills ? (
+                    <div className="px-4 py-3 text-sm text-muted-foreground">Searching...</div>
+                  ) : (
+                    matchedSkills.slice(0, 8).map(skill => (
+                      <button
+                        key={skill.id}
+                        onClick={() => selectSkill(skill)}
+                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-secondary flex items-center justify-between group"
+                      >
+                        <div>
+                          <span className="font-medium text-foreground">{skill.name}</span>
+                          {skill.category && (
+                            <span className="ml-2 text-xs text-muted-foreground">{skill.category}</span>
+                          )}
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Selected skill header & Name filter */}
+        {selectedSkill && (
+          <div className="mb-8 space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Showing results for</span>
+              <Badge variant="secondary" className="gap-1.5 px-2.5 py-1 text-sm font-medium">
+                <BookOpen className="w-3.5 h-3.5" />
+                {selectedSkill.name}
+                <button onClick={clearSearch} aria-label="Remove filter" className="hover:bg-muted-foreground/20 rounded-full p-0.5 ml-1">
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            </div>
+
+            {mentors.length > 0 && (
+              <div className="relative max-w-sm">
+                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="name-filter-input"
+                  placeholder="Filter by name..."
+                  value={nameFilter}
+                  onChange={(e) => setNameFilter(e.target.value)}
+                  className="pl-9 pr-9 bg-secondary/50 border-transparent focus-visible:border-border focus-visible:bg-background h-10 text-sm rounded-lg"
+                />
+                {nameFilter && (
+                  <button onClick={() => setNameFilter("")} aria-label="Clear name filter" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}
 
         <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-6" />
 
-        {/* Results layout logic */}
-        {loadingMentors ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <SkeletonList count={4} />
-          </div>
-        ) : selectedSkill && mentors.length === 0 && !loadingMentors ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20 bg-card rounded-xl border border-border shadow-sm">
-            <BookOpen className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <p className="font-medium text-foreground text-lg">No mentors found for "{selectedSkill.name}"</p>
-            <p className="text-sm text-muted-foreground mt-2">Try a different skill or check back later.</p>
-          </motion.div>
-        ) : showEmptyState ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            
-            <div className="mb-8">
-              {!selectedCategory ? (
-                <div className="p-10 rounded-xl bg-card border border-border text-center shadow-sm">
-                  <Flame className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-                  <p className="text-foreground font-medium">Select a category</p>
-                  <p className="text-sm text-muted-foreground mt-1">Choose a category above to view trending mentors.</p>
-                </div>
-              ) : trendMentorsLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <SkeletonList count={4} />
-                </div>
-              ) : trendMentors.length === 0 ? (
-                <div className="p-10 rounded-xl bg-card border border-border text-center shadow-sm">
-                  <Users2 className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-                  <p className="text-foreground font-medium">No trending mentors</p>
-                  <p className="text-sm text-muted-foreground mt-1">No one is currently trending in {selectedCategory}.</p>
-                </div>
-              ) : (
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Flame className="w-5 h-5 text-primary" />
-                    <h2 className="text-lg font-semibold text-foreground">Trending in {selectedCategory}</h2>
+        {/* Default View (Trending Categories) */}
+        {!selectedSkill && !query && (
+          <div className="space-y-8 animate-in fade-in duration-500">
+            <div>
+              <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-4">Discover Top Mentors</h2>
+              <div className="flex flex-wrap gap-2">
+                {TREND_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
+                      selectedCategory === cat 
+                        ? "bg-foreground text-background border-foreground" 
+                        : "bg-background text-foreground border-border hover:border-foreground/30"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {selectedCategory && (
+              <div>
+                {trendMentorsLoading ? (
+                  <SkeletonList count={3} />
+                ) : trendMentors.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <p className="text-sm text-muted-foreground">No trending mentors found in this category.</p>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {trendMentors.map((mentor, i) => (
-                      <motion.div
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {trendMentors.map((mentor) => (
+                      <button
                         key={mentor.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 }}
                         onClick={() => navigate(`/profile/${mentor.id}`)}
-                        className="p-5 rounded-xl bg-card border border-border hover:shadow-md transition-shadow cursor-pointer flex flex-col gap-4"
+                        className="flex flex-col p-5 rounded-2xl border border-border bg-card text-left transition-colors hover:border-foreground/20"
                       >
-                        <div className="flex items-start gap-4">
-                          <div className="relative">
-                            <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-heading font-semibold text-sm">
-                              {getInitials(mentor.fullName)}
-                            </div>
-                            <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shadow-sm border-2 border-card">
-                              {i + 1}
-                            </div>
+                        <div className="flex items-start gap-4 w-full">
+                          <div className="w-12 h-12 shrink-0 rounded-full bg-secondary flex items-center justify-center font-medium text-foreground">
+                            {getInitials(mentor.fullName)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-heading font-semibold text-foreground truncate">{mentor.fullName}</h3>
-                            <div className="flex items-center gap-1 text-primary mt-1">
-                              <Star className="w-3.5 h-3.5 fill-current" />
-                              <span className="text-xs font-medium">{mentor.reputationScore} Rep</span>
+                            <div className="flex justify-between items-center mb-1">
+                              <h3 className="font-semibold text-foreground truncate">{mentor.fullName}</h3>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              {mentor.ratingAvg != null && (
+                                <span className="flex items-center gap-1 text-foreground font-medium">
+                                  <Star className="w-3.5 h-3.5 fill-current" /> {mentor.ratingAvg.toFixed(1)}
+                                </span>
+                              )}
+                              <span className="flex items-center gap-1">
+                                <Users2 className="w-3.5 h-3.5" /> {mentor.reputationScore} rep
+                              </span>
                             </div>
                           </div>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground opacity-30 mt-1" />
                         </div>
-                        {mentor.bio && <p className="text-sm text-muted-foreground line-clamp-2">{mentor.bio}</p>}
-                      </motion.div>
+                      </button>
                     ))}
                   </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                )}
+              </div>
+            )}
+
+            {showEmptyState && (
+               <div className="pt-12 text-center text-muted-foreground">
+                 <p className="text-sm">Select a category above or search for a specific skill.</p>
+               </div>
+            )}
+          </div>
+        )}
+
+        {/* Results layout logic */}
+        {loadingMentors ? (
+          <div className="mt-8"><SkeletonList count={4} /></div>
+        ) : selectedSkill && mentors.length === 0 && !loadingMentors ? (
+          <div className="text-center py-16">
+            <p className="text-sm text-muted-foreground">No mentors teach this skill yet.</p>
+          </div>
+        ) : selectedSkill && mentors.length > 0 ? (
+          <div className="grid gap-4 mt-2">
             {mentors
               .filter(us => !nameFilter || us.userName.toLowerCase().includes(nameFilter.toLowerCase()))
-              .map((us, i) => {
+              .map((us) => {
                 const initials = getInitials(us.userName);
                 return (
-                  <motion.div
+                  <button
                     key={`${us.userId}-${us.skillId}`}
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
                     onClick={() => navigate(`/profile/${us.userId}`, { state: { skillId: selectedSkill?.id } })}
-                    className="p-5 rounded-xl bg-card border border-border hover:shadow-md transition-shadow cursor-pointer flex flex-col gap-4"
+                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-2xl border border-border bg-card text-left transition-colors hover:border-foreground/20 group"
                   >
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-heading font-semibold text-sm flex-shrink-0">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="w-12 h-12 rounded-full bg-secondary text-foreground flex items-center justify-center font-medium flex-shrink-0">
                         {initials}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-0.5">
-                          <h3 className="font-heading font-semibold text-foreground truncate">{us.userName}</h3>
-                          <div className="flex items-center gap-1 text-amber-500 shrink-0 ml-2">
-                            <Star className="w-3.5 h-3.5 fill-current" />
-                            <span className="text-xs font-medium">{us.userRatingAvg?.toFixed(1) ?? "New"}</span>
-                          </div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-foreground truncate">{us.userName}</h3>
+                          {us.userRatingAvg != null && (
+                            <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                              <Star className="w-3 h-3 fill-current" />
+                              {us.userRatingAvg.toFixed(1)}
+                            </span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                          <span className="flex items-center gap-1 text-primary font-medium">
-                            <Users2 className="w-3.5 h-3.5" /> {us.userReputationScore} Rep
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            Teaches <span className="font-medium text-foreground">{selectedSkill.name}</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users2 className="w-3 h-3" /> {us.userReputationScore}
                           </span>
                         </div>
                       </div>
                     </div>
-                    {us.userBio && <p className="text-sm text-muted-foreground line-clamp-2">{us.userBio}</p>}
-                    <div className="mt-auto pt-2 flex flex-wrap gap-2">
-                      <span className="skill-badge-teach">
-                        Teaches {selectedSkill?.name}
-                      </span>
-                    </div>
-                  </motion.div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground opacity-30 group-hover:opacity-100 transition-opacity hidden sm:block" />
+                  </button>
                 );
               })}
           </div>
-        )}
+        ) : null}
+
       </div>
     </AppLayout>
   );

@@ -17,30 +17,29 @@ export default function FloatingChatWidget() {
     closeWidget,
   } = useChat();
 
-  // Only render for authenticated users
   if (!user) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
-      {/* ── Floating Panel ──────────────────────────────────────── */}
+    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-4">
+      {/* Floating Panel */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             key="chat-panel"
-            initial={{ opacity: 0, scale: 0.92, y: 16 }}
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: 16 }}
-            transition={{ type: "spring", stiffness: 380, damping: 30 }}
-            className="w-80 h-[480px] rounded-2xl overflow-hidden shadow-2xl flex flex-col bg-background border border-border"
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: "tween", duration: 0.2 }}
+            className="w-[calc(100vw-3rem)] sm:w-[340px] h-[520px] max-h-[calc(100vh-8rem)] rounded-2xl overflow-hidden shadow-2xl flex flex-col bg-background border border-border"
           >
             {/* Close button (top-right) */}
             <button
               id="chat-widget-close"
               onClick={closeWidget}
-              className="absolute top-3 right-3 z-10 p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="absolute top-3 right-3 z-10 p-1.5 rounded-full text-muted-foreground hover:bg-secondary transition-colors"
               aria-label="Close chat"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
 
             {/* Sliding panels container */}
@@ -49,8 +48,8 @@ export default function FloatingChatWidget() {
               <motion.div
                 key="inbox"
                 animate={{ x: view === "inbox" ? 0 : "-100%" }}
-                transition={{ type: "spring", stiffness: 400, damping: 35 }}
-                className="absolute inset-0"
+                transition={{ type: "tween", duration: 0.25 }}
+                className="absolute inset-0 bg-background"
               >
                 <InboxPanel isLoadingInbox={isLoadingInbox} inbox={inbox} />
               </motion.div>
@@ -59,8 +58,8 @@ export default function FloatingChatWidget() {
               <motion.div
                 key="chat"
                 animate={{ x: view === "chat" ? 0 : "100%" }}
-                transition={{ type: "spring", stiffness: 400, damping: 35 }}
-                className="absolute inset-0"
+                transition={{ type: "tween", duration: 0.25 }}
+                className="absolute inset-0 bg-background"
               >
                 <ActiveChatPanel />
               </motion.div>
@@ -69,13 +68,11 @@ export default function FloatingChatWidget() {
         )}
       </AnimatePresence>
 
-      {/* ── Floating Trigger Button ─────────────────────────────── */}
-      <motion.button
+      {/* Floating Trigger Button */}
+      <button
         id="chat-fab-button"
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.94 }}
         onClick={isOpen ? closeWidget : openWidget}
-        className="relative w-14 h-14 rounded-full flex items-center justify-center shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+        className="relative w-14 h-14 rounded-full flex items-center justify-center shadow-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
         aria-label={isOpen ? "Close chat" : "Open chat"}
       >
         <AnimatePresence mode="wait">
@@ -87,7 +84,7 @@ export default function FloatingChatWidget() {
               exit={{ rotate: 90, opacity: 0 }}
               transition={{ duration: 0.15 }}
             >
-              <X className="w-6 h-6 text-primary-foreground" />
+              <X className="w-6 h-6" />
             </motion.span>
           ) : (
             <motion.span
@@ -97,28 +94,20 @@ export default function FloatingChatWidget() {
               exit={{ rotate: -90, opacity: 0 }}
               transition={{ duration: 0.15 }}
             >
-              <MessageSquare className="w-6 h-6 text-primary-foreground" />
+              <MessageSquare className="w-6 h-6" />
             </motion.span>
           )}
         </AnimatePresence>
-
-        {/* Unread notification dot */}
+        
+        {/* Unread dot */}
         {!isOpen && totalUnread > 0 && (
-          <motion.span
-            key="badge"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive border-2 border-background text-[9px] font-bold text-destructive-foreground flex items-center justify-center leading-none"
-          >
-            {totalUnread > 99 ? "99+" : totalUnread}
-          </motion.span>
+          <span className="absolute top-0 right-0 w-4 h-4 rounded-full bg-red-500 border-2 border-background flex items-center justify-center">
+            <span className="text-[9px] text-white font-bold leading-none">
+              {totalUnread > 9 ? "9" : totalUnread}
+            </span>
+          </span>
         )}
-
-        {/* Pulse ring when unread and closed */}
-        {!isOpen && totalUnread > 0 && (
-          <span className="absolute inset-0 rounded-full animate-ping bg-primary/30 pointer-events-none" />
-        )}
-      </motion.button>
+      </button>
     </div>
   );
 }
