@@ -79,9 +79,9 @@ const MySchedule = () => {
     }
   };
 
-  const handleRemoveSlot = async (id: number) => {
+  const handleRemoveSlot = async (id: string) => {
     try {
-      await availabilityApi.delete(String(id));  // BUG-02: was remove(), API only exports delete()
+      await availabilityApi.delete(id);  // BUG-02: was remove(), API only exports delete()
       setSlots((prev) => prev.filter((s) => s.id !== id));
       toast.success("Slot removed.");
     } catch (err: unknown) {
