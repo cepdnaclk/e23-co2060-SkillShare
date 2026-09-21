@@ -104,7 +104,7 @@ const FeedbackDialog = ({ session, rateName, onClose, onSubmitted }: FeedbackDia
 interface SessionRowProps {
   session: Session;
   role: "learner" | "mentor";
-  onAction: (session: Session, action: "accept" | "reject" | "complete" | "feedback") => void;
+  onAction: (session: Session, action: "accept" | "reject" | "complete" | "feedback" | "cancel") => void;
   actionLoading: string | null;
   ratedSessionIds: string[];
 }
@@ -157,7 +157,12 @@ const SessionRow = ({ session: s, role, onAction, actionLoading, ratedSessionIds
             </Button>
           </>
         )}
-        {role === "mentor" && s.status === "ACCEPTED" && (
+        {(s.status === "PENDING" || (s.status === "ACCEPTED" && new Date(s.startTime) > new Date())) && (
+          <Button size="sm" variant="outline" onClick={() => onAction(s, "cancel")} disabled={isBusy} className="h-8 text-xs text-red-500 hover:text-red-600">
+            Cancel
+          </Button>
+        )}
+        {role === "learner" && s.status === "ACCEPTED" && new Date() >= new Date(s.endTime) && (
           <Button size="sm" variant="outline" onClick={() => onAction(s, "complete")} disabled={isBusy} className="h-8 text-xs">
             Mark Completed
           </Button>
@@ -173,7 +178,7 @@ const SessionRow = ({ session: s, role, onAction, actionLoading, ratedSessionIds
 };
 
 const Sessions = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [learnerSessions, setLearnerSessions] = useState<Session[]>([]);
   const [mentorSessions, setMentorSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -202,10 +207,14 @@ const Sessions = () => {
       .finally(() => setLoading(false));
   }, [user?.id]);
 
-  const handleAction = async (s: Session, action: "accept" | "reject" | "complete" | "feedback") => {
+  const handleAction = async (s: Session, action: "accept" | "reject" | "complete" | "feedback" | "cancel") => {
     if (action === "feedback") {
       setFeedbackSession(s);
       return;
+    }
+
+    if (action === "cancel") {
+      if (!window.confirm("Are you sure you want to cancel this session?")) return;
     }
 
     setActionLoading(s.id);
@@ -219,11 +228,19 @@ const Sessions = () => {
       } else if (action === "complete") {
         await sessionsApi.complete(s.id);
         toast.success("Session marked as completed.");
+      } else if (action === "cancel") {
+        await sessionsApi.cancel(s.id);
+        toast.success("Session cancelled.");
       }
 
       // Re-fetch to update state cleanly
       if (user?.id) {
-        const ms = await sessionsApi.getMentorSessions(user.id);
+        await refreshUser(user.id);
+        const [ls, ms] = await Promise.all([
+          sessionsApi.getLearnerSessions(user.id).catch(() => []),
+          sessionsApi.getMentorSessions(user.id).catch(() => [])
+        ]);
+        setLearnerSessions(ls);
         setMentorSessions(ms);
       }
     } catch (err: unknown) {
