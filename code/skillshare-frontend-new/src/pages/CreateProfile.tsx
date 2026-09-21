@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, KeyboardEvent, useRef, useEffect } from "react";
+import { useState, useCallback, KeyboardEvent, useRef, useEffect } from "react";
 import { Search, X, Check, User, Sparkles, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -191,7 +191,7 @@ const CreateProfile = () => {
       
       setSkills(mappedSkills);
       setInitialSkills(mappedSkills);
-      setRecommended(trending.map(t => (t.skillName || t.name || "")));
+      setRecommended(trending.map(t => t.skillName || ""));
 
       const names = mappedSkills.map(s => s.name.toLowerCase());
       const hasConflicts = new Set(names).size !== names.length;

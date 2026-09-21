@@ -292,11 +292,7 @@ const Search = () => {
                               <h3 className="font-semibold text-foreground truncate">{mentor.fullName}</h3>
                             </div>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                              {mentor.ratingAvg != null && (
-                                <span className="flex items-center gap-1 text-foreground font-medium">
-                                  <Star className="w-3.5 h-3.5 fill-current" /> {mentor.ratingAvg.toFixed(1)}
-                                </span>
-                              )}
+
                               <span className="flex items-center gap-1">
                                 <Users2 className="w-3.5 h-3.5" /> {mentor.reputationScore} rep
                               </span>

@@ -78,11 +78,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         if (!prev || prev.contactId !== incomingId) return prev;
         const newMsg: ChatHistoryMessage = {
           id: crypto.randomUUID(),
-          sender: { id: dto.senderId as string, fullName: "", email: "" },
-          receiver: { id: dto.receiverId as string, fullName: "", email: "" },
+          senderId: dto.senderId as string,
+          receiverId: dto.receiverId as string,
           content: dto.content,
           timestamp: dto.timestamp ?? new Date().toISOString(),
-          read: true,
+          isRead: true,
         };
         return { ...prev, messages: [...prev.messages, newMsg] };
       });
@@ -192,11 +192,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       // Optimistic update — append to local state immediately
       const optimisticMsg: ChatHistoryMessage = {
         id: crypto.randomUUID(),
-        sender: { id: user.id, fullName: user.fullName, email: user.email },
-        receiver: { id: activeConversation.contactId, fullName: activeConversation.contactName, email: "" },
+        senderId: user.id,
+        receiverId: activeConversation.contactId,
         content: content.trim(),
         timestamp: new Date().toISOString(),
-        read: true,
+        isRead: true,
       };
       setActiveConversation((prev) =>
         prev ? { ...prev, messages: [...prev.messages, optimisticMsg] } : prev

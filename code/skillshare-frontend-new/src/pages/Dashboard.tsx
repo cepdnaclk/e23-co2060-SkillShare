@@ -4,7 +4,7 @@ import AppLayout from "@/components/AppLayout";
 import { sessionsApi } from "@/api/sessions.api";
 import { feedbackApi } from "@/api/feedback.api";
 import { userSkillsApi } from "@/api/userSkills.api";
-import { type Session, type Feedback, type UserSkill } from "@/api/types";
+import { type Session, type FeedbackResponse, type UserSkill } from "@/api/types";
 
 import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";
@@ -124,7 +124,7 @@ const Dashboard = () => {
 
   const [upcomingLearner, setUpcomingLearner] = useState<Session[]>([]);
   const [upcomingMentor, setUpcomingMentor] = useState<Session[]>([]);
-  const [feedback, setFeedback] = useState<Feedback[]>([]);
+  const [feedback, setFeedback] = useState<FeedbackResponse[]>([]);
   const [userSkills, setUserSkills] = useState<UserSkill[]>([]);
   
   // Post-Signup Welcome
@@ -166,11 +166,11 @@ const Dashboard = () => {
         
         const now = new Date();
         const activeMentoring = mentoring
-          .filter(s => (s.status === "SCHEDULED" || s.status === "PENDING") && new Date(s.startTime) >= now)
+          .filter(s => (s.status === "ACCEPTED" || s.status === "PENDING") && new Date(s.startTime) >= now)
           .sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
           
         const activeLearning = learning
-          .filter(s => (s.status === "SCHEDULED" || s.status === "PENDING") && new Date(s.startTime) >= now)
+          .filter(s => (s.status === "ACCEPTED" || s.status === "PENDING") && new Date(s.startTime) >= now)
           .sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
         setUpcomingMentor(activeMentoring);

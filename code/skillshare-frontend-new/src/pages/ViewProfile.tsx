@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 import { Clock, Star, Users2, MessageSquare, Edit3, X, UserPlus, UserCheck, Clock4 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,7 @@ import { userSkillsApi } from "@/api/userSkills.api";
 import { availabilityApi } from "@/api/availability.api";
 import { sessionsApi } from "@/api/sessions.api";
 import { connectionsApi } from "@/api/connections.api";
-import { type User, type UserSkill, type Availability } from "@/api/types";
+import { type UserPublicDto, type UserSkill, type Availability } from "@/api/types";
 import { type ApiError } from "@/api/client";
 
 import { useAuth } from "@/context/AuthContext";
@@ -44,7 +44,7 @@ const ViewProfile = () => {
   const { openChat, openWidget } = useChat();
   const preselectedSkillId = location.state?.skillId;
 
-  const [mentor, setMentor] = useState<User | null>(null);
+  const [mentor, setMentor] = useState<UserPublicDto | null>(null);
   const [skills, setSkills] = useState<UserSkill[]>([]);
   const [slots, setSlots] = useState<Availability[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<{ status: string; connectionId: string | null }>({ status: "NONE", connectionId: null });
@@ -77,7 +77,7 @@ const ViewProfile = () => {
       connectionsApi.getStatus(id).catch(() => ({ status: "NONE", connectionId: null })),
     ])
       .then(([u, sk, av, statusData]) => {
-        setMentor(u as User);
+        setMentor(u as UserPublicDto);
         setSkills(sk as UserSkill[]);
         setSlots(av as Availability[]);
         setConnectionStatus(statusData as { status: string; connectionId: string | null });
@@ -260,7 +260,7 @@ const ViewProfile = () => {
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
               <span className="flex items-center gap-1.5 font-medium text-foreground">
-                <Star className="w-4 h-4 fill-current opacity-70" /> {mentor.ratingAvg?.toFixed(1) ?? "New"}
+                <Star className="w-4 h-4 fill-current opacity-70" /> {mentor.level ? `Lvl ${mentor.level}` : "New"}
               </span>
               <span className="flex items-center gap-1.5">
                 <Users2 className="w-4 h-4 opacity-70" /> {mentor.reputationScore ?? 0} rep

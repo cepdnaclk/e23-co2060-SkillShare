@@ -1,4 +1,4 @@
-﻿import {
+import {
   useRef,
   useEffect,
   useState,
@@ -154,11 +154,11 @@ export default function ActiveChatPanel() {
         ) : (
           <>
             {messages.map((msg: ChatHistoryMessage, index: number) => {
-              const isOutgoing = (msg.senderId || msg.sender?.id) === user?.id;
+              const isOutgoing = msg.senderId === user?.id;
               
               // Only show timestamp if it's the last message in a cluster or more than 5 mins apart
               const nextMsg = messages[index + 1];
-              const showTime = !nextMsg || next(msg.senderId || msg.sender?.id) !== (msg.senderId || msg.sender?.id) || 
+              const showTime = !nextMsg || nextMsg.senderId !== msg.senderId || 
                 (new Date(nextMsg.timestamp).getTime() - new Date(msg.timestamp).getTime() > 300000);
 
               return (
