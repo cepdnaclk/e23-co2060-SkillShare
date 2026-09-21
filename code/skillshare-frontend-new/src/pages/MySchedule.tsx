@@ -64,7 +64,7 @@ const MySchedule = () => {
 
     setSaving(true);
     try {
-      await availabilityApi.add(start.toISOString(), end.toISOString());
+      await availabilityApi.add(startTime, endTime);
       toast.success("Availability added!");
       // BUG-07: refresh via authenticated endpoint, not public mentor-slots
       const freshSlots = await availabilityApi.getMyAvailabilities();
