@@ -157,7 +157,7 @@ const SessionRow = ({ session: s, role, onAction, actionLoading, ratedSessionIds
             </Button>
           </>
         )}
-        {(s.status === "PENDING" || (s.status === "ACCEPTED" && new Date(s.startTime) > new Date())) && (
+        {((s.status === "PENDING" && role === "learner") || (s.status === "ACCEPTED" && new Date(s.startTime) > new Date())) && (
           <Button size="sm" variant="outline" onClick={() => onAction(s, "cancel")} disabled={isBusy} className="h-8 text-xs text-red-500 hover:text-red-600">
             Cancel
           </Button>

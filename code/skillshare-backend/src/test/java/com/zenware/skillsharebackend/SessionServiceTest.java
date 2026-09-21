@@ -390,10 +390,15 @@ public class SessionServiceTest {
     void testCancelSession_LearnerCancelsAccepted_AfterStartTime() {
         Session session = new Session();
         session.setId(UUID.randomUUID());
+        session.setLearner(mockLearner);
+        session.setMentor(mockMentor);
         session.setStatus(SessionStatus.ACCEPTED);
         session.setStartTime(referenceTime.minusHours(1));
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("learner@test.com");
+        when(userRepository.findByEmail("learner@test.com")).thenReturn(Optional.of(mockLearner));
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             sessionService.cancelSession(session.getId());
@@ -409,10 +414,15 @@ public class SessionServiceTest {
     void testCancelSession_MentorCancelsAccepted_AfterStartTime() {
         Session session = new Session();
         session.setId(UUID.randomUUID());
+        session.setLearner(mockLearner);
+        session.setMentor(mockMentor);
         session.setStatus(SessionStatus.ACCEPTED);
         session.setStartTime(referenceTime.minusHours(1));
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("mentor@test.com");
+        when(userRepository.findByEmail("mentor@test.com")).thenReturn(Optional.of(mockMentor));
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             sessionService.cancelSession(session.getId());
@@ -424,10 +434,15 @@ public class SessionServiceTest {
     void testCancelSession_Accepted_NullStartTime() {
         Session session = new Session();
         session.setId(UUID.randomUUID());
+        session.setLearner(mockLearner);
+        session.setMentor(mockMentor);
         session.setStatus(SessionStatus.ACCEPTED);
         session.setStartTime(null);
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("learner@test.com");
+        when(userRepository.findByEmail("learner@test.com")).thenReturn(Optional.of(mockLearner));
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             sessionService.cancelSession(session.getId());
@@ -439,10 +454,15 @@ public class SessionServiceTest {
     void testCancelSession_Accepted_ExactlyAtStartTime() {
         Session session = new Session();
         session.setId(UUID.randomUUID());
+        session.setLearner(mockLearner);
+        session.setMentor(mockMentor);
         session.setStatus(SessionStatus.ACCEPTED);
         session.setStartTime(referenceTime); // Exactly now is NOT before now
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("learner@test.com");
+        when(userRepository.findByEmail("learner@test.com")).thenReturn(Optional.of(mockLearner));
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             sessionService.cancelSession(session.getId());
@@ -454,9 +474,14 @@ public class SessionServiceTest {
     void testCancelSession_AlreadyProcessed() {
         Session session = new Session();
         session.setId(UUID.randomUUID());
+        session.setLearner(mockLearner);
+        session.setMentor(mockMentor);
         session.setStatus(SessionStatus.PENDING);
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("learner@test.com");
+        when(userRepository.findByEmail("learner@test.com")).thenReturn(Optional.of(mockLearner));
 
         when(sessionRepository.transitionSessionStatusAtomically(
                 session.getId(),
@@ -676,10 +701,15 @@ public class SessionServiceTest {
     void cancelSession_ExactlyAtStartTime_ThrowsException() {
         Session session = new Session();
         session.setId(UUID.randomUUID());
+        session.setLearner(mockLearner);
+        session.setMentor(mockMentor);
         session.setStatus(SessionStatus.ACCEPTED);
         session.setStartTime(referenceTime);
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("learner@test.com");
+        when(userRepository.findByEmail("learner@test.com")).thenReturn(Optional.of(mockLearner));
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             sessionService.cancelSession(session.getId());

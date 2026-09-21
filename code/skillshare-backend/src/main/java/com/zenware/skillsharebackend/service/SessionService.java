@@ -223,6 +223,15 @@ public class SessionService {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Session not found"));
 
+        // SECURITY GUARD: Fetch canceling user from JWT
+        User cancelingUser = getAuthenticatedUser();
+        User learner = session.getLearner();
+        User mentor = session.getMentor();
+
+        if (!cancelingUser.getId().equals(learner.getId()) && !cancelingUser.getId().equals(mentor.getId())) {
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You are not part of this session!");
+        }
+
         if (session.getStatus() != SessionStatus.ACCEPTED && session.getStatus() != SessionStatus.PENDING) {
             throw new IllegalStateException("You can only cancel upcoming sessions!");
         }
@@ -233,27 +242,24 @@ public class SessionService {
             }
         }
 
+        SessionStatus originalStatus = session.getStatus();
+
         int updated = sessionRepository.transitionSessionStatusAtomically(
                 session.getId(),
                 SessionStatus.CANCELLED,
-                List.of(session.getStatus())
+                List.of(originalStatus)
         );
 
         if (updated == 0) {
             throw new IllegalStateException("Session was already cancelled or processed.");
         }
 
-        // SECURITY GUARD: Fetch canceling user from JWT
-        User cancelingUser = getAuthenticatedUser();
-        User learner = session.getLearner();
-        User mentor = session.getMentor();
-
         int originalCost = 10;
         int penaltyAmount = 5;
 
         if (cancelingUser.getId().equals(learner.getId())) {
             // Learner Cancels Logic
-            if (session.getStatus() == SessionStatus.PENDING) {
+            if (originalStatus == SessionStatus.PENDING) {
                 userRepository.addCreditsAtomically(learner.getId(), originalCost);
                 notificationService.sendNotification(mentor, "The learner cancelled their session request.", NotificationType.SESSION_UPDATE);
                 notificationService.sendNotification(learner, "You cancelled your session request. You were refunded your full 10 credits.", NotificationType.SESSION_UPDATE);
@@ -266,7 +272,7 @@ public class SessionService {
 
         } else if (cancelingUser.getId().equals(mentor.getId())) {
             // Mentor Cancels Logic
-            if (session.getStatus() == SessionStatus.PENDING) {
+            if (originalStatus == SessionStatus.PENDING) {
                 userRepository.addCreditsAtomically(learner.getId(), originalCost);
                 notificationService.sendNotification(learner, "The mentor cancelled the session request. You received a full refund.", NotificationType.SESSION_UPDATE);
                 notificationService.sendNotification(mentor, "You cancelled the pending session request. No penalty was applied.", NotificationType.SESSION_UPDATE);
@@ -290,8 +296,6 @@ public class SessionService {
                 notificationService.sendNotification(learner, "The mentor cancelled the session. You received a full refund PLUS " + penaltyAmount + " credits compensation.", NotificationType.SESSION_UPDATE);
             }
 
-        } else {
-            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You are not part of this session!");
         }
 
         // userRepository.save(learner);
