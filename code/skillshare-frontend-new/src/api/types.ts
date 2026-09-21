@@ -200,6 +200,12 @@ export interface Notification {
 }
 
 // --- CHAT & WEBSOCKET ---
+export interface ChatMessageRequest {
+  senderId: string; // UUID
+  receiverId: string; // UUID
+  content: string;
+}
+
 export interface ChatMessageDto {
   senderId: string; // UUID
   receiverId: string; // UUID

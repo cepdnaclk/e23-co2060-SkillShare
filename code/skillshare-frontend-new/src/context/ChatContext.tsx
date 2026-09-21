@@ -9,7 +9,7 @@ import {
 } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { chatApi } from "@/api/chat.api";
-import type { RecentChatDto as RecentChat, ChatMessageResponse as ChatHistoryMessage, ChatMessageDto } from "@/api/types";
+import type { RecentChatDto as RecentChat, ChatMessageResponse as ChatHistoryMessage, ChatMessageDto, ChatMessageRequest } from "@/api/types";
 import { chatSocketService } from "@/services/chatSocketService";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -183,7 +183,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     (content: string) => {
       if (!user || !activeConversation || !content.trim()) return;
 
-      const dto: ChatMessageDto = {
+      const dto: ChatMessageRequest = {
         senderId: user.id,
         receiverId: activeConversation.contactId,
         content: content.trim(),

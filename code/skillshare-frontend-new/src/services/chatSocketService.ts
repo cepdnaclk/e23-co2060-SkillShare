@@ -1,5 +1,5 @@
 import { Client, type IMessage } from "@stomp/stompjs";
-import type { ChatMessageDto, TypingStatusDto } from "@/api/types";
+import type { ChatMessageDto, ChatMessageRequest, TypingStatusDto } from "@/api/types";
 
 // Derive the WebSocket base URL from the REST API base URL.
 // The backend WebSocket endpoint is registered at /ws (root, no /api prefix).
@@ -74,7 +74,7 @@ class ChatSocketService {
     this.connected = false;
   }
 
-  sendMessage(dto: ChatMessageDto): void {
+  sendMessage(dto: ChatMessageRequest): void {
     if (!this.client?.active) {
       console.warn("[ChatSocket] Cannot send — not connected.");
       return;
