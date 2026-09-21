@@ -196,7 +196,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         receiverId: activeConversation.contactId,
         content: content.trim(),
         timestamp: new Date().toISOString(),
-        isRead: true,
+        isRead: false,
       };
       setActiveConversation((prev) =>
         prev ? { ...prev, messages: [...prev.messages, optimisticMsg] } : prev

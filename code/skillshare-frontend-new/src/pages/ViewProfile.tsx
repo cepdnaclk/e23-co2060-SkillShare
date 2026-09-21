@@ -259,9 +259,7 @@ const ViewProfile = () => {
             )}
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
-              <span className="flex items-center gap-1.5 font-medium text-foreground">
-                <Star className="w-4 h-4 fill-current opacity-70" /> {mentor.level ? `Lvl ${mentor.level}` : "New"}
-              </span>
+
               <span className="flex items-center gap-1.5">
                 <Users2 className="w-4 h-4 opacity-70" /> {mentor.reputationScore ?? 0} rep
               </span>
