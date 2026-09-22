@@ -6,6 +6,7 @@
 export type SessionStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED' | 'CLOSED' | 'CANCELLED' | 'EXPIRED';
 export type ConnectionStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 export type NotificationType = 'SESSION_UPDATE' | 'SYSTEM_ALERT' | 'MESSAGE';
+export type UserRole = 'USER' | 'ADMIN';
 
 // --- AUTHENTICATION ---
 export interface AuthenticationRequest {
@@ -36,6 +37,7 @@ export interface UserPrivateDto {
   id: string; // UUID
   fullName: string;
   email: string;
+  role: UserRole;
   bio: string | null;
   profilePictureUrl: string | null;
   credits: number | null;
@@ -272,4 +274,45 @@ export interface Page<T> {
   };
   totalElements: number;
   totalPages: number;
+}
+
+// --- ADMIN ---
+export interface AdminOverviewDto {
+  totalUsers: number;
+  activeUsers: number;
+  inactiveUsers: number;
+  totalSkills: number;
+  totalSessions: number;
+  pendingSessions: number;
+  completedSessions: number;
+  totalFeedback: number;
+}
+
+export interface AdminUserDto {
+  id: string;
+  fullName: string;
+  email: string;
+  role: UserRole;
+  isActive: boolean;
+  credits: number | null;
+  xp: number | null;
+  level: number | null;
+  reputationScore: number | null;
+  isProfileCompleted: boolean;
+  createdAt: string | null;
+}
+
+export interface AdminSessionDto {
+  id: string;
+  learnerId: string;
+  learnerName: string;
+  mentorId: string;
+  mentorName: string;
+  skillId: string;
+  skillName: string;
+  startTime: string;
+  endTime: string;
+  status: SessionStatus;
+  creditValue: number;
+  createdAt: string | null;
 }

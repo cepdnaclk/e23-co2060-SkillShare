@@ -16,6 +16,7 @@ import {
   X,
   PanelLeftClose,
   PanelLeftOpen,
+  ShieldCheck,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -25,7 +26,7 @@ import { notificationsApi } from "@/api/notifications.api";
 
 interface AppLayoutProps { children: React.ReactNode; }
 
-const navItems = [
+const baseNavItems = [
   { path: "/dashboard",     icon: Home,         label: "Dashboard" },
   { path: "/search",        icon: Search,       label: "Explore" },
   { path: "/sessions",      icon: Layers,       label: "Sessions" },
@@ -60,6 +61,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     logout();
     navigate("/signup");
   };
+
+  const navItems = user?.role === "ADMIN"
+    ? [...baseNavItems, { path: "/admin", icon: ShieldCheck, label: "Admin" }]
+    : baseNavItems;
 
   const getInitials = (name: string) =>
     name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) ?? "?";

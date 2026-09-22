@@ -18,6 +18,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     // Custom query to find a user by their email
     Optional<User> findByEmail(String email);
 
+    List<User> findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCase(String fullName, String email);
+
+    long countByIsActive(Boolean isActive);
+
     // Fetch the top mentors sorted by reputation score (descending)
     // TIE-BREAKER ADDED: u.id ASC
     @Query("SELECT u FROM User u ORDER BY u.reputationScore DESC, u.id ASC")

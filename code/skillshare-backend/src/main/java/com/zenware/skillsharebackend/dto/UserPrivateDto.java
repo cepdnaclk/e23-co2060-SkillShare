@@ -1,5 +1,6 @@
 package com.zenware.skillsharebackend.dto;
 
+import com.zenware.skillsharebackend.entity.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,6 +16,7 @@ public class UserPrivateDto {
     private UUID id;
     private String fullName;
     private String email;
+    private Role role;
     private String bio;
     private String profilePictureUrl;
     private Integer credits;

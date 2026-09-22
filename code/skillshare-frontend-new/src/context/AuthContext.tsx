@@ -106,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 🔥 THE HYDRATION MERGE: Blend backend profile with auth numbers!
       const completeUser: User = {
         ...fullProfile,
+        role: fullProfile.role ?? response.role,
         credits: fullProfile.credits ?? response.credits ?? 0,
         level: fullProfile.level ?? response.level ?? 1,
         xp: fullProfile.xp ?? response.xp ?? 0,
@@ -144,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 🔥 THE HYDRATION MERGE: Combine profile data with initial auth payload fields
       const completeUser: User = {
         ...fullProfile,
+        role: fullProfile.role ?? response.role,
         credits: fullProfile.credits ?? response.credits, // Safe fallback to 100 if both are empty
         level: fullProfile.level ?? response.level,
         xp: fullProfile.xp ?? response.xp,
@@ -186,6 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const completeUser: User = {
         ...fullUser,
+        role: fullUser.role ?? "USER",
         // For OAuth2, fullUser (from UserPublicDto) is missing credits, so we read it from the JWT payload
         credits: payload.credits ?? fullUser.credits ?? 0,
       };

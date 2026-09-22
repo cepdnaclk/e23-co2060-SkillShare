@@ -51,6 +51,7 @@ public class SecurityConfig {
                                 .requestMatchers("/api/auth/**", "/login/oauth2/**", "/oauth2/**", "/ws/**").permitAll()
                                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/skills/**").permitAll()
                                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/feedback/**", "/api/user-skills/**").permitAll()
+                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                 .requestMatchers("/api/sessions/expire-overdue").hasRole("ADMIN")
 
                                 // BLACKLIST: Every other single endpoint requires a valid JWT Token!
