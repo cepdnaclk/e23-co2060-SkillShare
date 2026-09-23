@@ -29,6 +29,8 @@ const Settings = () => {
   const [pickerType, setPickerType] = useState<"TEACH" | "LEARN">("TEACH");
   
   const [bio, setBio] = useState("");
+  const [university, setUniversity] = useState("");
+  const [major, setMajor] = useState("");
   const [savingBio, setSavingBio] = useState(false);
   const [uploading, setUploading] = useState(false);
   
@@ -48,8 +50,18 @@ const Settings = () => {
 
   useEffect(() => {
     fetchSkills();
-    if (user?.bio) {
-      setBio(user.bio);
+    if (user?.id) {
+      if (user.bio) {
+        setBio(user.bio);
+      }
+      const saved = localStorage.getItem(`skillshare_academic_${user.id}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.university) setUniversity(parsed.university);
+          if (parsed.major) setMajor(parsed.major);
+        } catch {}
+      }
     }
   }, [user?.id, user?.bio]);
 
@@ -91,8 +103,14 @@ const Settings = () => {
     setSavingBio(true);
     try {
       await usersApi.updateMyBio(bio);
-      if (user?.id) await refreshUser(user.id);
-      toast.success("Profile updated successfully.");
+      if (user?.id) {
+        localStorage.setItem(
+          `skillshare_academic_${user.id}`,
+          JSON.stringify({ university: university.trim(), major: major.trim() })
+        );
+        await refreshUser(user.id);
+      }
+      toast.success("About You details updated successfully.");
     } catch (err: any) {
       toast.error(err.message || "Failed to update profile.");
     } finally {
@@ -196,18 +214,19 @@ const Settings = () => {
                   <Input
                     id="university"
                     placeholder="e.g. Stanford University"
-                    className="bg-secondary/30 opacity-70 cursor-not-allowed"
-                    disabled
+                    value={university}
+                    onChange={(e) => setUniversity(e.target.value)}
+                    className="bg-background"
                   />
-                  <p className="text-xs text-muted-foreground mt-1">This information is currently read-only.</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="major">Faculty / Major</Label>
                   <Input
                     id="major"
                     placeholder="e.g. Computer Science"
-                    className="bg-secondary/30 opacity-70 cursor-not-allowed"
-                    disabled
+                    value={major}
+                    onChange={(e) => setMajor(e.target.value)}
+                    className="bg-background"
                   />
                 </div>
               </div>

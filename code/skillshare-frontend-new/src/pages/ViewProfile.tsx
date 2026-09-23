@@ -1,5 +1,5 @@
 import { useEffect, useState, ChangeEvent } from "react";
-import { Clock, Star, Users2, MessageSquare, Edit3, X, UserPlus, UserCheck, Clock4 } from "lucide-react";
+import { Clock, Star, Users2, Users, MessageSquare, Edit3, X, UserPlus, UserCheck, Clock4, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
@@ -222,6 +222,16 @@ const ViewProfile = () => {
   const learnSkills = skills.filter((s) => s.skillType === "LEARN");
   const unbookedSlots = slots.filter((s) => !s.isBooked);
 
+  const academic = (() => {
+    try {
+      const stored = localStorage.getItem(`skillshare_academic_${mentor.id}`);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const academicInfoStr = [academic?.university, academic?.major].filter(Boolean).join(" • ");
+
   // Connection button copy
   let connectLabel = "Connect";
   let ConnectIcon = UserPlus;
@@ -277,7 +287,11 @@ const ViewProfile = () => {
             )}
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
-
+              {academicInfoStr && (
+                <span className="flex items-center gap-1.5 font-medium text-foreground">
+                  <GraduationCap className="w-4 h-4 text-primary opacity-80" /> {academicInfoStr}
+                </span>
+              )}
               <span className="flex items-center gap-1.5">
                 <Users2 className="w-4 h-4 opacity-70" /> {mentor.reputationScore ?? 0} rep
               </span>
