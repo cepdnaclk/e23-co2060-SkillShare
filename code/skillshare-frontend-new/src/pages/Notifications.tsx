@@ -11,6 +11,7 @@ import { SkeletonList } from "@/components/SkeletonCard";
 import ErrorBanner from "@/components/ErrorBanner";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 const getInitials = (name: string) =>
   name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
@@ -36,19 +37,23 @@ const fmtTime = (iso: string) => {
 const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [pendingRequests, setPendingRequests] = useState<ConnectionDto[]>([]);
+  const [friends, setFriends] = useState<ConnectionDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const load = async () => {
     setLoading(true);
     try {
-      const [data, pending] = await Promise.all([
+      const [data, pending, fData] = await Promise.all([
         notificationsApi.getInbox(),
         connectionsApi.getPending().catch(() => [] as ConnectionDto[]),
+        connectionsApi.getFriends().catch(() => [] as ConnectionDto[]),
       ]);
       setNotifications(data);
       setPendingRequests(pending);
+      setFriends(fData);
     } catch (err: unknown) {
       setError((err as Error).message ?? "Failed to load notifications.");
     } finally { 
@@ -173,8 +178,19 @@ const Notifications = () => {
                         key={n.id}
                         onClick={async () => {
                           if (!n.isRead) await markAsRead(n.id);
-                          if (!isConnectionRequest) {
-                            const msg = n.message.toLowerCase();
+                          const msg = n.message.toLowerCase();
+                          if (msg.includes("sent you a connection request")) {
+                            const name = n.message.split(" sent you")[0].trim();
+                            const p = pendingRequests.find(c => c.sender.fullName === name);
+                            if (p) navigate(`/profile/${p.sender.id}`);
+                          } else if (msg.includes("accepted your connection request")) {
+                            const name = n.message.split(" accepted")[0].trim();
+                            const f = friends.find(c => c.sender.fullName === name || c.receiver.fullName === name);
+                            if (f && user) {
+                              const otherId = f.sender.id === user.id ? f.receiver.id : f.sender.id;
+                              navigate(`/profile/${otherId}`);
+                            }
+                          } else {
                             const tab = msg.includes("booked") || msg.includes("requested") || msg.includes("learn") ? "mentor" : "learner";
                             navigate("/sessions", { state: { tab } });
                           }

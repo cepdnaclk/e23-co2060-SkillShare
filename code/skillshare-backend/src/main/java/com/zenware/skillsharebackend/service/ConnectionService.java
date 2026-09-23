@@ -144,6 +144,24 @@ public class ConnectionService {
         connectionRepository.delete(connection);
     }
 
+    // 3.5 DELETE CONNECTION (Cancel or Unfriend)
+    @Transactional
+    public void deleteConnection(UUID connectionId) {
+        User authenticatedUser = getAuthenticatedUser();
+
+        Connection connection = connectionRepository.findById(connectionId)
+                .orElseThrow(() -> new IllegalArgumentException("Connection not found!"));
+
+        boolean isSender = connection.getSender().getId().equals(authenticatedUser.getId());
+        boolean isReceiver = connection.getReceiver().getId().equals(authenticatedUser.getId());
+
+        if (!isSender && !isReceiver) {
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You do not have permission to delete this connection.");
+        }
+
+        connectionRepository.delete(connection);
+    }
+
     // 4. FETCH PENDING REQUESTS (For the Notification/Network Page)
     public List<Connection> getMyPendingRequests() {
         User currentUser = getAuthenticatedUser();

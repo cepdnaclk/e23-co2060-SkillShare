@@ -178,6 +178,18 @@ const Settings = () => {
                 <p className="text-xs text-muted-foreground mt-1">Name changes are not supported.</p>
               </div>
 
+            </CardContent>
+          </Card>
+
+          {/* ABOUT YOU */}
+          <Card className="border-border/60 shadow-sm">
+            <CardHeader className="pb-4 border-b border-border/40">
+              <CardTitle className="text-lg">About You</CardTitle>
+              <CardDescription>
+                Your bio and background.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
               <div className="space-y-2">
                 <Label>Bio</Label>
                 <Textarea 
@@ -191,41 +203,6 @@ const Settings = () => {
               <Button onClick={handleSaveBio} disabled={savingBio}>
                 {savingBio ? "Saving..." : "Save Changes"}
               </Button>
-            </CardContent>
-          </Card>
-
-          {/* ACADEMIC INFORMATION */}
-          <Card className="border-border/60 shadow-sm">
-            <CardHeader className="pb-4 border-b border-border/40">
-              <CardTitle className="text-lg">Academic Information</CardTitle>
-              <CardDescription>
-                Your university and study details.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6 pt-6">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>University</Label>
-                  <Input disabled placeholder="e.g. Stanford University" className="bg-secondary/30 opacity-70 cursor-not-allowed" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Faculty</Label>
-                  <Input disabled placeholder="e.g. Engineering" className="bg-secondary/30 opacity-70 cursor-not-allowed" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Department</Label>
-                  <Input disabled placeholder="e.g. Computer Science" className="bg-secondary/30 opacity-70 cursor-not-allowed" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Degree / Program</Label>
-                  <Input disabled placeholder="e.g. B.Sc." className="bg-secondary/30 opacity-70 cursor-not-allowed" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Year</Label>
-                  <Input disabled placeholder="e.g. Year 2" className="bg-secondary/30 opacity-70 cursor-not-allowed" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">Academic information updates are currently pending backend support.</p>
             </CardContent>
           </Card>
 

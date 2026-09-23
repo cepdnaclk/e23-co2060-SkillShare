@@ -143,9 +143,19 @@ const ViewProfile = () => {
           setConnectionStatus(newStatus);
         }
       } else if (s === "FRIENDS" || s === "ACCEPTED") {
-        toast.error("API Limitation: The backend currently lacks an endpoint to remove accepted friends.");
+        if (connectionStatus.connectionId) {
+          await connectionsApi.deleteConnection(connectionStatus.connectionId);
+          toast.success("Connection removed.");
+          const newStatus = await connectionsApi.getStatus(id);
+          setConnectionStatus(newStatus);
+        }
       } else if (s === "PENDING_SENT") {
-        toast.error("API Limitation: The backend currently lacks an endpoint to cancel outgoing requests.");
+        if (connectionStatus.connectionId) {
+          await connectionsApi.deleteConnection(connectionStatus.connectionId);
+          toast.success("Connection request cancelled.");
+          const newStatus = await connectionsApi.getStatus(id);
+          setConnectionStatus(newStatus);
+        }
       }
     } catch (err: unknown) {
       toast.error((err as Error).message ?? "Connection action failed.");
@@ -210,14 +220,14 @@ const ViewProfile = () => {
   const s = connectionStatus.status.toUpperCase();
   
   if (s === "PENDING_SENT" || s === "PENDING") { 
-    connectLabel = "Request Sent"; 
+    connectLabel = "Cancel Request"; 
     ConnectIcon = Clock4; 
   } else if (s === "PENDING_RECEIVED") {
     connectLabel = "Accept Request";
     ConnectIcon = UserCheck;
   } else if (s === "FRIENDS" || s === "ACCEPTED") { 
-    connectLabel = "Connected"; 
-    ConnectIcon = UserCheck; 
+    connectLabel = "Remove Connection"; 
+    ConnectIcon = X; 
   }
 
   return (
@@ -268,7 +278,7 @@ const ViewProfile = () => {
             {/* Profile Actions */}
             <div className="flex flex-wrap items-center gap-3">
               {isOwnProfile ? (
-                <Button variant="outline" size="sm" onClick={() => navigate("/create-profile", { state: { startStep: 1 } })}>
+                <Button variant="outline" size="sm" onClick={() => navigate("/settings")}>
                   Edit Profile
                 </Button>
               ) : (
@@ -329,7 +339,7 @@ const ViewProfile = () => {
             {teachSkills.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {teachSkills.map((s) => (
-                  <Badge key={s.skillId} variant="secondary" className="px-3 py-1 text-xs font-medium bg-secondary/60 hover:bg-secondary">
+                  <Badge key={s.skillId} variant="secondary" className="px-3 py-1 text-xs font-medium bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors">
                     {s.skillName}
                   </Badge>
                 ))}
@@ -347,7 +357,7 @@ const ViewProfile = () => {
             {learnSkills.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {learnSkills.map((s) => (
-                  <Badge key={s.skillId} variant="outline" className="px-3 py-1 text-xs font-medium border-border">
+                  <Badge key={s.skillId} variant="outline" className="px-3 py-1 text-xs font-medium bg-[hsl(var(--chart-4))]/10 text-[hsl(var(--chart-4))] border-[hsl(var(--chart-4))]/20 hover:bg-[hsl(var(--chart-4))]/20 transition-colors">
                     {s.skillName}
                   </Badge>
                 ))}

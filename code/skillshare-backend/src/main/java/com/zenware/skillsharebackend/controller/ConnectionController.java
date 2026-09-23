@@ -51,6 +51,16 @@ public class ConnectionController {
         ));
     }
 
+    // 3.5. Cancel Request or Remove Friend
+    @DeleteMapping("/{connectionId}")
+    public ResponseEntity<?> deleteConnection(@PathVariable UUID connectionId) {
+        connectionService.deleteConnection(connectionId);
+        return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Connection removed."
+        ));
+    }
+
     // 4. Get Pending Requests (To populate the notification bell / pending tab)
     @GetMapping("/pending")
     public ResponseEntity<List<ConnectionDto>> getPendingRequests() {

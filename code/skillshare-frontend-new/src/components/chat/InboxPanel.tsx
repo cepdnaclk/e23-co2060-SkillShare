@@ -1,4 +1,4 @@
-﻿import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import type { RecentChatDto as RecentChat } from "@/api/types";
 import { useChat } from "@/context/ChatContext";
 import { MessageSquare } from "lucide-react";
@@ -16,6 +16,7 @@ function formatTime(iso: string | null): string {
   if (!iso) return "";
   try {
     return formatDistanceToNow(new Date(iso), { addSuffix: false })
+      .replace("less than a minute", "now")
       .replace("about ", "")
       .replace(" minutes", "m")
       .replace(" minute", "m")
