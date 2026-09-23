@@ -160,7 +160,7 @@ const SkillSection = ({
 
 const CreateProfile = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -177,6 +177,17 @@ const CreateProfile = () => {
   useEffect(() => {
     if (!user?.id) return;
     let mounted = true;
+
+    const academic = parseAcademicBio(user.bio);
+    const stored = localStorage.getItem(`skillshare_academic_${user.id}`);
+    let local: { university?: string; major?: string } = {};
+    if (stored) { try { local = JSON.parse(stored); } catch {} }
+    setProfileInfo(prev => ({
+      ...prev,
+      bio: prev.bio || academic.cleanBio,
+      university: prev.university || academic.university || local.university || "",
+      major: prev.major || academic.major || local.major || "",
+    }));
 
     Promise.all([
       userSkillsApi.getByUser(user.id).catch(() => []),
@@ -246,10 +257,19 @@ const CreateProfile = () => {
     setError(null);
     try {
       if (user) {
+        localStorage.setItem(
+          `skillshare_academic_${user.id}`,
+          JSON.stringify({ university: profileInfo.university.trim(), major: profileInfo.major.trim() })
+        );
         const fullBio = formatAcademicBio(profileInfo.bio, profileInfo.university, profileInfo.major);
         if (fullBio) {
-          try { await usersApi.updateMyBio(fullBio); } catch (err) { console.error("Failed to update bio:", err); }
+          try { 
+            await usersApi.updateMyBio(fullBio); 
+          } catch (err) { 
+            console.error("Failed to update bio:", err); 
+          }
         }
+        await refreshUser(user.id);
       }
 
       const newSkills = skills.filter(s => !initialSkills.some(is => is.name.toLowerCase() === s.name.toLowerCase() && is.type === s.type));

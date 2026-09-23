@@ -1,5 +1,5 @@
 import { useEffect, useState, ChangeEvent } from "react";
-import { Clock, Star, Users2, Users, MessageSquare, Edit3, X, UserPlus, UserCheck, Clock4, GraduationCap } from "lucide-react";
+import { Clock, Star, Users2, Users, MessageSquare, Edit3, X, UserPlus, UserCheck, Clock4, GraduationCap, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
@@ -274,14 +274,16 @@ const ViewProfile = () => {
   const unbookedSlots = slots.filter((s) => !s.isBooked);
 
   const academic = parseAcademicBio(mentor.bio);
-  const localAcademic = isOwnProfile && me?.id ? (() => {
+  const localAcademic = (() => {
     try {
-      const stored = localStorage.getItem(`skillshare_academic_${me.id}`);
+      const targetId = mentor?.id || id || (isOwnProfile && me?.id ? me.id : null);
+      if (!targetId) return null;
+      const stored = localStorage.getItem(`skillshare_academic_${targetId}`);
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
     }
-  })() : null;
+  })();
 
   const resolvedUniversity = academic.university || localAcademic?.university || "";
   const resolvedMajor = academic.major || localAcademic?.major || "";
@@ -343,9 +345,13 @@ const ViewProfile = () => {
             )}
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
-              {academicInfoStr && (
+              {academicInfoStr ? (
                 <span className="flex items-center gap-1.5 font-medium text-foreground">
                   <GraduationCap className="w-4 h-4 text-primary opacity-80" /> {academicInfoStr}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 font-medium text-muted-foreground/70">
+                  <GraduationCap className="w-4 h-4 text-muted-foreground/50" /> Student
                 </span>
               )}
               <span className="flex items-center gap-1.5">
@@ -427,6 +433,39 @@ const ViewProfile = () => {
                   )}
                 </>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── ACADEMIC INFORMATION ────────────────────────────── */}
+        <div className="bg-card border border-border/60 rounded-2xl p-6 mb-12 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <GraduationCap className="w-4 h-4 text-primary" />
+            </div>
+            <h2 className="text-sm font-semibold tracking-tight text-foreground uppercase">
+              Academic Information
+            </h2>
+          </div>
+          
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="p-4 rounded-xl bg-secondary/30 border border-border/40">
+              <span className="text-xs font-medium text-muted-foreground block mb-1">University / Institution</span>
+              <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                <GraduationCap className="w-4 h-4 text-primary opacity-80 shrink-0" />
+                <span className={resolvedUniversity ? "font-semibold" : "text-muted-foreground italic"}>
+                  {resolvedUniversity || "Not specified"}
+                </span>
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-secondary/30 border border-border/40">
+              <span className="text-xs font-medium text-muted-foreground block mb-1">Faculty / Major</span>
+              <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-primary opacity-80 shrink-0" />
+                <span className={resolvedMajor ? "font-semibold" : "text-muted-foreground italic"}>
+                  {resolvedMajor || "Not specified"}
+                </span>
+              </p>
             </div>
           </div>
         </div>

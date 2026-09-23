@@ -12,7 +12,7 @@ export const usersApi = {
   updateMyBio: (bio: string) =>
     apiFetch<UserPrivateDto>(API_ROUTES.USERS_UPDATE_BIO, {
       method: "PATCH",
-      body: bio, // Raw string request body as required
+      body: bio != null && bio.trim() !== "" ? bio : " ", // Prevent HttpMessageNotReadable on empty payload
       headers: {
         "Content-Type": "text/plain", // Set to text/plain since it's a raw string
       }
