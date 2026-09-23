@@ -82,4 +82,9 @@ export const API_ROUTES = {
   ADMIN_SKILLS: '/admin/skills',
   adminSkillById: (skillId: string) => `/admin/skills/${skillId}`,
   ADMIN_SESSIONS: '/admin/sessions',
+
+  //---REPORTS---
+  REPORTS: "/reports",
+  ADMIN_REPORTS: "/admin/reports",
+  adminReportResolve: (reportId: string | number) => `/admin/reports/${reportId}/resolve`,
 };

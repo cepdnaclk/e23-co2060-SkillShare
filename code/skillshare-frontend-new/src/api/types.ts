@@ -8,6 +8,21 @@ export type ConnectionStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 export type NotificationType = 'SESSION_UPDATE' | 'SYSTEM_ALERT' | 'MESSAGE';
 export type UserRole = 'USER' | 'ADMIN';
 
+// ✅ Correct: Export as a standard runtime enum
+export enum ReportReason {
+  HARASSMENT = "HARASSMENT",
+  NO_SHOW = "NO_SHOW",
+  INAPPROPRIATE_CONTENT = "INAPPROPRIATE_CONTENT",
+  SPAM = "SPAM",
+  OTHER = "OTHER",
+}
+
+export enum ReportStatus {
+  PENDING = "PENDING",
+  UNDER_REVIEW = "UNDER_REVIEW",
+  RESOLVED = "RESOLVED",
+  DISMISSED = "DISMISSED",
+}
 // --- AUTHENTICATION ---
 export interface AuthenticationRequest {
   email: string;
@@ -89,6 +104,8 @@ export interface UserSkillDto {
 }
 
 export interface TrendingSkillDto {
+  name: string;
+  skillId: any;
   skillName: string;
   totalSessions: number;
 }
@@ -315,4 +332,28 @@ export interface AdminSessionDto {
   status: SessionStatus;
   creditValue: number;
   createdAt: string | null;
+}
+export interface ReportRequestDto {
+  reportedUserId: string | number;
+  sessionId?: string | number | null;
+  reason: ReportReason;
+  description: String;
+}
+
+export interface ReportDto {
+  id: string | number;
+  reporterId: string | number;
+  reportedUserId: string | number;
+  sessionId?: string | number | null;
+  reason: ReportReason;
+  description: string;
+  status: ReportStatus;
+  adminNotes?: string;
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+export interface ResolveReportPayload {
+  adminNotes: string;
+  status: ReportStatus;
 }
