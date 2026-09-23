@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Check, X, Clock, Calendar, Video, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import AppLayout from "@/components/AppLayout";
 import { sessionsApi } from "@/api/sessions.api";
 import { feedbackApi } from "@/api/feedback.api";
@@ -101,10 +102,85 @@ const FeedbackDialog = ({ session, rateName, onClose, onSubmitted }: FeedbackDia
   );
 };
 
+interface MeetingLinkDialogProps {
+  session: Session | null;
+  onClose: () => void;
+  onSaved: (sessionId: string, meetingLink: string) => void;
+}
+
+const MeetingLinkDialog = ({ session, onClose, onSaved }: MeetingLinkDialogProps) => {
+  const [link, setLink] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (session) {
+      setLink(session.meetingLink || "");
+    }
+  }, [session]);
+
+  const submit = async () => {
+    if (!session || !link.trim()) return;
+    setSubmitting(true);
+    try {
+      await sessionsApi.addMeetingLink(session.id, link.trim());
+      toast.success("Meeting link sent to learner!");
+      onSaved(session.id, link.trim());
+      onClose();
+    } catch (err: unknown) {
+      toast.error((err as Error).message ?? "Failed to send meeting link.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={!!session} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Video className="w-5 h-5 text-primary" />
+            Send Meeting Link
+          </DialogTitle>
+          <DialogDescription>
+            Provide a meeting URL (Google Meet, Zoom, Teams) for your session with {session?.learnerName}.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-3">
+          <div className="space-y-2">
+            <label htmlFor="meeting-link-input" className="text-sm font-medium text-foreground">
+              Meeting URL
+            </label>
+            <Input
+              id="meeting-link-input"
+              placeholder="e.g. https://meet.google.com/abc-defg-hij"
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              className="bg-background"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            The learner will receive this link directly on their Sessions dashboard and via notifications.
+          </p>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-3 border-t border-border mt-2">
+          <Button variant="outline" size="sm" onClick={onClose} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button size="sm" onClick={submit} disabled={!link.trim() || submitting}>
+            {submitting ? "Sending..." : "Send Link"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 interface SessionRowProps {
   session: Session;
   role: "learner" | "mentor";
-  onAction: (session: Session, action: "accept" | "reject" | "complete" | "feedback" | "cancel") => void;
+  onAction: (session: Session, action: "accept" | "reject" | "complete" | "feedback" | "cancel" | "link") => void;
   actionLoading: string | null;
   ratedSessionIds: string[];
 }
@@ -138,10 +214,27 @@ const SessionRow = ({ session: s, role, onAction, actionLoading, ratedSessionIds
           <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {formatDate(s.startTime)}</span>
           <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {formatTime(s.startTime)}</span>
         </div>
-        {role === "learner" && s.meetingLink && s.status === "ACCEPTED" && (
-          <div className="mt-2 text-xs flex items-center gap-2 bg-secondary/40 px-3 py-1.5 rounded-md w-fit">
-            <Video className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="font-mono text-foreground select-all">{s.meetingLink}</span>
+        {s.meetingLink && s.status === "ACCEPTED" && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <a
+              href={s.meetingLink.startsWith("http://") || s.meetingLink.startsWith("https://") ? s.meetingLink : `https://${s.meetingLink}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs"
+            >
+              <Video className="w-3.5 h-3.5" /> Join Call
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(s.meetingLink!);
+                toast.success("Meeting link copied to clipboard!");
+              }}
+              className="text-xs text-muted-foreground hover:text-foreground font-mono bg-secondary/60 hover:bg-secondary px-2.5 py-1.5 rounded-lg transition-colors border border-border/40 truncate max-w-xs"
+              title="Click to copy link"
+            >
+              {s.meetingLink}
+            </button>
           </div>
         )}
       </div>
@@ -156,6 +249,18 @@ const SessionRow = ({ session: s, role, onAction, actionLoading, ratedSessionIds
               Accept
             </Button>
           </>
+        )}
+        {role === "mentor" && s.status === "ACCEPTED" && (
+          <Button
+            size="sm"
+            variant={s.meetingLink ? "outline" : "default"}
+            onClick={() => onAction(s, "link")}
+            disabled={isBusy}
+            className="h-8 text-xs gap-1.5"
+          >
+            <Video className="w-3.5 h-3.5" />
+            {s.meetingLink ? "Edit Meeting Link" : "Send Meeting Link"}
+          </Button>
         )}
         {((s.status === "PENDING" && role === "learner") || (s.status === "ACCEPTED" && new Date(s.startTime) > new Date())) && (
           <Button size="sm" variant="outline" onClick={() => onAction(s, "cancel")} disabled={isBusy} className="h-8 text-xs text-red-500 hover:text-red-600">
@@ -188,6 +293,7 @@ const Sessions = () => {
   const [ratedSessionIds, setRatedSessionIds] = useState<string[]>([]);
   
   const [feedbackSession, setFeedbackSession] = useState<Session | null>(null);
+  const [meetingLinkSession, setMeetingLinkSession] = useState<Session | null>(null);
 
   useEffect(() => {
     if (!user?.id) {
@@ -207,9 +313,19 @@ const Sessions = () => {
       .finally(() => setLoading(false));
   }, [user?.id]);
 
-  const handleAction = async (s: Session, action: "accept" | "reject" | "complete" | "feedback" | "cancel") => {
+  const handleMeetingLinkSaved = (sessionId: string, newLink: string) => {
+    setMentorSessions(prev => prev.map(s => s.id === sessionId ? { ...s, meetingLink: newLink } : s));
+    setLearnerSessions(prev => prev.map(s => s.id === sessionId ? { ...s, meetingLink: newLink } : s));
+  };
+
+  const handleAction = async (s: Session, action: "accept" | "reject" | "complete" | "feedback" | "cancel" | "link") => {
     if (action === "feedback") {
       setFeedbackSession(s);
+      return;
+    }
+
+    if (action === "link") {
+      setMeetingLinkSession(s);
       return;
     }
 
@@ -354,6 +470,12 @@ const Sessions = () => {
         rateName={feedbackSession ? feedbackSession.mentorName : ""}
         onClose={() => setFeedbackSession(null)}
         onSubmitted={onFeedbackSubmitted}
+      />
+
+      <MeetingLinkDialog
+        session={meetingLinkSession}
+        onClose={() => setMeetingLinkSession(null)}
+        onSaved={handleMeetingLinkSaved}
       />
     </AppLayout>
   );
