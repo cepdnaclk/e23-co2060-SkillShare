@@ -345,9 +345,13 @@ const ViewProfile = () => {
             )}
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
-              {academicInfoStr && (
+              {academicInfoStr ? (
                 <span className="flex items-center gap-1.5 font-medium text-foreground">
                   <GraduationCap className="w-4 h-4 text-primary opacity-80" /> {academicInfoStr}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 font-medium text-muted-foreground/70">
+                  <GraduationCap className="w-4 h-4 text-muted-foreground/50" /> Student
                 </span>
               )}
               <span className="flex items-center gap-1.5">
