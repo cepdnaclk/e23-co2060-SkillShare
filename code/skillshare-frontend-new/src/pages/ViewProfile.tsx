@@ -1,4 +1,4 @@
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState, useRef, ChangeEvent } from "react";
 import { Clock, Star, Users2, Users, MessageSquare, Edit3, X, UserPlus, UserCheck, Clock4, GraduationCap, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,7 @@ import { sessionsApi } from "@/api/sessions.api";
 import { connectionsApi } from "@/api/connections.api";
 import { type UserPublicDto, type UserSkill, type Availability } from "@/api/types";
 import { type ApiError } from "@/api/client";
-import { parseAcademicBio } from "@/lib/academicBio";
+import { parseAcademicBio, formatAcademicBio } from "@/lib/academicBio";
 
 import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";
@@ -52,6 +52,29 @@ const ViewProfile = () => {
   const [connLoading, setConnLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const syncedRef = useRef(false);
+
+  useEffect(() => {
+    if (syncedRef.current || !me?.id || !mentor || mentor.id !== me.id) return;
+    
+    try {
+      const stored = localStorage.getItem(`skillshare_academic_${me.id}`);
+      if (stored) {
+        const local = JSON.parse(stored);
+        if ((local.university || local.major) && (!mentor.bio || !mentor.bio.includes("[Academic:"))) {
+          syncedRef.current = true;
+          const clean = parseAcademicBio(mentor.bio).cleanBio;
+          const formatted = formatAcademicBio(clean, local.university, local.major);
+          usersApi.updateMyBio(formatted).then(() => {
+            setMentor(prev => prev ? { ...prev, bio: formatted } : null);
+          }).catch(() => {});
+        }
+      }
+    } catch {
+      // ignore JSON errors
+    }
+  }, [me?.id, mentor]);
 
   // Booking state
   const [bookingOpen, setBookingOpen] = useState(false);
