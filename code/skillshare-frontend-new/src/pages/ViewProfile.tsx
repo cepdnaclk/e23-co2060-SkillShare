@@ -144,14 +144,22 @@ const ViewProfile = () => {
         }
       } else if (s === "FRIENDS" || s === "ACCEPTED") {
         if (connectionStatus.connectionId) {
-          await connectionsApi.deleteConnection(connectionStatus.connectionId);
+          try {
+            await connectionsApi.deleteConnection(connectionStatus.connectionId);
+          } catch {
+            await connectionsApi.rejectRequest(connectionStatus.connectionId);
+          }
           toast.success("Connection removed.");
           const newStatus = await connectionsApi.getStatus(id);
           setConnectionStatus(newStatus);
         }
       } else if (s === "PENDING_SENT") {
         if (connectionStatus.connectionId) {
-          await connectionsApi.deleteConnection(connectionStatus.connectionId);
+          try {
+            await connectionsApi.deleteConnection(connectionStatus.connectionId);
+          } catch {
+            await connectionsApi.rejectRequest(connectionStatus.connectionId);
+          }
           toast.success("Connection request cancelled.");
           const newStatus = await connectionsApi.getStatus(id);
           setConnectionStatus(newStatus);

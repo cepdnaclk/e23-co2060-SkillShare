@@ -18,6 +18,12 @@ public interface ConnectionRepository extends JpaRepository<Connection, UUID> {
             "(c.sender.id = :userId2 AND c.receiver.id = :userId1)")
     Optional<Connection> findExistingConnection(@Param("userId1") UUID userId1, @Param("userId2") UUID userId2);
 
+    @Query("SELECT c FROM Connection c " +
+            "JOIN FETCH c.sender " +
+            "JOIN FETCH c.receiver " +
+            "WHERE c.id = :connectionId")
+    Optional<Connection> findByIdWithUsers(@Param("connectionId") UUID connectionId);
+
     // --- THE N+1 FIXES ---
 
     /**
