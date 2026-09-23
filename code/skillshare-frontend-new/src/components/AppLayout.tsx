@@ -11,7 +11,6 @@ import {
   Coins,
   Settings as SettingsIcon,
   Trophy,
-  GraduationCap,
   Menu,
   X,
   PanelLeftClose,
@@ -72,9 +71,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         <div className={cn("h-14 border-b border-border flex items-center flex-shrink-0 relative", isCollapsed ? "px-0 justify-center" : "px-4 justify-between")}>
           <div className="flex items-center gap-2 overflow-hidden">
             <Link to="/dashboard" className="flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md">
-              <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center flex-shrink-0">
-                <GraduationCap className="w-4 h-4 text-primary-foreground" />
-              </div>
+              <img src="/skillshare.png" alt="SkillShare Logo" className="w-7 h-7 object-contain flex-shrink-0" />
               {!isCollapsed && (
                 <span className="font-semibold text-base whitespace-nowrap">
                   <span className="text-foreground">Skill</span>
@@ -235,9 +232,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           <div className="flex items-center">
             {/* Mobile Logo */}
             <Link to="/dashboard" className="md:hidden flex items-center gap-2 focus:outline-none">
-              <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center flex-shrink-0">
-                <GraduationCap className="w-4 h-4 text-primary-foreground" />
-              </div>
+              <img src="/skillshare.png" alt="SkillShare Logo" className="w-7 h-7 object-contain flex-shrink-0" />
               <span className="font-semibold text-base">
                 <span className="text-foreground">Skill</span>
                 <span className="text-primary">Share</span>

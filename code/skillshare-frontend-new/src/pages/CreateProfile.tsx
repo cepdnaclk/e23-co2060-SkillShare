@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { skillsApi } from "@/api/skills.api";
 import { userSkillsApi } from "@/api/userSkills.api";
 import { availabilityApi } from "@/api/availability.api";
@@ -280,7 +280,11 @@ const CreateProfile = () => {
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 md:py-12 md:py-20">
         
-        <div className="mb-10 text-center sm:text-left">
+        <div className="mb-10 text-center sm:text-left flex flex-col items-center sm:items-start">
+          <Link to="/dashboard" className="inline-flex items-center gap-2 mb-6 hover:opacity-80 transition-opacity">
+            <img src="/skillshare.png" alt="SkillShare Logo" className="w-8 h-8 object-contain" />
+            <span className="font-bold text-xl tracking-tight text-foreground">SkillShare</span>
+          </Link>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground mb-3">Complete your profile</h1>
           <p className="text-muted-foreground text-sm">Tell us about yourself and what you want to share.</p>
         </div>

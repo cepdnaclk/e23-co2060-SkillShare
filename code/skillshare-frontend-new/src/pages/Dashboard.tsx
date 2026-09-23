@@ -213,9 +213,7 @@ const Dashboard = () => {
           transition={{ duration: 0.7, ease: "easeOut" }}
           className="max-w-md flex flex-col items-center"
         >
-          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-8 shadow-lg shadow-primary/20">
-            <Sparkles className="w-8 h-8 text-white" />
-          </div>
+          <img src="/skillshare.png" alt="SkillShare Logo" className="w-20 h-20 object-contain mb-8 drop-shadow-md" />
           <h1 className="text-4xl font-bold tracking-tight text-foreground mb-4">Welcome to SkillShare</h1>
           <p className="text-xl text-muted-foreground mb-12 leading-relaxed">
             Everyone has something to teach.<br />Everyone has something to learn.
