@@ -66,6 +66,11 @@ const ViewProfile = () => {
   const [friendsList, setFriendsList] = useState<ConnectionDto[]>([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
 
+  // Confirmation dialog for removing a connected connection
+  const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
+  const [connectionToRemove, setConnectionToRemove] = useState<{ id: string; name: string } | null>(null);
+  const [removingConn, setRemovingConn] = useState(false);
+
   const loadFriends = async () => {
     setLoadingFriends(true);
     try {
@@ -75,6 +80,30 @@ const ViewProfile = () => {
       // ignore
     } finally {
       setLoadingFriends(false);
+    }
+  };
+
+  const handleConfirmRemove = async () => {
+    if (!connectionToRemove) return;
+    setRemovingConn(true);
+    try {
+      try {
+        await connectionsApi.deleteConnection(connectionToRemove.id);
+      } catch {
+        await connectionsApi.rejectRequest(connectionToRemove.id);
+      }
+      toast.success("Connection removed.");
+      if (id) {
+        const newStatus = await connectionsApi.getStatus(id);
+        setConnectionStatus(newStatus);
+      }
+      setFriendsList((prev) => prev.filter((c) => c.id !== connectionToRemove.id));
+      setConfirmRemoveOpen(false);
+      setConnectionToRemove(null);
+    } catch {
+      toast.error("Failed to remove connection.");
+    } finally {
+      setRemovingConn(false);
     }
   };
 
@@ -167,16 +196,14 @@ const ViewProfile = () => {
         }
       } else if (s === "FRIENDS" || s === "ACCEPTED") {
         if (connectionStatus.connectionId) {
-          try {
-            await connectionsApi.deleteConnection(connectionStatus.connectionId);
-          } catch {
-            await connectionsApi.rejectRequest(connectionStatus.connectionId);
-          }
-          toast.success("Connection removed.");
-          const newStatus = await connectionsApi.getStatus(id);
-          setConnectionStatus(newStatus);
+          setConnectionToRemove({
+            id: connectionStatus.connectionId,
+            name: mentor.fullName,
+          });
+          setConfirmRemoveOpen(true);
         }
       } else if (s === "PENDING_SENT") {
+        // Request cancel with just a single press
         if (connectionStatus.connectionId) {
           try {
             await connectionsApi.deleteConnection(connectionStatus.connectionId);
@@ -540,14 +567,14 @@ const ViewProfile = () => {
 
         {/* All Friends Dialog */}
         <Dialog open={friendsOpen} onOpenChange={setFriendsOpen}>
-          <DialogContent className="sm:max-w-[480px]">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg w-full max-h-[85vh] flex flex-col p-5 sm:p-6 overflow-hidden">
+            <DialogHeader className="shrink-0 pb-2 border-b border-border/50">
+              <DialogTitle className="flex items-center gap-2 text-lg">
                 <Users className="w-5 h-5 text-primary" />
                 All Friends ({friendsList.length})
               </DialogTitle>
             </DialogHeader>
-            <div className="py-2">
+            <div className="flex-1 overflow-y-auto min-h-0 py-3 pr-1 overscroll-contain">
               {loadingFriends ? (
                 <div className="py-8 text-center text-sm text-muted-foreground animate-pulse">
                   Loading connections...
@@ -556,49 +583,49 @@ const ViewProfile = () => {
                 <div className="py-10 text-center">
                   <Users className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
                   <p className="text-sm font-medium text-foreground">No connections yet</p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
                     Connect with other students and mentors on SkillShare to build your network.
                   </p>
                 </div>
               ) : (
-                <div className="max-h-[380px] overflow-y-auto space-y-2.5 pr-1">
+                <div className="space-y-2.5">
                   {friendsList.map((conn) => {
                     const friend = conn.sender.id === me?.id ? conn.receiver : conn.sender;
                     return (
                       <div
                         key={conn.id}
-                        className="flex items-center justify-between p-3 rounded-xl border border-border/60 hover:bg-secondary/30 transition-colors"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border border-border/60 hover:bg-secondary/20 transition-colors gap-3 w-full"
                       >
                         <div
-                          className="flex items-center gap-3 cursor-pointer min-w-0 flex-1 mr-2"
+                          className="flex items-center gap-3 cursor-pointer min-w-0 flex-1 overflow-hidden"
                           onClick={() => {
                             setFriendsOpen(false);
                             navigate(`/profile/${friend.id}`);
                           }}
                         >
-                          <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-xs font-semibold text-foreground overflow-hidden shrink-0 border border-border/50">
+                          <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-xs font-semibold text-foreground overflow-hidden shrink-0 border border-border/50">
                             {friend.profilePictureUrl ? (
                               <img src={friend.profilePictureUrl} alt={friend.fullName} className="w-full h-full object-cover" />
                             ) : (
                               getInitials(friend.fullName)
                             )}
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-foreground truncate hover:underline">
+                          <div className="min-w-0 flex-1 overflow-hidden">
+                            <p className="text-sm font-semibold text-foreground truncate hover:underline">
                               {friend.fullName}
                             </p>
                             <p className="text-xs text-muted-foreground truncate">
-                              {friend.reputationScore ? `${friend.reputationScore} rep` : "0 rep"}
+                              <span className="font-medium text-foreground/80">{friend.reputationScore ? `${friend.reputationScore} rep` : "0 rep"}</span>
                               {friend.bio ? ` • ${friend.bio}` : ""}
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
                           <Button
                             size="sm"
-                            variant="ghost"
-                            className="h-8 px-2 text-xs"
+                            variant="outline"
+                            className="h-8 px-2.5 text-xs gap-1.5"
                             onClick={() => {
                               setFriendsOpen(false);
                               openChat({
@@ -612,24 +639,22 @@ const ViewProfile = () => {
                               openWidget();
                             }}
                           >
-                            <MessageSquare className="w-3.5 h-3.5 mr-1" /> Message
+                            <MessageSquare className="w-3.5 h-3.5" /> Message
                           </Button>
                           <Button
                             size="sm"
                             variant="ghost"
                             className="h-8 px-2 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                             title="Remove connection"
-                            onClick={async () => {
-                              try {
-                                await connectionsApi.deleteConnection(conn.id);
-                                setFriendsList((prev) => prev.filter((c) => c.id !== conn.id));
-                                toast.success("Connection removed.");
-                              } catch {
-                                toast.error("Failed to remove connection.");
-                              }
+                            onClick={() => {
+                              setConnectionToRemove({
+                                id: conn.id,
+                                name: friend.fullName,
+                              });
+                              setConfirmRemoveOpen(true);
                             }}
                           >
-                            <X className="w-3.5 h-3.5" />
+                            <X className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
@@ -638,9 +663,42 @@ const ViewProfile = () => {
                 </div>
               )}
             </div>
-            <div className="flex justify-end pt-2 border-t border-border">
+            <div className="flex justify-end pt-3 border-t border-border/50 shrink-0">
               <Button variant="outline" size="sm" onClick={() => setFriendsOpen(false)}>
                 Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Remove Connection Confirmation Dialog */}
+        <Dialog open={confirmRemoveOpen} onOpenChange={setConfirmRemoveOpen}>
+          <DialogContent className="sm:max-w-[420px]">
+            <DialogHeader>
+              <DialogTitle>Remove Connection?</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground py-2 leading-relaxed">
+              Are you sure you want to remove <span className="font-semibold text-foreground">{connectionToRemove?.name}</span> from your connections? You will need to send a new request if you want to connect again.
+            </p>
+            <div className="flex justify-end gap-3 pt-3 border-t border-border mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setConfirmRemoveOpen(false);
+                  setConnectionToRemove(null);
+                }}
+                disabled={removingConn}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleConfirmRemove}
+                disabled={removingConn}
+              >
+                {removingConn ? "Removing..." : "Remove Connection"}
               </Button>
             </div>
           </DialogContent>
