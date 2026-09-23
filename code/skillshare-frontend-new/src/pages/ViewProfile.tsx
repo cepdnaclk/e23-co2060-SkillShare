@@ -61,6 +61,29 @@ const ViewProfile = () => {
   // Upload pic state
   const [uploadingPic, setUploadingPic] = useState(false);
 
+  // Friends modal state
+  const [friendsOpen, setFriendsOpen] = useState(false);
+  const [friendsList, setFriendsList] = useState<ConnectionDto[]>([]);
+  const [loadingFriends, setLoadingFriends] = useState(false);
+
+  const loadFriends = async () => {
+    setLoadingFriends(true);
+    try {
+      const data = await connectionsApi.getFriends();
+      setFriendsList(data);
+    } catch {
+      // ignore
+    } finally {
+      setLoadingFriends(false);
+    }
+  };
+
+  useEffect(() => {
+    if (me?.id) {
+      loadFriends();
+    }
+  }, [me?.id]);
+
   useEffect(() => {
     if (!id || id === "undefined") {
       setLoading(false);
@@ -295,14 +318,39 @@ const ViewProfile = () => {
               <span className="flex items-center gap-1.5">
                 <Users2 className="w-4 h-4 opacity-70" /> {mentor.reputationScore ?? 0} rep
               </span>
+              {isOwnProfile && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    loadFriends();
+                    setFriendsOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                >
+                  <Users className="w-4 h-4 opacity-70" /> {friendsList.length} {friendsList.length === 1 ? "friend" : "friends"}
+                </button>
+              )}
             </div>
 
             {/* Profile Actions */}
             <div className="flex flex-wrap items-center gap-3">
               {isOwnProfile ? (
-                <Button variant="outline" size="sm" onClick={() => navigate("/settings")}>
-                  Edit Profile
-                </Button>
+                <>
+                  <Button variant="outline" size="sm" onClick={() => navigate("/settings")}>
+                    Edit Profile
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      loadFriends();
+                      setFriendsOpen(true);
+                    }}
+                    className="gap-2"
+                  >
+                    <Users className="w-4 h-4" /> All Friends ({friendsList.length})
+                  </Button>
+                </>
               ) : (
                 <>
                   <Button
@@ -485,6 +533,114 @@ const ViewProfile = () => {
               <Button variant="outline" onClick={() => setBookingOpen(false)}>Cancel</Button>
               <Button onClick={handleBook} disabled={!selectedSkill || !selectedSlot || booking}>
                 {booking ? "Confirming..." : "Confirm Request"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* All Friends Dialog */}
+        <Dialog open={friendsOpen} onOpenChange={setFriendsOpen}>
+          <DialogContent className="sm:max-w-[480px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                All Friends ({friendsList.length})
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-2">
+              {loadingFriends ? (
+                <div className="py-8 text-center text-sm text-muted-foreground animate-pulse">
+                  Loading connections...
+                </div>
+              ) : friendsList.length === 0 ? (
+                <div className="py-10 text-center">
+                  <Users className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+                  <p className="text-sm font-medium text-foreground">No connections yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Connect with other students and mentors on SkillShare to build your network.
+                  </p>
+                </div>
+              ) : (
+                <div className="max-h-[380px] overflow-y-auto space-y-2.5 pr-1">
+                  {friendsList.map((conn) => {
+                    const friend = conn.sender.id === me?.id ? conn.receiver : conn.sender;
+                    return (
+                      <div
+                        key={conn.id}
+                        className="flex items-center justify-between p-3 rounded-xl border border-border/60 hover:bg-secondary/30 transition-colors"
+                      >
+                        <div
+                          className="flex items-center gap-3 cursor-pointer min-w-0 flex-1 mr-2"
+                          onClick={() => {
+                            setFriendsOpen(false);
+                            navigate(`/profile/${friend.id}`);
+                          }}
+                        >
+                          <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-xs font-semibold text-foreground overflow-hidden shrink-0 border border-border/50">
+                            {friend.profilePictureUrl ? (
+                              <img src={friend.profilePictureUrl} alt={friend.fullName} className="w-full h-full object-cover" />
+                            ) : (
+                              getInitials(friend.fullName)
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-foreground truncate hover:underline">
+                              {friend.fullName}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {friend.reputationScore ? `${friend.reputationScore} rep` : "0 rep"}
+                              {friend.bio ? ` • ${friend.bio}` : ""}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2 text-xs"
+                            onClick={() => {
+                              setFriendsOpen(false);
+                              openChat({
+                                contactId: friend.id,
+                                contactName: friend.fullName,
+                                contactProfilePicture: friend.profilePictureUrl || null,
+                                lastMessage: "",
+                                lastMessageTime: null,
+                                unreadCount: 0
+                              });
+                              openWidget();
+                            }}
+                          >
+                            <MessageSquare className="w-3.5 h-3.5 mr-1" /> Message
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                            title="Remove connection"
+                            onClick={async () => {
+                              try {
+                                await connectionsApi.deleteConnection(conn.id);
+                                setFriendsList((prev) => prev.filter((c) => c.id !== conn.id));
+                                toast.success("Connection removed.");
+                              } catch {
+                                toast.error("Failed to remove connection.");
+                              }
+                            }}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end pt-2 border-t border-border">
+              <Button variant="outline" size="sm" onClick={() => setFriendsOpen(false)}>
+                Close
               </Button>
             </div>
           </DialogContent>
