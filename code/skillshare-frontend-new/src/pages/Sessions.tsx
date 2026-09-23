@@ -267,7 +267,7 @@ const SessionRow = ({ session: s, role, onAction, actionLoading, ratedSessionIds
             Cancel
           </Button>
         )}
-        {role === "learner" && s.status === "ACCEPTED" && new Date() >= new Date(s.endTime) && (
+        {role === "learner" && s.status === "ACCEPTED" && (
           <Button size="sm" variant="outline" onClick={() => onAction(s, "complete")} disabled={isBusy} className="h-8 text-xs">
             Mark Completed
           </Button>
