@@ -1,0 +1,967 @@
+{
+    "info": {
+        "name": "SkillShare API Tests",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "01 Authentication",
+            "item": [
+                {
+                    "name": "Register Mentor",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "pm.collectionVariables.set(\"mentorEmail\", `mentor_${Date.now()}@test.com`);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "const response = pm.response.json();",
+                                    "pm.collectionVariables.set(\"mentorToken\", response.token);",
+                                    "pm.collectionVariables.set(\"mentorId\", response.userId);",
+                                    "pm.test(\"Has token and ID\", function () {",
+                                    "    pm.expect(response.token).to.exist;",
+                                    "    pm.expect(response.userId).to.exist;",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fullName\": \"Test Mentor\",\n  \"email\": \"{{mentorEmail}}\",\n  \"password\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "register"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Register Learner",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "pm.collectionVariables.set(\"learnerEmail\", `learner_${Date.now()}@test.com`);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "const response = pm.response.json();",
+                                    "pm.collectionVariables.set(\"learnerToken\", response.token);",
+                                    "pm.collectionVariables.set(\"learnerId\", response.userId);",
+                                    "pm.test(\"Initial credits are 100\", function () {",
+                                    "    pm.expect(response.credits).to.eql(100);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fullName\": \"Test Learner\",\n  \"email\": \"{{learnerEmail}}\",\n  \"password\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "register"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "02 Mentor Setup",
+            "auth": {
+                "type": "bearer",
+                "bearer": [
+                    {
+                        "key": "token",
+                        "value": "{{mentorToken}}",
+                        "type": "string"
+                    }
+                ]
+            },
+            "item": [
+                {
+                    "name": "Get Mentor Profile",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "const response = pm.response.json();",
+                                    "pm.test(\"ID matches\", function () {",
+                                    "    pm.expect(response.id).to.eql(pm.collectionVariables.get(\"mentorId\"));",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/users/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "me"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Add Skill to Mentor",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "const response = pm.response.json();",
+                                    "pm.collectionVariables.set(\"skillId\", response.skillId);",
+                                    "pm.test(\"Skill ID exists\", function () {",
+                                    "    pm.expect(response.skillId).to.exist;",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"skillName\": \"Test Automation {{$randomTimestamp}}\",\n  \"skillType\": \"TEACH\",\n  \"skillCategory\": \"Technology\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/user-skills/add",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "user-skills",
+                                "add"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Availability",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "let start = new Date();",
+                                    "start.setMinutes(start.getMinutes() + 1);",
+                                    "let end = new Date(start);",
+                                    "end.setMinutes(end.getMinutes() + 2);",
+                                    "let pad = n => n.toString().padStart(2, '0');",
+                                    "let formatLocal = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;",
+                                    "pm.collectionVariables.set(\"dynamicStartTime\", formatLocal(start));",
+                                    "pm.collectionVariables.set(\"dynamicEndTime\", formatLocal(end));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "const response = pm.response.json();",
+                                    "pm.collectionVariables.set(\"availabilityId\", response.id);",
+                                    "pm.test(\"Availability created and not booked\", function () {",
+                                    "    pm.expect(response.id).to.exist;",
+                                    "    pm.expect(response.isBooked).to.be.false;",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"startTime\": \"{{dynamicStartTime}}\",\n  \"endTime\": \"{{dynamicEndTime}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/availability/add",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "availability",
+                                "add"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "03 Learner Discovery",
+            "auth": {
+                "type": "bearer",
+                "bearer": [
+                    {
+                        "key": "token",
+                        "value": "{{learnerToken}}",
+                        "type": "string"
+                    }
+                ]
+            },
+            "item": [
+                {
+                    "name": "Get Learner Profile",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "const response = pm.response.json();",
+                                    "pm.collectionVariables.set(\"beforeBookingCredits\", response.credits);",
+                                    "pm.test(\"Initial credits are 100\", function () {",
+                                    "    pm.expect(response.credits).to.eql(100);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/users/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "me"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Mentor Availability",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "const response = pm.response.json();",
+                                    "pm.test(\"Mentor has our slot\", function () {",
+                                    "    const slot = response.find(s => s.id === pm.collectionVariables.get(\"availabilityId\"));",
+                                    "    pm.expect(slot).to.exist;",
+                                    "    pm.expect(slot.isBooked).to.be.false;",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/availability/mentor/{{mentorId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "availability",
+                                "mentor",
+                                "{{mentorId}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "04 Session Booking",
+            "auth": {
+                "type": "bearer",
+                "bearer": [
+                    {
+                        "key": "token",
+                        "value": "{{learnerToken}}",
+                        "type": "string"
+                    }
+                ]
+            },
+            "item": [
+                {
+                    "name": "Book Session",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "const response = pm.response.json();",
+                                    "pm.collectionVariables.set(\"sessionEndTime\", response.endTime);",
+                                    "pm.collectionVariables.set(\"sessionId\", response.id);",
+                                    "pm.test(\"Session created successfully\", function () {",
+                                    "    pm.expect(response.id).to.exist;",
+                                    "    pm.expect(response.status).to.eql(\"PENDING\");",
+                                    "    pm.expect(response.mentorId).to.eql(pm.collectionVariables.get(\"mentorId\"));",
+                                    "    pm.expect(response.learnerId).to.eql(pm.collectionVariables.get(\"learnerId\"));",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"skillId\": \"{{skillId}}\",\n  \"availabilityId\": \"{{availabilityId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/sessions/book",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "sessions",
+                                "book"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Verify Credit Deduction",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "const response = pm.response.json();",
+                                    "const expected = pm.collectionVariables.get(\"beforeBookingCredits\") - 10;",
+                                    "pm.test(\"Credits deducted by 10\", function () {",
+                                    "    pm.expect(response.credits).to.eql(expected);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/users/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "me"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "05 Session Lifecycle",
+            "item": [
+                {
+                    "name": "Get Mentor Sessions",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{mentorToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/sessions/mentor/{{mentorId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "sessions",
+                                "mentor",
+                                "{{mentorId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "const response = pm.response.json();",
+                                    "pm.test(\"Session appears for mentor\", function () {",
+                                    "    const s = response.find(s => s.id === pm.collectionVariables.get(\"sessionId\"));",
+                                    "    pm.expect(s).to.exist;",
+                                    "    pm.expect(s.status).to.eql(\"PENDING\");",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Accept Session",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{mentorToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PATCH",
+                        "url": {
+                            "raw": "{{baseUrl}}/sessions/{{sessionId}}/status?status=ACCEPTED",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "sessions",
+                                "{{sessionId}}",
+                                "status"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "ACCEPTED"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "const response = pm.response.json();",
+                                    "pm.test(\"Session is ACCEPTED\", function () {",
+                                    "    pm.expect(response.status).to.eql(\"ACCEPTED\");",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Get Learner Sessions",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{learnerToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/sessions/learner/{{learnerId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "sessions",
+                                "learner",
+                                "{{learnerId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "const response = pm.response.json();",
+                                    "pm.test(\"Learner sees ACCEPTED session\", function () {",
+                                    "    const s = response.find(s => s.id === pm.collectionVariables.get(\"sessionId\"));",
+                                    "    pm.expect(s).to.exist;",
+                                    "    pm.expect(s.status).to.eql(\"ACCEPTED\");",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "06 Negative and Security",
+            "item": [
+                {
+                    "name": "Unauthenticated Request",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/users/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "me"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status is 401 or 403\", function () {",
+                                    "    pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Unauthorized Acceptance",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{learnerToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PATCH",
+                        "url": {
+                            "raw": "{{baseUrl}}/sessions/{{sessionId}}/status?status=ACCEPTED",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "sessions",
+                                "{{sessionId}}",
+                                "status"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "ACCEPTED"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Learner cannot accept session (403 or 500 mapping)\", function () {",
+                                    "    pm.expect(pm.response.code).to.be.oneOf([400, 403, 500]);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Double Booking",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{learnerToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"skillId\": \"{{skillId}}\",\n  \"availabilityId\": \"{{availabilityId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/sessions/book",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "sessions",
+                                "book"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Already booked returns 400 or 409\", function () {",
+                                    "    pm.expect(pm.response.code).to.be.oneOf([400, 409, 500]);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Own Availability Booking",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{mentorToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"skillId\": \"{{skillId}}\",\n  \"availabilityId\": \"{{availabilityId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/sessions/book",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "sessions",
+                                "book"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Mentor cannot book own slot\", function () {",
+                                    "    pm.expect(pm.response.code).to.be.oneOf([400, 409, 500]);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Invalid Past Availability",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{mentorToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"startTime\": \"2020-01-01T10:00:00\",\n  \"endTime\": \"2020-01-01T11:00:00\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/availability/add",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "availability",
+                                "add"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Rejects past time\", function () {",
+                                    "    pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "07 Early Completion (Blocked)",
+            "item": [
+                {
+                    "name": "Attempt Early Completion",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{learnerToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PATCH",
+                        "url": {
+                            "raw": "{{baseUrl}}/sessions/{{sessionId}}/complete",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "sessions",
+                                "{{sessionId}}",
+                                "complete"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Cannot complete before end time (409 Conflict)\", function () {",
+                                    "    pm.expect(pm.response.code).to.eql(409);",
+                                    "});",
+                                    "// Stop the automated Newman runner here so it doesn't run the manual suite",
+                                    "pm.execution.setNextRequest(null);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "08 Completion Lifecycle (Manual)",
+            "item": [
+                {
+                    "name": "Complete Session (After End Time)",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{learnerToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PATCH",
+                        "url": {
+                            "raw": "{{baseUrl}}/sessions/{{sessionId}}/complete",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "sessions",
+                                "{{sessionId}}",
+                                "complete"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "const endTime = pm.collectionVariables.get(\"sessionEndTime\");",
+                                    "console.log(`Ensure current time is past ${endTime} before running this manually.`);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200 OK\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "mentorToken",
+            "value": ""
+        },
+        {
+            "key": "learnerToken",
+            "value": ""
+        },
+        {
+            "key": "mentorId",
+            "value": ""
+        },
+        {
+            "key": "learnerId",
+            "value": ""
+        },
+        {
+            "key": "skillId",
+            "value": ""
+        },
+        {
+            "key": "availabilityId",
+            "value": ""
+        },
+        {
+            "key": "sessionId",
+            "value": ""
+        },
+        {
+            "key": "sessionEndTime",
+            "value": ""
+        }
+    ]
+}

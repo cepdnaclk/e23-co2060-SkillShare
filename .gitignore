@@ -2,3 +2,5 @@
 backup.sql
 .vscode/
 current_test.java
+
+qa/postman/reports/
