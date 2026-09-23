@@ -16,7 +16,9 @@ import ViewProfile from "./pages/ViewProfile";
 import MySchedule from "./pages/MySchedule";
 import Notifications from "./pages/Notifications";
 import Sessions from "./pages/Sessions";
-import Settings from "./pages/Settings";
+import Settings from "./pages/settings";
+import Admin from "./pages/Admin";
+import AdminReports from "@/pages/AdminReports.tsx";
 
 import NotFound from "./pages/NotFound";
 import OAuth2RedirectHandler from "@/components/OAuth2RedirectHandler";
@@ -72,6 +74,11 @@ const App = () => (
             <Route path="/settings" element={
               <ProtectedRoute><Settings /></ProtectedRoute>
             } />
+            <Route path="/admin" element={
+              <ProtectedRoute requiredRole="ADMIN"><Admin /></ProtectedRoute>
+            } />
+            <Route path="/admin/reports" element={
+              <ProtectedRoute requiredRole="ADMIN"><AdminReports /></ProtectedRoute>} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />

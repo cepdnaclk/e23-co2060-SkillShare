@@ -74,4 +74,17 @@ export const API_ROUTES = {
   CHAT_RECENT: '/chat/recent',
   chatHistoryByContactId: (contactId: string) => `/chat/history/${contactId}`, // Takes ?page={page}&size={size}
   markChatRead: (contactId: string) => `/chat/mark-read/${contactId}`,
+
+  // --- ADMIN ---
+  ADMIN_OVERVIEW: '/admin/overview',
+  ADMIN_USERS: '/admin/users',
+  adminUserById: (userId: string) => `/admin/users/${userId}`,
+  ADMIN_SKILLS: '/admin/skills',
+  adminSkillById: (skillId: string) => `/admin/skills/${skillId}`,
+  ADMIN_SESSIONS: '/admin/sessions',
+
+  //---REPORTS---
+  REPORTS: "/reports",
+  ADMIN_REPORTS: "/admin/reports",
+  adminReportResolve: (reportId: string | number) => `/admin/reports/${reportId}/resolve`,
 };

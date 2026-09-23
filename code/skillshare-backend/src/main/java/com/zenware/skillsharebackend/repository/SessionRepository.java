@@ -42,6 +42,8 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
     // Counts upcoming sessions for the learner
     long countByLearnerIdAndStatus(UUID learnerId, com.zenware.skillsharebackend.entity.SessionStatus status);
 
+    long countByStatus(SessionStatus status);
+
     // for the Demo Bot
     List<Session> findByMentorEmailAndStatus(String email, SessionStatus status);
 

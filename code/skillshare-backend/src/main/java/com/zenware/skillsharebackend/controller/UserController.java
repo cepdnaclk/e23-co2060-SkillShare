@@ -102,6 +102,7 @@ public class UserController {
                 .id(user.getId())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
+                .role(user.getRole())
                 .bio(user.getBio())
                 .profilePictureUrl(user.getProfilePictureUrl())
                 .credits(user.getCredits() != null ? user.getCredits() : 0)

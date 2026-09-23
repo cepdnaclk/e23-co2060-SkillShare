@@ -6,7 +6,23 @@
 export type SessionStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED' | 'CLOSED' | 'CANCELLED' | 'EXPIRED';
 export type ConnectionStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 export type NotificationType = 'SESSION_UPDATE' | 'SYSTEM_ALERT' | 'MESSAGE';
+export type UserRole = 'USER' | 'ADMIN';
 
+// ✅ Correct: Export as a standard runtime enum
+export enum ReportReason {
+  HARASSMENT = "HARASSMENT",
+  NO_SHOW = "NO_SHOW",
+  INAPPROPRIATE_CONTENT = "INAPPROPRIATE_CONTENT",
+  SPAM = "SPAM",
+  OTHER = "OTHER",
+}
+
+export enum ReportStatus {
+  PENDING = "PENDING",
+  UNDER_REVIEW = "UNDER_REVIEW",
+  RESOLVED = "RESOLVED",
+  DISMISSED = "DISMISSED",
+}
 // --- AUTHENTICATION ---
 export interface AuthenticationRequest {
   email: string;
@@ -36,6 +52,7 @@ export interface UserPrivateDto {
   id: string; // UUID
   fullName: string;
   email: string;
+  role: UserRole;
   bio: string | null;
   profilePictureUrl: string | null;
   credits: number | null;
@@ -87,6 +104,8 @@ export interface UserSkillDto {
 }
 
 export interface TrendingSkillDto {
+  name: string;
+  skillId: any;
   skillName: string;
   totalSessions: number;
 }
@@ -272,4 +291,69 @@ export interface Page<T> {
   };
   totalElements: number;
   totalPages: number;
+}
+
+// --- ADMIN ---
+export interface AdminOverviewDto {
+  totalUsers: number;
+  activeUsers: number;
+  inactiveUsers: number;
+  totalSkills: number;
+  totalSessions: number;
+  pendingSessions: number;
+  completedSessions: number;
+  totalFeedback: number;
+}
+
+export interface AdminUserDto {
+  id: string;
+  fullName: string;
+  email: string;
+  role: UserRole;
+  isActive: boolean;
+  credits: number | null;
+  xp: number | null;
+  level: number | null;
+  reputationScore: number | null;
+  isProfileCompleted: boolean;
+  createdAt: string | null;
+}
+
+export interface AdminSessionDto {
+  id: string;
+  learnerId: string;
+  learnerName: string;
+  mentorId: string;
+  mentorName: string;
+  skillId: string;
+  skillName: string;
+  startTime: string;
+  endTime: string;
+  status: SessionStatus;
+  creditValue: number;
+  createdAt: string | null;
+}
+export interface ReportRequestDto {
+  reportedUserId: string | number;
+  sessionId?: string | number | null;
+  reason: ReportReason;
+  description: String;
+}
+
+export interface ReportDto {
+  id: string | number;
+  reporterId: string | number;
+  reportedUserId: string | number;
+  sessionId?: string | number | null;
+  reason: ReportReason;
+  description: string;
+  status: ReportStatus;
+  adminNotes?: string;
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+export interface ResolveReportPayload {
+  adminNotes: string;
+  status: ReportStatus;
 }
