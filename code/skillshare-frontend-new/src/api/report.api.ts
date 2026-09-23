@@ -1,31 +1,39 @@
-// File: src/api/report.api.ts
-
 import { apiFetch } from "./client";
-import { API_ROUTES } from "./routes";
-import type {
-    ReportDto,
-    ReportRequestDto,
-    ReportStatus,
-    ResolveReportPayload
-} from "./types";
+import { ReportReason } from "./types";
+
+export interface ReportResponseDto {
+    id: string;
+    reporterId: string;
+    reporterName: string;
+    reportedUserId: string;
+    reportedUserName: string;
+    reportedUserEmail: string;
+    sessionId?: string;
+    reason: ReportReason;
+    description: string;
+    status: "PENDING" | "RESOLVED" | "DISMISSED";
+    createdAt: string;
+}
 
 export const reportApi = {
-    // User Actions
-    submitReport: (payload: ReportRequestDto) =>
-        apiFetch<string>(API_ROUTES.REPORTS, {
+    // Submit a report (POST /api/reports)
+    submitReport: (data: {
+        reportedUserId: string;
+        sessionId?: string;
+        reason: ReportReason;
+        description: string;
+    }) =>
+        apiFetch<void>("/reports", {
             method: "POST",
-            body: JSON.stringify(payload),
+            body: JSON.stringify(data),
         }),
 
-    // Admin Actions
-    getReportsByStatus: (status?: ReportStatus) =>
-        apiFetch<ReportDto[]>(
-            `${API_ROUTES.ADMIN_REPORTS}${status ? `?status=${encodeURIComponent(status)}` : ""}`
-        ),
+    // Fetch all reports for admins (GET /api/reports/admin/all)
+    getAllReports: () => apiFetch<ReportResponseDto[]>("/reports/admin/all"),
 
-    resolveReport: (reportId: string | number, payload: ResolveReportPayload) =>
-        apiFetch<string>(API_ROUTES.adminReportResolve(reportId), {
-            method: "PUT",
-            body: JSON.stringify(payload),
+    // Update report status (PATCH /api/reports/admin/{reportId}/status?status=RESOLVED)
+    updateStatus: (reportId: string, status: "RESOLVED" | "DISMISSED") =>
+        apiFetch<void>(`/reports/admin/${reportId}/status?status=${status}`, {
+            method: "PATCH",
         }),
 };

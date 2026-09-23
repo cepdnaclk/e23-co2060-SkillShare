@@ -4,14 +4,14 @@ import com.zenware.skillsharebackend.entity.ReportReason;
 import com.zenware.skillsharebackend.entity.ReportStatus;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-
+import java.util.UUID;
 @Entity
 @Table(name = "reports")
 public class Report {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reporter_id", nullable = false)
@@ -43,8 +43,8 @@ public class Report {
     private LocalDateTime resolvedAt;
 
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public User getReporter() { return reporter; }
     public void setReporter(User reporter) { this.reporter = reporter; }
