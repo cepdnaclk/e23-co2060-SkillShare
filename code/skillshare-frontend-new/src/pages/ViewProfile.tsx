@@ -12,6 +12,7 @@ import { sessionsApi } from "@/api/sessions.api";
 import { connectionsApi } from "@/api/connections.api";
 import { type UserPublicDto, type UserSkill, type Availability } from "@/api/types";
 import { type ApiError } from "@/api/client";
+import { parseAcademicBio } from "@/lib/academicBio";
 
 import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";
@@ -272,15 +273,20 @@ const ViewProfile = () => {
   const learnSkills = skills.filter((s) => s.skillType === "LEARN");
   const unbookedSlots = slots.filter((s) => !s.isBooked);
 
-  const academic = (() => {
+  const academic = parseAcademicBio(mentor.bio);
+  const localAcademic = isOwnProfile && me?.id ? (() => {
     try {
-      const stored = localStorage.getItem(`skillshare_academic_${mentor.id}`);
+      const stored = localStorage.getItem(`skillshare_academic_${me.id}`);
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
     }
-  })();
-  const academicInfoStr = [academic?.university, academic?.major].filter(Boolean).join(" • ");
+  })() : null;
+
+  const resolvedUniversity = academic.university || localAcademic?.university || "";
+  const resolvedMajor = academic.major || localAcademic?.major || "";
+  const academicInfoStr = [resolvedUniversity, resolvedMajor].filter(Boolean).join(" • ");
+  const cleanBioText = academic.cleanBio;
 
   // Connection button copy
   let connectLabel = "Connect";
@@ -330,9 +336,9 @@ const ViewProfile = () => {
               {mentor.fullName}
             </h1>
             
-            {mentor.bio && (
+            {cleanBioText && (
               <p className="text-muted-foreground text-sm max-w-xl mb-4 leading-relaxed">
-                {mentor.bio}
+                {cleanBioText}
               </p>
             )}
 

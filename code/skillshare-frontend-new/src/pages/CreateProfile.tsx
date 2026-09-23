@@ -13,6 +13,7 @@ import { trendingApi } from "@/api/dashboard.api";
 import { usersApi } from "@/api/users.api";
 import { type Skill } from "@/api/types";
 import { type ApiError } from "@/api/client";
+import { formatAcademicBio } from "@/lib/academicBio";
 
 import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";
@@ -244,8 +245,11 @@ const CreateProfile = () => {
     setIsSaving(true);
     setError(null);
     try {
-      if (profileInfo.bio && user) {
-        try { await usersApi.updateMyBio(profileInfo.bio); } catch (err) { console.error("Failed to update bio:", err); }
+      if (user) {
+        const fullBio = formatAcademicBio(profileInfo.bio, profileInfo.university, profileInfo.major);
+        if (fullBio) {
+          try { await usersApi.updateMyBio(fullBio); } catch (err) { console.error("Failed to update bio:", err); }
+        }
       }
 
       const newSkills = skills.filter(s => !initialSkills.some(is => is.name.toLowerCase() === s.name.toLowerCase() && is.type === s.type));

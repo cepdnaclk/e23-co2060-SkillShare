@@ -16,6 +16,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { SkillPickerModal } from "@/components/SkillPickerModal";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { parseAcademicBio, formatAcademicBio } from "@/lib/academicBio";
 
 const Settings = () => {
   const { user, refreshUser } = useAuth();
@@ -51,17 +52,16 @@ const Settings = () => {
   useEffect(() => {
     fetchSkills();
     if (user?.id) {
-      if (user.bio) {
-        setBio(user.bio);
+      const academic = parseAcademicBio(user.bio);
+      setBio(academic.cleanBio);
+
+      const localSaved = localStorage.getItem(`skillshare_academic_${user.id}`);
+      let localParsed: { university?: string; major?: string } = {};
+      if (localSaved) {
+        try { localParsed = JSON.parse(localSaved); } catch {}
       }
-      const saved = localStorage.getItem(`skillshare_academic_${user.id}`);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed.university) setUniversity(parsed.university);
-          if (parsed.major) setMajor(parsed.major);
-        } catch {}
-      }
+      setUniversity(academic.university || localParsed.university || "");
+      setMajor(academic.major || localParsed.major || "");
     }
   }, [user?.id, user?.bio]);
 
@@ -102,7 +102,8 @@ const Settings = () => {
   const handleSaveBio = async () => {
     setSavingBio(true);
     try {
-      await usersApi.updateMyBio(bio);
+      const formattedBio = formatAcademicBio(bio, university, major);
+      await usersApi.updateMyBio(formattedBio);
       if (user?.id) {
         localStorage.setItem(
           `skillshare_academic_${user.id}`,
