@@ -1,4 +1,4 @@
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState, useMemo, ChangeEvent } from "react";
 import { Clock, Star, Users2, Users, MessageSquare, Edit3, X, UserPlus, UserCheck, Clock4, GraduationCap, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -274,7 +274,7 @@ const ViewProfile = () => {
   const unbookedSlots = slots.filter((s) => !s.isBooked);
 
   const academic = parseAcademicBio(mentor.bio);
-  const localAcademic = (() => {
+  const localAcademic = useMemo(() => {
     try {
       const targetId = mentor?.id || id || (isOwnProfile && me?.id ? me.id : null);
       if (!targetId) return null;
@@ -283,25 +283,12 @@ const ViewProfile = () => {
     } catch {
       return null;
     }
-  })();
+  }, [mentor?.id, id, isOwnProfile, me?.id]);
 
   const resolvedUniversity = academic.university || localAcademic?.university || "";
   const resolvedMajor = academic.major || localAcademic?.major || "";
   const academicInfoStr = [resolvedUniversity, resolvedMajor].filter(Boolean).join(" • ");
   const cleanBioText = academic.cleanBio;
-
-  // Auto-sync: if viewing own profile and local storage has academic data not yet synced to backend bio, sync it immediately
-  useEffect(() => {
-    if (isOwnProfile && me?.id && localAcademic && mentor) {
-      if ((localAcademic.university || localAcademic.major) && (!mentor.bio || !mentor.bio.includes("[Academic:"))) {
-        const clean = parseAcademicBio(mentor.bio).cleanBio;
-        const formatted = formatAcademicBio(clean, localAcademic.university, localAcademic.major);
-        usersApi.updateMyBio(formatted).then(() => {
-          refreshUser(me.id);
-        }).catch(() => {});
-      }
-    }
-  }, [isOwnProfile, me?.id, localAcademic, mentor]);
 
   // Connection button copy
   let connectLabel = "Connect";
