@@ -334,12 +334,12 @@ const ViewProfile = () => {
           {/* TEACH */}
           <div>
             <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-4">
-              Can Teach
+              <span className="text-[hsl(var(--teach-text))] font-semibold">Can Teach</span>
             </h2>
             {teachSkills.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {teachSkills.map((s) => (
-                  <Badge key={s.skillId} variant="secondary" className="px-3 py-1 text-xs font-medium bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors">
+                  <Badge key={s.skillId} variant="secondary" className="px-3 py-1 text-xs font-medium skill-badge-teach hover:opacity-80 transition-opacity">
                     {s.skillName}
                   </Badge>
                 ))}
@@ -352,12 +352,12 @@ const ViewProfile = () => {
           {/* LEARN */}
           <div>
             <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-4">
-              Wants To Learn
+              <span className="text-[hsl(var(--learn-text))] font-semibold">Wants To Learn</span>
             </h2>
             {learnSkills.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {learnSkills.map((s) => (
-                  <Badge key={s.skillId} variant="outline" className="px-3 py-1 text-xs font-medium bg-[hsl(var(--chart-4))]/10 text-[hsl(var(--chart-4))] border-[hsl(var(--chart-4))]/20 hover:bg-[hsl(var(--chart-4))]/20 transition-colors">
+                  <Badge key={s.skillId} variant="outline" className="px-3 py-1 text-xs font-medium skill-badge-learn hover:opacity-80 transition-opacity">
                     {s.skillName}
                   </Badge>
                 ))}

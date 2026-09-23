@@ -182,7 +182,15 @@ const Notifications = () => {
                           if (msg.includes("sent you a connection request")) {
                             const name = n.message.split(" sent you")[0].trim();
                             const p = pendingRequests.find(c => c.sender.fullName === name);
-                            if (p) navigate(`/profile/${p.sender.id}`);
+                            if (p) {
+                              navigate(`/profile/${p.sender.id}`);
+                              return;
+                            }
+                            const f = friends.find(c => c.sender.fullName === name || c.receiver.fullName === name);
+                            if (f && user) {
+                              const otherId = f.sender.id === user.id ? f.receiver.id : f.sender.id;
+                              navigate(`/profile/${otherId}`);
+                            }
                           } else if (msg.includes("accepted your connection request")) {
                             const name = n.message.split(" accepted")[0].trim();
                             const f = friends.find(c => c.sender.fullName === name || c.receiver.fullName === name);

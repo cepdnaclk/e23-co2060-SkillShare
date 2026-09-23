@@ -190,6 +190,28 @@ const Settings = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="university">University / Institution</Label>
+                  <Input
+                    id="university"
+                    placeholder="e.g. Stanford University"
+                    className="bg-secondary/30 opacity-70 cursor-not-allowed"
+                    disabled
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">This information is currently read-only.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="major">Faculty / Major</Label>
+                  <Input
+                    id="major"
+                    placeholder="e.g. Computer Science"
+                    className="bg-secondary/30 opacity-70 cursor-not-allowed"
+                    disabled
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label>Bio</Label>
                 <Textarea 

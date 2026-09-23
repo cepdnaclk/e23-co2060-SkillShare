@@ -1,4 +1,4 @@
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNowStrict } from "date-fns";
 import type { RecentChatDto as RecentChat } from "@/api/types";
 import { useChat } from "@/context/ChatContext";
 import { MessageSquare } from "lucide-react";
@@ -15,15 +15,14 @@ function getInitials(name: string) {
 function formatTime(iso: string | null): string {
   if (!iso) return "";
   try {
-    return formatDistanceToNow(new Date(iso), { addSuffix: false })
-      .replace("less than a minute", "now")
-      .replace("about ", "")
-      .replace(" minutes", "m")
-      .replace(" minute", "m")
-      .replace(" hours", "h")
-      .replace(" hour", "h")
-      .replace(" days", "d")
-      .replace(" day", "d");
+    const diff = formatDistanceToNowStrict(new Date(iso), { addSuffix: false });
+    if (diff.includes("second")) return "now";
+    return diff
+      .replace(/ minutes?/, "m")
+      .replace(/ hours?/, "h")
+      .replace(/ days?/, "d")
+      .replace(/ months?/, "mo")
+      .replace(/ years?/, "y");
   } catch {
     return "";
   }
