@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { SERVER_BASE_URL } from "@/api/client";
 
 const STRICT_EMAIL_REGEX = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}$/;
 const DISPOSABLE_DOMAINS = ["mailinator.com", "10minutemail.com", "tempmail.com", "guerrillamail.com", "yopmail.com", "dropmail.me"];
@@ -199,7 +200,7 @@ const SignUp = () => {
                   <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Or continue with</span></div>
                 </div>
                 
-                <Button type="button" variant="outline" className="w-full h-11 rounded-xl gap-2 font-medium hover:bg-secondary/80 transition-colors" onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/github'}>
+                <Button type="button" variant="outline" className="w-full h-11 rounded-xl gap-2 font-medium hover:bg-secondary/80 transition-colors" onClick={() => window.location.href = `${SERVER_BASE_URL}/oauth2/authorization/github`}>
                   <Github className="w-4 h-4" /> GitHub
                 </Button>
               </motion.form>
