@@ -8,8 +8,8 @@ import { type Session, type FeedbackResponse, type UserSkill } from "@/api/types
 
 import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";
-import { 
-  Calendar, BookOpen, GraduationCap, Clock, Inbox, PlayCircle, Trophy, Sparkles, Plus, Search, ChevronRight, ArrowRight
+import {
+  Calendar, BookOpen, GraduationCap, Clock, Inbox, PlayCircle, Trophy, Sparkles, Plus, Search, ChevronRight, ArrowRight, Flame, Coins, type LucideIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -47,70 +47,146 @@ const greeting = () => {
   return "Good evening";
 };
 
+// ── REUSABLE GAMIFIED STICKER POPUP WRAPPER ──
+interface TooltipProps {
+  children: React.ReactNode;
+  title: string;
+  titleColor: string;
+  tooltipText: string;
+  emoji: string;
+  Icon: LucideIcon;
+  iconColor: string;
+  tooltipBg: string;
+  textColor: string;
+}
+
+function HeaderChipWithTooltip({
+                                 children,
+                                 title,
+                                 titleColor,
+                                 tooltipText,
+                                 emoji,
+                                 Icon,
+                                 iconColor,
+                                 tooltipBg,
+                                 textColor
+                               }: TooltipProps) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+      <div
+          className="relative flex flex-col items-center"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* Target Anchor Component */}
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          {children}
+        </motion.div>
+
+        {/* Duolingo Sticker Card Dialog with themed color backgrounds */}
+        <AnimatePresence>
+          {isHovered && (
+              <motion.div
+                  initial={{ opacity: 0, y: 12, scale: 0.93 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.93 }}
+                  transition={{ duration: 0.16, ease: "easeOut" }}
+                  className={`absolute top-full mt-2.5 z-50 w-52 p-4 rounded-2xl border border-border shadow-[0_12px_32px_rgba(0,0,0,0.15)] pointer-events-none text-center ${tooltipBg}`}
+              >
+                {/* Arrow Pin */}
+                <div className={`absolute -top-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 border-t border-l border-border ${tooltipBg}`} />
+
+                {/* Centered Large Sticker Graphic */}
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <div className="relative flex items-center justify-center w-11 h-11 rounded-full bg-background border border-border text-xl shadow-inner">
+                    <span>{emoji}</span>
+                    <div className="absolute -bottom-1 -right-1 p-0.5 rounded-md bg-muted border border-border shadow-sm">
+                      <Icon className={`w-3 h-3 ${iconColor}`} />
+                    </div>
+                  </div>
+
+                  {/* Typography Structure */}
+                  <div className="flex flex-col gap-0.5 mt-1">
+                    <h4 className={`text-xs font-black tracking-wider uppercase ${titleColor}`}>
+                      {title}
+                    </h4>
+                    <p className={`text-[11px] leading-relaxed font-bold px-1 ${textColor}`}>
+                      {tooltipText}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+  );
+}
+
 /* Sub-components */
 function SkillPill({ name, variant }: { name: string; variant: "teach" | "learn" }) {
   const isTeach = variant === "teach";
   return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      whileHover={{ scale: 1.05 }}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-default ${isTeach ? 'bg-primary/10 text-primary border-primary/20' : 'bg-[hsl(var(--chart-4))]/15 text-[hsl(var(--chart-4))] border-[hsl(var(--chart-4))]/20'}`}
-    >
-      {isTeach ? <GraduationCap className="w-3.5 h-3.5" /> : <BookOpen className="w-3.5 h-3.5" />}
-      {name}
-    </motion.div>
+      <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          whileHover={{ scale: 1.05 }}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-default ${isTeach ? 'bg-primary/10 text-primary border-primary/20' : 'bg-[hsl(var(--chart-4))]/15 text-[hsl(var(--chart-4))] border-[hsl(var(--chart-4))]/20'}`}
+      >
+        {isTeach ? <GraduationCap className="w-3.5 h-3.5" /> : <BookOpen className="w-3.5 h-3.5" />}
+        {name}
+      </motion.div>
   );
 }
 
 function SessionRow({ session, onClick }: { session: Session; onClick: () => void }) {
   const dateStr = formatDate(session.startTime);
   const isPending = session.status === "PENDING";
-  
+
   return (
-    <motion.div 
-      whileHover={{ scale: 1.01 }}
-      onClick={onClick}
-      className="group flex items-center gap-4 py-3 cursor-pointer hover:bg-secondary/50 px-3 -mx-3 rounded-xl transition-colors border-b border-border/50 last:border-0"
-    >
-      <div className="w-10 h-10 rounded-full bg-secondary text-muted-foreground flex items-center justify-center group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-        <PlayCircle className="w-5 h-5" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground truncate">
-          {session.skillName} <span className="text-muted-foreground font-normal mx-1">with</span> {session.learnerName}
-        </p>
-        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-          <Clock className="w-3 h-3" /> {dateStr}
-        </p>
-      </div>
-      <div className="flex items-center gap-3">
-        {isPending && (
-          <span className="text-[10px] uppercase font-bold tracking-wider text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
+      <motion.div
+          whileHover={{ scale: 1.01 }}
+          onClick={onClick}
+          className="group flex items-center gap-4 py-3 cursor-pointer hover:bg-secondary/50 px-3 -mx-3 rounded-xl transition-colors border-b border-border/50 last:border-0"
+      >
+        <div className="w-10 h-10 rounded-full bg-secondary text-muted-foreground flex items-center justify-center group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+          <PlayCircle className="w-5 h-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">
+            {session.skillName} <span className="text-muted-foreground font-normal mx-1">with</span> {session.learnerName}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+            <Clock className="w-3 h-3" /> {dateStr}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {isPending && (
+              <span className="text-[10px] uppercase font-bold tracking-wider text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
             Pending
           </span>
-        )}
-        <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1" />
-      </div>
-    </motion.div>
+          )}
+          <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1" />
+        </div>
+      </motion.div>
   );
 }
 
 function StatCard({ label, value, icon: Icon, onClick }: { label: string; value: string | number; icon: React.ElementType; onClick?: () => void }) {
   return (
-    <motion.div whileHover={onClick ? { y: -2 } : {}}>
-      <Card className={`bg-card shadow-sm border-border/60 ${onClick ? 'cursor-pointer hover:border-primary/50 transition-colors' : ''}`} onClick={onClick}>
-        <CardContent className="p-4 flex flex-col gap-2">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-semibold tracking-wider uppercase">{label}</span>
-            <Icon className="w-4 h-4 opacity-50" />
-          </div>
-          <div className="text-2xl font-bold text-foreground">
-            {value}
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+      <motion.div whileHover={onClick ? { y: -2 } : {}}>
+        <Card className={`bg-card shadow-sm border-border/60 ${onClick ? 'cursor-pointer hover:border-primary/50 transition-colors' : ''}`} onClick={onClick}>
+          <CardContent className="p-4 flex flex-col gap-2">
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span className="text-xs font-semibold tracking-wider uppercase">{label}</span>
+              <Icon className="w-4 h-4 opacity-50" />
+            </div>
+            <div className="text-2xl font-bold text-foreground">
+              {value}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
   );
 }
 
@@ -118,7 +194,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -126,10 +202,10 @@ const Dashboard = () => {
   const [upcomingMentor, setUpcomingMentor] = useState<Session[]>([]);
   const [feedback, setFeedback] = useState<FeedbackResponse[]>([]);
   const [userSkills, setUserSkills] = useState<UserSkill[]>([]);
-  
+
   // Post-Signup Welcome
   const [showWelcome, setShowWelcome] = useState(false);
-  
+
   // Skill Picker State
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerType, setPickerType] = useState<"TEACH" | "LEARN">("TEACH");
@@ -150,9 +226,9 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!user) return;
-    
+
     let isMounted = true;
-    
+
     const loadAll = async () => {
       try {
         const [mentoring, learning, fbs, skillsRes] = await Promise.all([
@@ -161,17 +237,17 @@ const Dashboard = () => {
           feedbackApi.getForUser(user.id),
           userSkillsApi.getByUser(user.id),
         ]);
-        
+
         if (!isMounted) return;
-        
+
         const now = new Date();
         const activeMentoring = mentoring
-          .filter(s => (s.status === "ACCEPTED" || s.status === "PENDING") && new Date(s.startTime) >= now)
-          .sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-          
+            .filter(s => (s.status === "ACCEPTED" || s.status === "PENDING") && new Date(s.startTime) >= now)
+            .sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
         const activeLearning = learning
-          .filter(s => (s.status === "ACCEPTED" || s.status === "PENDING") && new Date(s.startTime) >= now)
-          .sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+            .filter(s => (s.status === "ACCEPTED" || s.status === "PENDING") && new Date(s.startTime) >= now)
+            .sort((a,b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
         setUpcomingMentor(activeMentoring);
         setUpcomingLearner(activeLearning);
@@ -186,7 +262,7 @@ const Dashboard = () => {
     };
 
     loadAll();
-    
+
     return () => { isMounted = false; };
   }, [user]);
 
@@ -201,231 +277,303 @@ const Dashboard = () => {
   };
 
   const firstName = user?.fullName?.split(" ")[0] ?? "there";
+  const userXp = user?.xp ?? 0;
+  const userLevel = user?.level ?? 1;
   const teachSkills = userSkills.filter(s => s.skillType === "TEACH");
   const learnSkills = userSkills.filter(s => s.skillType === "LEARN");
 
   if (showWelcome) {
     return (
-      <div className="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-center p-6 text-center">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-          className="max-w-md flex flex-col items-center"
-        >
-          <img src="/skillshare.png" alt="SkillShare Logo" className="w-20 h-20 object-contain mb-8 drop-shadow-md" />
-          <h1 className="text-4xl font-bold tracking-tight text-foreground mb-4">Welcome to SkillShare</h1>
-          <p className="text-xl text-muted-foreground mb-12 leading-relaxed">
-            Everyone has something to teach.<br />Everyone has something to learn.
-          </p>
-          <Button 
-            onClick={() => setShowWelcome(false)} 
-            size="lg" 
-            className="rounded-full px-8 h-12 text-base font-medium group"
+        <div className="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-center p-6 text-center">
+          <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
+              className="max-w-md flex flex-col items-center"
           >
-            Get started
-            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-          </Button>
-        </motion.div>
-      </div>
+            <img src="/skillshare.png" alt="SkillShare Logo" className="w-20 h-20 object-contain mb-8 drop-shadow-md" />
+            <h1 className="text-4xl font-bold tracking-tight text-foreground mb-4">Welcome to SkillShare</h1>
+            <p className="text-xl text-muted-foreground mb-12 leading-relaxed">
+              Everyone has something to teach.<br />Everyone has something to learn.
+            </p>
+            <Button
+                onClick={() => setShowWelcome(false)}
+                size="lg"
+                className="rounded-full px-8 h-12 text-base font-medium group"
+            >
+              Get started
+              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </motion.div>
+        </div>
     );
   }
 
   return (
-    <AppLayout>
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="p-4 sm:p-6 md:p-10 max-w-5xl mx-auto flex flex-col min-h-[calc(100vh-4rem)]"
-      >
-        <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-6" />
+      <AppLayout>
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="p-4 sm:p-6 md:p-10 max-w-5xl mx-auto flex flex-col min-h-[calc(100vh-4rem)]"
+        >
+          <ErrorBanner error={error} onDismiss={() => setError(null)} className="mb-6" />
 
-        {/* 1. HEADER & QUICK ACTIONS */}
-        <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              {greeting()}, {firstName}
-            </h1>
-            <p className="text-muted-foreground mt-1">Here is what is happening today.</p>
-          </div>
-          
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={() => navigate("/search")} variant="default" className="gap-2 shadow-sm transition-transform active:scale-95">
-              <Search className="w-4 h-4" /> Explore Skills
-            </Button>
-            <Button onClick={() => navigate("/my-schedule")} variant="outline" className="gap-2 bg-background hover:bg-secondary transition-transform active:scale-95">
-              <Calendar className="w-4 h-4" /> My Schedule
-            </Button>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="animate-pulse space-y-12">
-            <div className="h-40 bg-secondary/50 rounded-xl" />
-            <div className="h-40 bg-secondary/50 rounded-xl" />
-          </div>
-        ) : (
-          <div className="space-y-10">
-            
-            {/* TEACH & LEARN SKILLS */}
-            <div className="grid md:grid-cols-2 gap-8">
-              
-              <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
-                <Card className="bg-card border-border/60 shadow-sm flex flex-col h-full hover:border-primary/30 transition-colors">
-                  <CardContent className="p-5 flex-1 flex flex-col">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <GraduationCap className="w-4 h-4 text-primary" />
-                        <h2 className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">
-                          I Can Teach
-                        </h2>
-                      </div>
-                      <Button variant="ghost" size="sm" onClick={() => { setPickerType("TEACH"); setPickerOpen(true); }} className="text-xs h-8 text-muted-foreground hover:text-foreground">
-                        <Plus className="w-3 h-3 mr-1" /> Add
-                      </Button>
-                    </div>
-
-                    {teachSkills.length > 0 ? (
-                      <div className="flex flex-wrap gap-2 mt-auto">
-                        {teachSkills.map((s) => (
-                          <SkillPill key={`${s.skillId}-teach`} name={s.skillName ?? "Unnamed"} variant="teach" />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center text-center py-6 bg-secondary/20 rounded-lg border border-dashed border-border mt-auto h-full">
-                        <GraduationCap className="w-8 h-8 text-muted-foreground/30 mb-2" />
-                        <p className="text-sm text-muted-foreground mb-3">No teaching skills listed.</p>
-                        <Button variant="outline" size="sm" onClick={() => { setPickerType("TEACH"); setPickerOpen(true); }} className="h-8 text-xs gap-1 transition-transform active:scale-95">
-                          <Plus className="w-3 h-3" /> Add Skills
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
-                <Card className="bg-card border-border/60 shadow-sm flex flex-col h-full hover:border-[hsl(var(--chart-4))]/30 transition-colors">
-                  <CardContent className="p-5 flex-1 flex flex-col">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="w-4 h-4 text-[hsl(var(--chart-4))]" />
-                        <h2 className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">
-                          I Want To Learn
-                        </h2>
-                      </div>
-                      <Button variant="ghost" size="sm" onClick={() => { setPickerType("LEARN"); setPickerOpen(true); }} className="text-xs h-8 text-muted-foreground hover:text-foreground">
-                        <Plus className="w-3 h-3 mr-1" /> Add
-                      </Button>
-                    </div>
-
-                    {learnSkills.length > 0 ? (
-                      <div className="flex flex-wrap gap-2 mt-auto">
-                        {learnSkills.map((s) => (
-                          <SkillPill key={`${s.skillId}-learn`} name={s.skillName ?? "Unnamed"} variant="learn" />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center text-center py-6 bg-secondary/20 rounded-lg border border-dashed border-border mt-auto h-full">
-                        <BookOpen className="w-8 h-8 text-muted-foreground/30 mb-2" />
-                        <p className="text-sm text-muted-foreground mb-3">No learning goals listed.</p>
-                        <Button variant="outline" size="sm" onClick={() => { setPickerType("LEARN"); setPickerOpen(true); }} className="h-8 text-xs gap-1 transition-transform active:scale-95">
-                          <Plus className="w-3 h-3" /> Add Goals
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
+          {/* 1. HEADER & QUICK ACTIONS WITH GAMIFICATION CHIPS */}
+          <div className="mb-10 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                {greeting()}, {firstName}
+              </h1>
+              <p className="text-muted-foreground mt-1">Here is what is happening today.</p>
             </div>
 
-            {/* UPCOMING SESSIONS */}
-            <Card className="bg-card border-border/60 shadow-sm hover:border-border transition-colors">
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <h2 className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">
-                      Upcoming Sessions
-                    </h2>
-                  </div>
-                  {(upcomingLearner.length > 0 || upcomingMentor.length > 0) && (
-                    <Button variant="ghost" size="sm" onClick={() => navigate("/sessions")} className="text-xs h-8 text-muted-foreground hover:text-foreground">
-                      View all
-                    </Button>
-                  )}
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* 1. SEARCH CHIP */}
+              <HeaderChipWithTooltip
+                  title="Search System"
+                  titleColor="text-slate-700 font-black"
+                  tooltipText="Find courses, skills, or peer mentors instantly."
+                  emoji="🔍"
+                  Icon={Search}
+                  iconColor="text-slate-600"
+                  tooltipBg="bg-white"
+                  textColor="text-slate-500"
+              >
+                <button
+                    onClick={() => navigate("/search")}
+                    className="flex items-center justify-center w-9 h-9 rounded-xl bg-muted border border-border text-foreground shadow-sm transition-all hover:bg-secondary"
+                >
+                  <Search className="w-4 h-4 font-bold" />
+                </button>
+              </HeaderChipWithTooltip>
+
+              {/* 2. LEVEL CHIP */}
+              <HeaderChipWithTooltip
+                  title={`Level ${userLevel}`}
+                  titleColor="text-violet-700 font-black"
+                  tooltipText={`Keep learning and sharing skills to reach Level ${userLevel + 1}!`}
+                  emoji="👑"
+                  Icon={Trophy}
+                  iconColor="text-violet-600"
+                  tooltipBg="bg-violet-50"
+                  textColor="text-violet-600"
+              >
+                <div className="flex items-center gap-1.5 px-3 py-1.5 h-9 rounded-xl bg-card border-2 border-violet-400 text-xs font-black tracking-tight text-violet-700 shadow-sm">
+                  <Trophy className="w-3.5 h-3.5 fill-violet-200 text-violet-600" />
+                  <span className="uppercase text-[9px] tracking-wider font-extrabold text-violet-500">LVL</span>
+                  <span className="font-extrabold text-violet-900 dark:text-violet-300">{userLevel}</span>
                 </div>
+              </HeaderChipWithTooltip>
 
-                {upcomingLearner.length > 0 ? (
-                  <div className="flex flex-col">
-                    {upcomingLearner.slice(0, 4).map((s) => (
-                      <SessionRow key={s.id} session={s} onClick={() => navigate("/sessions")} />
-                    ))}
-                  </div>
-                ) : upcomingMentor.length > 0 ? (
-                  <div className="flex flex-col">
-                    {upcomingMentor.slice(0, 4).map((s) => (
-                      <SessionRow key={s.id} session={s} onClick={() => navigate("/sessions")} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-center py-8 bg-secondary/20 rounded-lg border border-dashed border-border">
-                    <Calendar className="w-8 h-8 text-muted-foreground/30 mb-2" />
-                    <p className="text-sm text-muted-foreground mb-4">No upcoming sessions right now.</p>
-                    <Button onClick={() => navigate("/search")} variant="default" size="sm" className="gap-2 transition-transform active:scale-95">
-                      <Search className="w-3.5 h-3.5" /> Find a Mentor
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* STAT CARDS (MOVED TO BOTTOM) */}
-            {user && (
-              <div className="pt-6 border-t border-border/40 mt-8">
-                <p className="text-[10px] uppercase font-semibold tracking-widest text-muted-foreground mb-4">Overview</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <StatCard 
-                    label="Credits" 
-                    value={user.credits ?? 0} 
-                    icon={Sparkles} 
-                  />
-                  <StatCard 
-                    label="Reputation" 
-                    value={user.reputationScore ?? 0} 
-                    icon={Trophy} 
-                  />
-                  <StatCard 
-                    label="Upcoming" 
-                    value={upcomingLearner.length + upcomingMentor.length} 
-                    icon={Calendar} 
-                    onClick={() => navigate("/sessions")}
-                  />
-                  <StatCard 
-                    label="Feedback" 
-                    value={feedback.length} 
-                    icon={Inbox} 
-                    onClick={() => navigate("/notifications")}
-                  />
+              {/* 3. XP CHIP */}
+              <HeaderChipWithTooltip
+                  title={`${userXp} Total XP`}
+                  titleColor="text-orange-700 font-black"
+                  tooltipText={`${100 - (userXp % 100)} more XP until your next level milestone.`}
+                  emoji="⚡"
+                  Icon={Flame}
+                  iconColor="text-orange-500"
+                  tooltipBg="bg-orange-50"
+                  textColor="text-orange-600"
+              >
+                <div className="flex items-center gap-1.5 px-3 py-1.5 h-9 rounded-xl bg-card border-2 border-orange-400 text-xs font-black tracking-tight text-orange-700 shadow-sm">
+                  <Flame className="w-3.5 h-3.5 fill-orange-100 text-orange-500 animate-pulse" />
+                  <span className="font-extrabold text-orange-900 dark:text-orange-300">{userXp}</span>
+                  <span className="uppercase text-[9px] font-extrabold text-orange-500">XP</span>
                 </div>
-              </div>
-            )}
+              </HeaderChipWithTooltip>
 
+              {/* 4. CREDITS CHIP */}
+              <HeaderChipWithTooltip
+                  title={`${user?.credits ?? 0} Balance`}
+                  titleColor="text-sky-700 font-black"
+                  tooltipText="Spend tokens to book master sessions or teach to earn them."
+                  emoji="💎"
+                  Icon={Coins}
+                  iconColor="text-sky-500"
+                  tooltipBg="bg-sky-50"
+                  textColor="text-sky-600"
+              >
+                <div className="flex items-center gap-1.5 px-3 py-1.5 h-9 rounded-xl bg-card border-2 border-sky-400 text-xs font-black tracking-tight text-sky-700 shadow-sm">
+                  <Coins className="w-3.5 h-3.5 text-sky-500" />
+                  <span className="font-extrabold text-sky-900 dark:text-sky-300">{user?.credits ?? 0}</span>
+                  <span className="text-sky-500 text-[9px] font-extrabold uppercase tracking-wide">Credits</span>
+                </div>
+              </HeaderChipWithTooltip>
+
+              <Button onClick={() => navigate("/my-schedule")} variant="outline" className="gap-2 ml-1 bg-background hover:bg-secondary transition-transform active:scale-95">
+                <Calendar className="w-4 h-4" /> My Schedule
+              </Button>
+            </div>
           </div>
-        )}
-      </motion.div>
-      
-      {/* Skill Picker Modal */}
-      <SkillPickerModal 
-        open={pickerOpen} 
-        onOpenChange={setPickerOpen} 
-        type={pickerType} 
-        onAdd={handleAddSkill}
-        existingTeach={teachSkills.map(s => s.skillName)}
-        existingLearn={learnSkills.map(s => s.skillName)}
-      />
-    </AppLayout>
+
+          {loading ? (
+              <div className="animate-pulse space-y-12">
+                <div className="h-40 bg-secondary/50 rounded-xl" />
+                <div className="h-40 bg-secondary/50 rounded-xl" />
+              </div>
+          ) : (
+              <div className="space-y-10">
+
+                {/* TEACH & LEARN SKILLS */}
+                <div className="grid md:grid-cols-2 gap-8">
+
+                  <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
+                    <Card className="bg-card border-border/60 shadow-sm flex flex-col h-full hover:border-primary/30 transition-colors">
+                      <CardContent className="p-5 flex-1 flex flex-col">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <GraduationCap className="w-4 h-4 text-primary" />
+                            <h2 className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">
+                              I Can Teach
+                            </h2>
+                          </div>
+                          <Button variant="ghost" size="sm" onClick={() => { setPickerType("TEACH"); setPickerOpen(true); }} className="text-xs h-8 text-muted-foreground hover:text-foreground">
+                            <Plus className="w-3 h-3 mr-1" /> Add
+                          </Button>
+                        </div>
+
+                        {teachSkills.length > 0 ? (
+                            <div className="flex flex-wrap gap-2 mt-auto">
+                              {teachSkills.map((s) => (
+                                  <SkillPill key={`${s.skillId}-teach`} name={s.skillName ?? "Unnamed"} variant="teach" />
+                              ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center text-center py-6 bg-secondary/20 rounded-lg border border-dashed border-border mt-auto h-full">
+                              <GraduationCap className="w-8 h-8 text-muted-foreground/30 mb-2" />
+                              <p className="text-sm text-muted-foreground mb-3">No teaching skills listed.</p>
+                              <Button variant="outline" size="sm" onClick={() => { setPickerType("TEACH"); setPickerOpen(true); }} className="h-8 text-xs gap-1 transition-transform active:scale-95">
+                                <Plus className="w-3 h-3" /> Add Skills
+                              </Button>
+                            </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+
+                  <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
+                    <Card className="bg-card border-border/60 shadow-sm flex flex-col h-full hover:border-[hsl(var(--chart-4))]/30 transition-colors">
+                      <CardContent className="p-5 flex-1 flex flex-col">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="w-4 h-4 text-[hsl(var(--chart-4))]" />
+                            <h2 className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">
+                              I Want To Learn
+                            </h2>
+                          </div>
+                          <Button variant="ghost" size="sm" onClick={() => { setPickerType("LEARN"); setPickerOpen(true); }} className="text-xs h-8 text-muted-foreground hover:text-foreground">
+                            <Plus className="w-3 h-3 mr-1" /> Add
+                          </Button>
+                        </div>
+
+                        {learnSkills.length > 0 ? (
+                            <div className="flex flex-wrap gap-2 mt-auto">
+                              {learnSkills.map((s) => (
+                                  <SkillPill key={`${s.skillId}-learn`} name={s.skillName ?? "Unnamed"} variant="learn" />
+                              ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center text-center py-6 bg-secondary/20 rounded-lg border border-dashed border-border mt-auto h-full">
+                              <BookOpen className="w-8 h-8 text-muted-foreground/30 mb-2" />
+                              <p className="text-sm text-muted-foreground mb-3">No learning goals listed.</p>
+                              <Button variant="outline" size="sm" onClick={() => { setPickerType("LEARN"); setPickerOpen(true); }} className="h-8 text-xs gap-1 transition-transform active:scale-95">
+                                <Plus className="w-3 h-3" /> Add Goals
+                              </Button>
+                            </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </div>
+
+                {/* UPCOMING SESSIONS */}
+                <Card className="bg-card border-border/60 shadow-sm hover:border-border transition-colors">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <h2 className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">
+                          Upcoming Sessions
+                        </h2>
+                      </div>
+                      {(upcomingLearner.length > 0 || upcomingMentor.length > 0) && (
+                          <Button variant="ghost" size="sm" onClick={() => navigate("/sessions")} className="text-xs h-8 text-muted-foreground hover:text-foreground">
+                            View all
+                          </Button>
+                      )}
+                    </div>
+
+                    {upcomingLearner.length > 0 ? (
+                        <div className="flex flex-col">
+                          {upcomingLearner.slice(0, 4).map((s) => (
+                              <SessionRow key={s.id} session={s} onClick={() => navigate("/sessions")} />
+                          ))}
+                        </div>
+                    ) : upcomingMentor.length > 0 ? (
+                        <div className="flex flex-col">
+                          {upcomingMentor.slice(0, 4).map((s) => (
+                              <SessionRow key={s.id} session={s} onClick={() => navigate("/sessions")} />
+                          ))}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center text-center py-8 bg-secondary/20 rounded-lg border border-dashed border-border">
+                          <Calendar className="w-8 h-8 text-muted-foreground/30 mb-2" />
+                          <p className="text-sm text-muted-foreground mb-4">No upcoming sessions right now.</p>
+                          <Button onClick={() => navigate("/search")} variant="default" size="sm" className="gap-2 transition-transform active:scale-95">
+                            <Search className="w-3.5 h-3.5" /> Find a Mentor
+                          </Button>
+                        </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* STAT CARDS */}
+                {user && (
+                    <div className="pt-6 border-t border-border/40 mt-8">
+                      <p className="text-[10px] uppercase font-semibold tracking-widest text-muted-foreground mb-4">Overview</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <StatCard
+                            label="Credits"
+                            value={user.credits ?? 0}
+                            icon={Sparkles}
+                        />
+                        <StatCard
+                            label="Reputation"
+                            value={user.reputationScore ?? 0}
+                            icon={Trophy}
+                        />
+                        <StatCard
+                            label="Upcoming"
+                            value={upcomingLearner.length + upcomingMentor.length}
+                            icon={Calendar}
+                            onClick={() => navigate("/sessions")}
+                        />
+                        <StatCard
+                            label="Feedback"
+                            value={feedback.length}
+                            icon={Inbox}
+                            onClick={() => navigate("/notifications")}
+                        />
+                      </div>
+                    </div>
+                )}
+
+              </div>
+          )}
+        </motion.div>
+
+        {/* Skill Picker Modal */}
+        <SkillPickerModal
+            open={pickerOpen}
+            onOpenChange={setPickerOpen}
+            type={pickerType}
+            onAdd={handleAddSkill}
+            existingTeach={teachSkills.map(s => s.skillName)}
+            existingLearn={learnSkills.map(s => s.skillName)}
+        />
+      </AppLayout>
   );
 };
 

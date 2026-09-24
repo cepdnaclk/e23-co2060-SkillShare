@@ -24,6 +24,7 @@ import NotFound from "./pages/NotFound";
 import OAuth2RedirectHandler from "@/components/OAuth2RedirectHandler";
 
 import { ThemeProvider } from "@/context/ThemeContext";
+import Leaderboard from "@/pages/Leaderboard.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -79,7 +80,9 @@ const App = () => (
             } />
             <Route path="/admin/reports" element={
               <ProtectedRoute requiredRole="ADMIN"><AdminReports /></ProtectedRoute>} />
-
+            <Route path="/leaderboard" element={
+              <ProtectedRoute><Leaderboard /></ProtectedRoute>
+            } />
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
