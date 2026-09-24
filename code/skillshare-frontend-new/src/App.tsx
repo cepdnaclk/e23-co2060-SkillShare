@@ -16,7 +16,7 @@ import ViewProfile from "./pages/ViewProfile";
 import MySchedule from "./pages/MySchedule";
 import Notifications from "./pages/Notifications";
 import Sessions from "./pages/Sessions";
-import Settings from "./pages/Settings";
+import Settings from "./pages/settings";
 
 import NotFound from "./pages/NotFound";
 import OAuth2RedirectHandler from "@/components/OAuth2RedirectHandler";
@@ -30,57 +30,105 @@ const queryClient = new QueryClient({
 const App = () => (
   <ThemeProvider>
     <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <ChatProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner richColors position="top-right" />
-          <BrowserRouter>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Landing />} />
-            <Route path="/signup" element={<SignUp />} />
+      <AuthProvider>
+        <ChatProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner richColors position="top-right" />
+            <BrowserRouter>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<Landing />} />
+                <Route path="/signup" element={<SignUp />} />
 
-            {/* GitHub OAuth2 redirect handler - must be public (not behind ProtectedRoute)
+                {/* GitHub OAuth2 redirect handler - must be public (not behind ProtectedRoute)
                 because the JWT arrives here for the first time and auth state is not yet set. */}
-            <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
-            {/* Protected routes */}
-            <Route path="/create-profile" element={
-              <ProtectedRoute><CreateProfile /></ProtectedRoute>
-            } />
-            <Route path="/dashboard" element={
-              <ProtectedRoute><Dashboard /></ProtectedRoute>
-            } />
-            <Route path="/search" element={
-              <ProtectedRoute><Search /></ProtectedRoute>
-            } />
-            <Route path="/profile/:id" element={
-              <ProtectedRoute><ViewProfile /></ProtectedRoute>
-            } />
-            <Route path="/profile/me" element={
-              <ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>
-            } />
-            <Route path="/my-schedule" element={
-              <ProtectedRoute><MySchedule /></ProtectedRoute>
-            } />
-            <Route path="/notifications" element={
-              <ProtectedRoute><Notifications /></ProtectedRoute>
-            } />
-            <Route path="/sessions" element={
-              <ProtectedRoute><Sessions /></ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute><Settings /></ProtectedRoute>
-            } />
+                <Route
+                  path="/oauth2/redirect"
+                  element={<OAuth2RedirectHandler />}
+                />
+                {/* Protected routes */}
+                <Route
+                  path="/create-profile"
+                  element={
+                    <ProtectedRoute>
+                      <CreateProfile />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/search"
+                  element={
+                    <ProtectedRoute>
+                      <Search />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile/:id"
+                  element={
+                    <ProtectedRoute>
+                      <ViewProfile />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile/me"
+                  element={
+                    <ProtectedRoute>
+                      <Navigate to="/dashboard" replace />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/my-schedule"
+                  element={
+                    <ProtectedRoute>
+                      <MySchedule />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notifications"
+                  element={
+                    <ProtectedRoute>
+                      <Notifications />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/sessions"
+                  element={
+                    <ProtectedRoute>
+                      <Sessions />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
+                    </ProtectedRoute>
+                  }
+                />
 
-            {/* Catch-all */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <FloatingChatWidget />
-        </BrowserRouter>
-      </TooltipProvider>
-    </ChatProvider>
-    </AuthProvider>
+                {/* Catch-all */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <FloatingChatWidget />
+            </BrowserRouter>
+          </TooltipProvider>
+        </ChatProvider>
+      </AuthProvider>
     </QueryClientProvider>
   </ThemeProvider>
 );
