@@ -8,6 +8,7 @@ import com.zenware.skillsharebackend.entity.User;
 import com.zenware.skillsharebackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -67,16 +68,24 @@ public class AuthenticationService {
         // LOGIC: This manager (which we configured in ApplicationConfig) automatically
         // hashes the incoming password and compares it to the database.
         // If it's wrong, it throws an exception here and halts the code!
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(),
+                            request.getPassword()
+                    )
+            );
+        } catch (DisabledException e) {
+            throw new IllegalArgumentException("Your account has been suspended by an administrator.");
+        }
 
         // If we get to this line, the password was 100% correct.
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found!"));
+
+        if (!user.isEnabled()) {
+            throw new IllegalArgumentException("Your account has been suspended by an administrator.");
+        }
 
         // Generate their token
         String jwtToken = jwtService.generateToken(user);

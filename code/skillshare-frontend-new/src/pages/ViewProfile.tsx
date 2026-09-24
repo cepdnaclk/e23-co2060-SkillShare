@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef, ChangeEvent } from "react";
-import { Clock, Star, Users2, Users, MessageSquare, Edit3, X, UserPlus, UserCheck, Clock4, GraduationCap, BookOpen, Flag } from "lucide-react";
+import { Clock, Star, Users2, Users, MessageSquare, Edit3, X, UserPlus, UserCheck, Clock4, GraduationCap, BookOpen, Flag, ShieldAlert, CalendarX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { useChat } from "@/context/ChatContext";
@@ -289,6 +291,34 @@ const ViewProfile = () => {
           <Button variant="outline" onClick={() => navigate("/search")} className="mt-4">
             Back to Explore
           </Button>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // 🛑 DISABLE PROFILE VIEW IF USER IS SUSPENDED / INACTIVE
+  if (mentor.isActive === false) {
+    return (
+      <AppLayout>
+        <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+          <Alert variant="destructive" className="border-destructive/30 bg-destructive/10 text-destructive mb-6 text-left">
+            <ShieldAlert className="h-5 w-5" />
+            <AlertTitle className="text-base font-bold">This user is no longer available</AlertTitle>
+            <AlertDescription className="mt-1 text-sm">
+              This account has been suspended or deactivated. You cannot request sessions, send messages, or interact with this user.
+            </AlertDescription>
+          </Alert>
+
+          <Card className="p-8 border-border/60 flex flex-col items-center">
+            <div className="rounded-full bg-secondary p-4 mb-4">
+              <CalendarX className="h-10 w-10 text-muted-foreground" />
+            </div>
+            <h2 className="text-xl font-semibold text-foreground mb-1">{mentor.fullName}</h2>
+            <p className="text-sm text-muted-foreground mb-6">Account Suspended / Unavailable</p>
+            <Button variant="outline" onClick={() => navigate("/search")}>
+              Back to Explore
+            </Button>
+          </Card>
         </div>
       </AppLayout>
     );

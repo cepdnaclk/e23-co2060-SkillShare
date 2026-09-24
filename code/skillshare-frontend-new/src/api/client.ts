@@ -1,4 +1,4 @@
-import { getToken } from "@/lib/auth";
+import { getToken, removeToken } from "@/lib/auth";
 
 /**
  * Normalized API Error structure used throughout the frontend.
@@ -67,10 +67,11 @@ export async function apiFetch<T>(
     if (!response.ok) {
       let errorMessage = `Request failed: ${response.status} ${response.statusText}`;
       let validationErrors: Record<string, string> | undefined;
+      let errBody: any = null;
 
       if (isJson) {
         try {
-          const errBody = await response.json();
+          errBody = await response.json();
           errorMessage = errBody?.message ?? errBody?.error ?? errorMessage;
           if (errBody?.errors && typeof errBody.errors === "object") {
              validationErrors = errBody.errors;
@@ -87,6 +88,11 @@ export async function apiFetch<T>(
       if (response.status === 401) {
          errorMessage = "Session expired or unauthorized. Please log in.";
       } else if (response.status === 403) {
+         if (errBody?.error === "ACCOUNT_DISABLED") {
+            removeToken();
+            window.location.href = "/signup?disabled=true";
+            throw { message: "Your account has been disabled by an administrator.", status: 403 } as ApiError;
+         }
          errorMessage = "You do not have permission to perform this action.";
       } else if (response.status === 500) {
          errorMessage = "An internal server error occurred.";

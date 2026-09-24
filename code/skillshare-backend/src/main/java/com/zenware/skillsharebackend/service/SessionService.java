@@ -95,6 +95,10 @@ public class SessionService {
         User mentor = userRepository.findById(availability.getUser().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Mentor not found"));
 
+        if (mentor.getIsActive() != null && !mentor.getIsActive()) {
+            throw new IllegalStateException("This user is no longer available for sessions.");
+        }
+
         // 4. Validation Rule: Is it already booked?
         if (availability.getIsBooked()) {
             throw new IllegalStateException("Sorry, this time slot is already booked!");
