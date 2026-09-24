@@ -90,10 +90,15 @@ public class SessionService {
         // 3. Fetch the Availability (This gives us the Mentor ID and the Times!)
         Availability availability = availabilityRepository.findById(request.getAvailabilityId())
                 .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
-                
+
         // Fetch the full Mentor user to avoid lazy initialization proxy errors later
         User mentor = userRepository.findById(availability.getUser().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Mentor not found"));
+
+        // 🛑 GUARD RAIL: Prevent booking with a disabled/suspended mentor
+        if (mentor.getIsActive() != null && !mentor.getIsActive()) {
+            throw new IllegalStateException("This user is no longer available on the platform.");
+        }
 
         // 4. Validation Rule: Is it already booked?
         if (availability.getIsBooked()) {
@@ -171,7 +176,7 @@ public class SessionService {
             LocalDateTime now = LocalDateTime.now(clock);
             LocalDateTime timeoutThreshold = now.minusHours(sessionProperties.getPendingResponseTimeoutHours());
             if (!now.isBefore(session.getStartTime()) ||
-                (session.getCreatedAt() != null && !timeoutThreshold.isBefore(session.getCreatedAt()))) {
+                    (session.getCreatedAt() != null && !timeoutThreshold.isBefore(session.getCreatedAt()))) {
                 throw new IllegalStateException("Session request has expired and cannot be accepted.");
             }
         }
@@ -298,9 +303,6 @@ public class SessionService {
 
         }
 
-        // userRepository.save(learner);
-        // userRepository.save(mentor);
-
         if (session.getAvailabilityId() != null) {
             int released = availabilityRepository.releaseAvailabilityAtomically(session.getAvailabilityId(), session.getId());
             if (released != 1) {
@@ -364,8 +366,6 @@ public class SessionService {
         if (!getAuthenticatedUser().getId().equals(learnerId)) {
             throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You can only view your own classes!");
         }
-        // CRITICAL FIX: Map to DTO inside @Transactional so lazy proxies are resolved
-        // before the Hibernate session closes.
         return sessionRepository.findByLearnerId(learnerId)
                 .stream()
                 .map(this::toDto)
@@ -377,8 +377,6 @@ public class SessionService {
         if (!getAuthenticatedUser().getId().equals(mentorId)) {
             throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You can only view your own schedule!");
         }
-        // CRITICAL FIX: Map to DTO inside @Transactional so lazy proxies are resolved
-        // before the Hibernate session closes.
         return sessionRepository.findByMentorId(mentorId)
                 .stream()
                 .map(this::toDto)
@@ -426,7 +424,7 @@ public class SessionService {
 
     @Transactional
     public SessionResponse addMeetingLink(UUID sessionId, String meetingLink) {
-        User currentUser = getAuthenticatedUser(); // Grabs the logged-in user from JWT
+        User currentUser = getAuthenticatedUser();
 
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Session not found!"));

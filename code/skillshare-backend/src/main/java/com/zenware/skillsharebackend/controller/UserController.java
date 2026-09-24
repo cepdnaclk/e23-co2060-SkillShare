@@ -33,9 +33,8 @@ public class UserController {
     // GET: /api/users/{id}
     // LOGIC: Publicly visible endpoint so learners can view a mentor's profile
     @GetMapping("/{id}")
-    public ResponseEntity<UserPublicDto> getUserProfile(@PathVariable UUID id) {
-        User user = userService.getUserById(id);
-        return ResponseEntity.ok(mapToPublicDto(user));
+    public ResponseEntity<UserPublicDto> getUserById(@PathVariable UUID id) {
+        return ResponseEntity.ok(userService.getPublicUserById(id));
     }
 
     // PATCH: /api/users/my-bio

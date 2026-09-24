@@ -63,6 +63,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // 6. Fetch the user details from the database (we will tell Spring how to do)
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
+                // 🛑 ACCOUNT FREEZE CHECK: If the user is disabled, reject request immediately
+                if (!userDetails.isEnabled()) {
+                    SecurityContextHolder.clearContext();
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\": \"ACCOUNT_DISABLED\", \"message\": \"Your account has been disabled by an administrator.\"}");
+                    return; // Stop filter chain execution
+                }
                 // 7. Check if the token is mathematically valid and not expired
                 if (jwtService.isTokenValid(jwt, userDetails)) {
 

@@ -66,6 +66,7 @@ export interface UserPublicDto {
   id: string; // UUID
   fullName: string;
   bio: string | null;
+  isActive: boolean;
   xp: number | null;
   level: number | null;
   reputationScore: number | null;

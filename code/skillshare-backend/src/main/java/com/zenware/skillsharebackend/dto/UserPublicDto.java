@@ -16,12 +16,13 @@ public class UserPublicDto {
     private String fullName;
     private String bio;
 
+    // Account Status
+    private Boolean isActive;
+
     // Gamification Stats
     private Integer xp;
     private Integer level;
     private Integer reputationScore;
 
-    // We will use this in the next step!
     private String profilePictureUrl;
-
 }

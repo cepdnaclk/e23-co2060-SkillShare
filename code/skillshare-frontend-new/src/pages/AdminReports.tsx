@@ -23,7 +23,7 @@ const AdminReports = () => {
     const [reports, setReports] = useState<ReportResponseDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [statusFilter, setStatusFilter] = useState<"ALL" | "PENDING" | "RESOLVED" | "DISMISSED">("PENDING");
+    const [statusFilter, setStatusFilter] = useState<"ALL" | "PENDING" | "RESOLVED" | "DISMISSED">("ALL");
     const [updatingId, setUpdatingId] = useState<string | null>(null);
 
     const fetchReports = async () => {

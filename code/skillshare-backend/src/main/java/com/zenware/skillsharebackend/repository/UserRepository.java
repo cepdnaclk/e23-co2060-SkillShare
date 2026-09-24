@@ -15,26 +15,22 @@ import java.util.UUID;
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
 
-    // Custom query to find a user by their email
     Optional<User> findByEmail(String email);
 
     List<User> findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCase(String fullName, String email);
 
     long countByIsActive(Boolean isActive);
 
-    // Fetch the top mentors sorted by reputation score (descending)
-    // TIE-BREAKER ADDED: u.id ASC
-    @Query("SELECT u FROM User u ORDER BY u.reputationScore DESC, u.id ASC")
+    // 🔒 FILTERED: Fetch active top mentors sorted by reputation score
+    @Query("SELECT u FROM User u WHERE u.isActive = true ORDER BY u.reputationScore DESC, u.id ASC")
     List<User> findTopMentorsByReputation(Pageable pageable);
 
-    // Fetch the most active users sorted by XP and Level
-    // TIE-BREAKER ADDED: u.id ASC
-    @Query("SELECT u FROM User u ORDER BY u.level DESC, u.xp DESC, u.id ASC")
+    // 🔒 FILTERED: Fetch active top users sorted by XP and Level
+    @Query("SELECT u FROM User u WHERE u.isActive = true ORDER BY u.level DESC, u.xp DESC, u.id ASC")
     List<User> findTopUsersByXp(Pageable pageable);
 
-    // Fetch top mentors for a specific skill, ordered by reputation
-    // TIE-BREAKER ADDED: u.id ASC
-    @Query("SELECT u FROM User u WHERE u.id IN " +
+    // 🔒 FILTERED: Fetch active top mentors for a specific skill
+    @Query("SELECT u FROM User u WHERE u.isActive = true AND u.id IN " +
             "(SELECT s.mentor.id FROM Session s WHERE LOWER(s.skill.name) = LOWER(:category) AND s.status = 'COMPLETED') " +
             "ORDER BY u.reputationScore DESC, u.id ASC")
     List<User> findTopMentorsByCategory(@Param("category") String category, Pageable pageable);
