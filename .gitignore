@@ -4,3 +4,7 @@ backup.sql
 current_test.java
 
 qa/postman/reports/
+
+.idea/
+*.iml
+*.tsbuildinfo
