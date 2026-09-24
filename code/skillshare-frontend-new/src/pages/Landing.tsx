@@ -1,5 +1,5 @@
 import { InteractiveDots } from "@/components/InteractiveDots";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import {
   ArrowRight,
   Sun,
@@ -15,17 +15,17 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/context/ThemeContext";
 
 /* ─── Animation variants ─────────────────────────────────────────────────── */
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 10 },
   show:   { opacity: 1, y: 0, transition: { duration: 0.28, ease: "easeOut" } },
 };
 
-const stagger = {
+const stagger: Variants = {
   hidden: {},
   show:   { transition: { staggerChildren: 0.07 } },
 };
 
-const fadeIn = {
+const fadeIn: Variants = {
   hidden: { opacity: 0 },
   show:   { opacity: 1, transition: { duration: 0.3, ease: "easeOut" } },
 };
