@@ -12,7 +12,7 @@ import { userSkillsApi } from "@/api/userSkills.api";
 import { availabilityApi } from "@/api/availability.api";
 import { sessionsApi } from "@/api/sessions.api";
 import { connectionsApi } from "@/api/connections.api";
-import { type UserPublicDto, type UserSkill, type Availability } from "@/api/types";
+import {type UserPublicDto, type UserSkill, type Availability, ConnectionDto} from "@/api/types";
 import { type ApiError } from "@/api/client";
 import { parseAcademicBio, formatAcademicBio } from "@/lib/academicBio";
 
