@@ -26,6 +26,7 @@ public class SessionExpirationProcessor {
     private final UserRepository userRepository;
     private final AvailabilityRepository availabilityRepository;
     private final NotificationService notificationService;
+    private final GamificationService gamificationService;
     private final SessionProperties sessionProperties;
     private final Clock clock;
 
@@ -91,6 +92,8 @@ public class SessionExpirationProcessor {
 
         if (updated == 1) {
             userRepository.addCreditsAtomically(session.getMentor().getId(), 10);
+            gamificationService.awardSessionCompletionXp(session.getLearner());
+            gamificationService.awardSessionCompletionXp(session.getMentor());
             notificationService.sendNotification(session.getMentor(), "The session time passed and was auto-completed. You received 10 credits.", NotificationType.SYSTEM_ALERT);
             return true;
         }

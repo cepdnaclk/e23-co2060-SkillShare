@@ -52,38 +52,7 @@ public class GamificationService {
     @Transactional
     public void awardXp(UUID userId, int xpToAdd) {
         // 1. Force PostgreSQL to safely and atomically add the XP.
+        // It also handles capping at 100, resetting to 0, and incrementing Level.
         userRepository.addXpAtomically(userId, xpToAdd);
-
-        // 2. Fetch the newly updated user record with the fresh XP.
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        
-        // Ensure the in-memory object has the correct XP since addXpAtomically bypasses the L1 cache.
-        user.setXp((user.getXp() != null ? user.getXp() : 0) + xpToAdd);
-
-        // 3. Check for a Level Up!
-        int currentXp = user.getXp();
-        int expectedLevel = calculateLevel(currentXp);
-
-        int currentLevel = user.getLevel() != null ? user.getLevel() : 1;
-
-        if (currentLevel < expectedLevel) {
-            user.setLevel(expectedLevel);
-            userRepository.save(user); // Safe to save here, the XP is already secured natively
-
-            // Placeholder: Wire this to your WebSocket tunnel later for live Level-Up animations!
-            System.out.println("🎉 User " + user.getFullName() + " leveled up to Level " + expectedLevel + "!");
-        }
-    }
-
-    /**
-     * Simple leveling algorithm.
-     * E.g., Every 100 XP = 1 Level.
-     * Level 1: 0-99 XP
-     * Level 2: 100-199 XP
-     * Level 3: 200-299 XP
-     */
-    private int calculateLevel(int totalXp) {
-        return (totalXp / 100) + 1;
     }
 }

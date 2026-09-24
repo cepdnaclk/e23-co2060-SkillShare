@@ -41,6 +41,9 @@ class SessionExpirationProcessorTest {
     private NotificationService notificationService;
 
     @Mock
+    private GamificationService gamificationService;
+
+    @Mock
     private SessionProperties sessionProperties;
     @Spy
     private Clock clock = Clock.fixed(LocalDateTime.of(2026, 1, 1, 12, 0).atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
@@ -123,6 +126,8 @@ class SessionExpirationProcessorTest {
 
         assertTrue(result);
         verify(userRepository).addCreditsAtomically(mockMentor.getId(), 10);
+        verify(gamificationService).awardSessionCompletionXp(mockLearner);
+        verify(gamificationService).awardSessionCompletionXp(mockMentor);
         verify(notificationService).sendNotification(eq(mockMentor), anyString(), eq(NotificationType.SYSTEM_ALERT));
     }
 

@@ -39,8 +39,13 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             "ORDER BY u.reputationScore DESC, u.id ASC")
     List<User> findTopMentorsByCategory(@Param("category") String category, Pageable pageable);
 
-    @Modifying(flushAutomatically = true)
-    @Query("UPDATE User u SET u.xp = u.xp + :amount WHERE u.id = :userId")
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        UPDATE User u
+        SET u.level = COALESCE(u.level, 1) + CASE WHEN (COALESCE(u.xp, 0) + :amount) >= 100 THEN 1 ELSE 0 END,
+            u.xp = CASE WHEN (COALESCE(u.xp, 0) + :amount) >= 100 THEN 0 ELSE (COALESCE(u.xp, 0) + :amount) END
+        WHERE u.id = :userId
+    """)
     void addXpAtomically(@Param("userId") UUID userId, @Param("amount") int amount);
 
     @Modifying(flushAutomatically = true)

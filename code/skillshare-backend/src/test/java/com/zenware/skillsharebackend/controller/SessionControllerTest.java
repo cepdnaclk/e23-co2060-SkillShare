@@ -355,7 +355,7 @@ public class SessionControllerTest {
                 .andExpect(status().isOk());
 
         User updatedMentor = userRepository.findById(mentor.getId()).orElseThrow();
-        assertEquals(110, updatedMentor.getXp());
+        assertEquals(0, updatedMentor.getXp()); // 90 + 20 = 110 -> hits 100 threshold, so resets to 0 (no overflow carry)
         assertEquals(2, updatedMentor.getLevel()); // Configured threshold is 100 XP per level
     }
 
