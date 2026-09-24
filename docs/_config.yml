@@ -1,9 +1,9 @@
 # This theme is based on https://github.com/jekyll/minima
 # Please refer above link to know the available configurations
 
-title: ""
+title: "e23-co2060-SkillShare"
 remote_theme: cepdnaclk/e23-co2060-SkillShare
-description: ""
+description: "Campus base skill sharing platform"
 markdown: kramdown
 
 kramdown:
