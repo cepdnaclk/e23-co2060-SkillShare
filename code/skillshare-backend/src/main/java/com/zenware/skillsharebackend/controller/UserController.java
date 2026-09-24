@@ -41,8 +41,8 @@ public class UserController {
     // PATCH: /api/users/my-bio
     // SECURITY: The `{id}` is gone preventing IDor attacks.
     @PatchMapping("/my-bio")
-    public ResponseEntity<UserPublicDto> updateMyBio(@RequestBody String bio) {
-        User updatedUser = userService.updateMyBio(bio);
+    public ResponseEntity<UserPublicDto> updateMyBio(@RequestBody(required = false) String bio) {
+        User updatedUser = userService.updateMyBio(bio != null ? bio : "");
         return ResponseEntity.ok(mapToPublicDto(updatedUser));
     }
 

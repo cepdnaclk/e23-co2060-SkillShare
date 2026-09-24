@@ -192,20 +192,36 @@ public class SessionServiceTest {
     }
 
     @Test
-    void testCompleteSession_BeforeEndTime() {
+    void testCompleteSession_BeforeEndTime_Success() {
         // Arrange
         Session session = new Session();
         session.setId(UUID.randomUUID());
+        session.setLearner(mockLearner);
+        session.setMentor(mockMentor);
+        session.setSkill(mockSkill);
         session.setStatus(SessionStatus.ACCEPTED);
         session.setEndTime(referenceTime.plusHours(1)); // Future end time
 
         when(sessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+        when(SecurityContextHolder.getContext().getAuthentication().getName()).thenReturn("learner@test.com");
+        when(userRepository.findByEmail("learner@test.com")).thenReturn(Optional.of(mockLearner));
 
-        // Act & Assert
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            sessionService.completeSession(session.getId());
-        });
-        assertEquals("Cannot complete session before its end time.", exception.getMessage());
+        when(sessionRepository.transitionSessionStatusAtomically(
+                session.getId(),
+                SessionStatus.COMPLETED,
+                List.of(SessionStatus.ACCEPTED)
+        )).thenReturn(1);
+
+        when(sessionRepository.save(any(Session.class))).thenReturn(session);
+
+        // Act
+        SessionResponse response = sessionService.completeSession(session.getId());
+
+        // Assert
+        assertEquals(SessionStatus.COMPLETED, response.getStatus());
+        verify(gamificationService).awardSessionCompletionXp(mockLearner);
+        verify(gamificationService).awardSessionCompletionXp(mockMentor);
+        verify(userRepository).addCreditsAtomically(mockMentor.getId(), 10);
     }
 
     @Test

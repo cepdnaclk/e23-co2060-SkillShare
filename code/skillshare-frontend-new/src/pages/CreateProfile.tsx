@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { skillsApi } from "@/api/skills.api";
 import { userSkillsApi } from "@/api/userSkills.api";
 import { availabilityApi } from "@/api/availability.api";
@@ -13,6 +13,7 @@ import { trendingApi } from "@/api/dashboard.api";
 import { usersApi } from "@/api/users.api";
 import { type Skill } from "@/api/types";
 import { type ApiError } from "@/api/client";
+import { formatAcademicBio } from "@/lib/academicBio";
 
 import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";
@@ -159,7 +160,7 @@ const SkillSection = ({
 
 const CreateProfile = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -176,6 +177,17 @@ const CreateProfile = () => {
   useEffect(() => {
     if (!user?.id) return;
     let mounted = true;
+
+    const academic = parseAcademicBio(user.bio);
+    const stored = localStorage.getItem(`skillshare_academic_${user.id}`);
+    let local: { university?: string; major?: string } = {};
+    if (stored) { try { local = JSON.parse(stored); } catch {} }
+    setProfileInfo(prev => ({
+      ...prev,
+      bio: prev.bio || academic.cleanBio,
+      university: prev.university || academic.university || local.university || "",
+      major: prev.major || academic.major || local.major || "",
+    }));
 
     Promise.all([
       userSkillsApi.getByUser(user.id).catch(() => []),
@@ -244,8 +256,20 @@ const CreateProfile = () => {
     setIsSaving(true);
     setError(null);
     try {
-      if (profileInfo.bio && user) {
-        try { await usersApi.updateMyBio(profileInfo.bio); } catch (err) { console.error("Failed to update bio:", err); }
+      if (user) {
+        localStorage.setItem(
+          `skillshare_academic_${user.id}`,
+          JSON.stringify({ university: profileInfo.university.trim(), major: profileInfo.major.trim() })
+        );
+        const fullBio = formatAcademicBio(profileInfo.bio, profileInfo.university, profileInfo.major);
+        if (fullBio) {
+          try { 
+            await usersApi.updateMyBio(fullBio); 
+          } catch (err) { 
+            console.error("Failed to update bio:", err); 
+          }
+        }
+        await refreshUser(user.id);
       }
 
       const newSkills = skills.filter(s => !initialSkills.some(is => is.name.toLowerCase() === s.name.toLowerCase() && is.type === s.type));
@@ -276,7 +300,11 @@ const CreateProfile = () => {
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 md:py-12 md:py-20">
         
-        <div className="mb-10 text-center sm:text-left">
+        <div className="mb-10 text-center sm:text-left flex flex-col items-center sm:items-start">
+          <Link to="/dashboard" className="inline-flex items-center gap-2 mb-6 hover:opacity-80 transition-opacity">
+            <img src="/skillshare.png" alt="SkillShare Logo" className="w-8 h-8 object-contain" />
+            <span className="font-bold text-xl tracking-tight text-foreground">SkillShare</span>
+          </Link>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground mb-3">Complete your profile</h1>
           <p className="text-muted-foreground text-sm">Tell us about yourself and what you want to share.</p>
         </div>

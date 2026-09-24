@@ -79,7 +79,8 @@ const OAuth2RedirectHandler = () => {
       {/* Keyframes injected via a style tag */}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-      <div style={{ textAlign: "center" }}>
+      <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <img src="/skillshare.png" alt="SkillShare Logo" style={{ width: 56, height: 56, objectFit: "contain", marginBottom: "1rem" }} />
         <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#c4b5fd" }}>
           Authenticating with GitHub…
         </h2>

@@ -1,8 +1,7 @@
-﻿import { InteractiveDots } from "@/components/InteractiveDots";
+import { InteractiveDots } from "@/components/InteractiveDots";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  GraduationCap,
   Sun,
   Moon,
   BookOpen,
@@ -82,9 +81,7 @@ const Landing = () => {
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             className="flex items-center gap-2 font-semibold text-base select-none focus:outline-none"
           >
-            <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center flex-shrink-0">
-              <GraduationCap className="w-4 h-4 text-primary-foreground" />
-            </div>
+            <img src="/skillshare.png" alt="SkillShare Logo" className="w-7 h-7 object-contain flex-shrink-0" />
             <span>
               <span className="text-foreground">Skill</span>
               <span className="text-primary">Share</span>
@@ -600,9 +597,7 @@ const Landing = () => {
       <footer className="border-t border-border">
         <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 select-none">
-            <div className="w-5 h-5 rounded bg-primary flex items-center justify-center flex-shrink-0">
-              <GraduationCap className="w-3 h-3 text-primary-foreground" />
-            </div>
+            <img src="/skillshare.png" alt="SkillShare Logo" className="w-5 h-5 object-contain flex-shrink-0" />
             <span className="text-sm font-semibold">
               <span className="text-foreground">Skill</span>
               <span className="text-primary">Share</span>

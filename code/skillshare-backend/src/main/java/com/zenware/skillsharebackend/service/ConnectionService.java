@@ -127,20 +127,41 @@ public class ConnectionService {
         return updatedConnection;
     }
 
-    // 3. REJECT A FRIEND REQUEST
+    // 3. REJECT A FRIEND REQUEST (Receiver declines or Sender cancels)
     @Transactional
     public void rejectConnectionRequest(UUID connectionId) {
         User authenticatedUser = getAuthenticatedUser();
 
-        Connection connection = connectionRepository.findById(connectionId)
-                .orElseThrow(() -> new IllegalArgumentException("Connection request not found!"));
+        Connection connection = connectionRepository.findByIdWithUsers(connectionId)
+                .or(() -> connectionRepository.findById(connectionId))
+                .orElseThrow(() -> new IllegalArgumentException("Connection not found!"));
 
-        // Zero-Trust Guardrail: Only the intended receiver can reject the request
-        if (!connection.getReceiver().getId().equals(authenticatedUser.getId())) {
+        boolean isSender = connection.getSender().getId().equals(authenticatedUser.getId());
+        boolean isReceiver = connection.getReceiver().getId().equals(authenticatedUser.getId());
+
+        if (!isSender && !isReceiver) {
             throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You do not have permission to reject this request.");
         }
 
-        // Action: For Skill-Connect, deleting the row is usually cleaner so the database doesn't fill up with rejected requests.
+        connectionRepository.delete(connection);
+    }
+
+    // 3.5 DELETE CONNECTION (Cancel or Unfriend)
+    @Transactional
+    public void deleteConnection(UUID connectionId) {
+        User authenticatedUser = getAuthenticatedUser();
+
+        Connection connection = connectionRepository.findByIdWithUsers(connectionId)
+                .or(() -> connectionRepository.findById(connectionId))
+                .orElseThrow(() -> new IllegalArgumentException("Connection not found!"));
+
+        boolean isSender = connection.getSender().getId().equals(authenticatedUser.getId());
+        boolean isReceiver = connection.getReceiver().getId().equals(authenticatedUser.getId());
+
+        if (!isSender && !isReceiver) {
+            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You do not have permission to delete this connection.");
+        }
+
         connectionRepository.delete(connection);
     }
 
