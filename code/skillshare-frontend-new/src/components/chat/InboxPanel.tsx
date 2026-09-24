@@ -108,7 +108,7 @@ export default function InboxPanel({ isLoadingInbox, inbox }: InboxPanelProps) {
                       </span>
                     </div>
                     <p className={`text-xs truncate ${chat.unreadCount > 0 ? "font-medium text-foreground" : "text-muted-foreground"}`}>
-                      {chat.lastMessageContent || "Started a conversation"}
+                      {chat.lastMessage || "Started a conversation"}
                     </p>
                   </div>
                 </button>

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
 import { authApi } from "@/api/auth.api";
 import { usersApi } from "@/api/users.api";
-import type { UserPrivateDto as User, UserPublicDto } from "@/api/types";
+import type { UserPrivateDto as User, UserPublicDto, UserRole } from "@/api/types";
 import type { ApiError } from "@/api/client";
 import {
   getToken, setToken, removeToken,
@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 🔥 THE HYDRATION MERGE: Blend backend profile with auth numbers!
       const completeUser: User = {
         ...fullProfile,
-        role: fullProfile.role ?? response.role,
+        role: (fullProfile.role ?? response.role) as UserRole,
         credits: fullProfile.credits ?? response.credits ?? 0,
         level: fullProfile.level ?? response.level ?? 1,
         xp: fullProfile.xp ?? response.xp ?? 0,
@@ -145,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 🔥 THE HYDRATION MERGE: Combine profile data with initial auth payload fields
       const completeUser: User = {
         ...fullProfile,
-        role: fullProfile.role ?? response.role,
+        role: (fullProfile.role ?? response.role) as UserRole,
         credits: fullProfile.credits ?? response.credits, // Safe fallback to 100 if both are empty
         level: fullProfile.level ?? response.level,
         xp: fullProfile.xp ?? response.xp,

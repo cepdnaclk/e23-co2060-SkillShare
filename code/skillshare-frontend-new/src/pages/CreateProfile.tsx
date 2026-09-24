@@ -13,7 +13,7 @@ import { trendingApi } from "@/api/dashboard.api";
 import { usersApi } from "@/api/users.api";
 import { type Skill } from "@/api/types";
 import { type ApiError } from "@/api/client";
-import { formatAcademicBio } from "@/lib/academicBio";
+import { formatAcademicBio, parseAcademicBio } from "@/lib/academicBio";
 
 import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";

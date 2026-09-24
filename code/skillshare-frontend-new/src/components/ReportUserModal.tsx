@@ -25,9 +25,9 @@ import { motion } from "framer-motion";
 interface ReportUserModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    reportedUserId: string | number;
+    reportedUserId: string;
     reportedUserName?: string;
-    sessionId?: string | number | null;
+    sessionId?: string | null;
 }
 
 export const ReportUserModal = ({
