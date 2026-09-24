@@ -828,10 +828,10 @@
             ]
         },
         {
-            "name": "07 Early Completion (Blocked)",
+            "name": "07 Early Completion",
             "item": [
                 {
-                    "name": "Attempt Early Completion",
+                    "name": "07 Early Completion",
                     "request": {
                         "auth": {
                             "type": "bearer",
@@ -861,8 +861,8 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test(\"Cannot complete before end time (409 Conflict)\", function () {",
-                                    "    pm.expect(pm.response.code).to.eql(409);",
+                                    "pm.test(\"Early completion allowed before end time (200 OK)\", function () {",
+                                    "    pm.expect(pm.response.code).to.eql(200);",
                                     "});",
                                     "// Stop the automated Newman runner here so it doesn't run the manual suite",
                                     "pm.execution.setNextRequest(null);"
