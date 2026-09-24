@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Mail, Lock, User, Eye, EyeOff, Sparkles, Zap, Users, Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -63,9 +63,7 @@ const SignUp = () => {
         
         <div className="flex-1 flex flex-col justify-center p-12 lg:p-20 relative z-10">
           <Link to="/" className="inline-flex items-center gap-2 mb-16 hover:opacity-80 transition-opacity w-fit">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
+            <img src="/skillshare.png" alt="SkillShare Logo" className="w-8 h-8 object-contain" />
             <span className="font-bold text-xl tracking-tight text-foreground">SkillShare</span>
           </Link>
 
@@ -121,9 +119,7 @@ const SignUp = () => {
             {/* Mobile Header (only visible on mobile since desktop has the left side) */}
             <div className="lg:hidden mb-10 text-center">
               <Link to="/" className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-white" />
-                </div>
+                <img src="/skillshare.png" alt="SkillShare Logo" className="w-8 h-8 object-contain" />
                 <span className="font-bold text-xl tracking-tight text-foreground">SkillShare</span>
               </Link>
             </div>

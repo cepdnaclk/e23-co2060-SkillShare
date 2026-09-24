@@ -7,6 +7,7 @@ import { trendingApi } from "@/api/dashboard.api";
 import type { UserPublicDto } from "@/api/types";
 import { SkeletonList } from "@/components/SkeletonCard";
 import ErrorBanner from "@/components/ErrorBanner";
+import { parseAcademicBio } from "@/lib/academicBio";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -91,7 +92,11 @@ const Leaderboard = () => {
 
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{user.fullName}</p>
-                    {user.bio && <p className="text-xs text-muted-foreground truncate mt-0.5">{user.bio}</p>}
+                    {user.bio && (
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">
+                        {parseAcademicBio(user.bio).cleanBio || user.bio}
+                      </p>
+                    )}
                   </div>
 
                   <div className="hidden sm:flex items-center gap-4 shrink-0 text-xs text-muted-foreground bg-secondary/50 px-3 py-1.5 rounded-lg border border-border/50">

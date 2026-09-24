@@ -324,10 +324,6 @@ public class SessionService {
             throw new IllegalStateException("Only ACCEPTED sessions can be marked as COMPLETED!");
         }
 
-        if (LocalDateTime.now(clock).isBefore(session.getEndTime())) {
-            throw new IllegalStateException("Cannot complete session before its end time.");
-        }
-
         // SECURITY GUARD: Only the learner can mark it complete
         User authenticatedUser = getAuthenticatedUser();
         if (!session.getLearner().getId().equals(authenticatedUser.getId())) {

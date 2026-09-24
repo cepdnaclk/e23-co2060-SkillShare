@@ -1,5 +1,5 @@
-import { useEffect, useState, ChangeEvent } from "react";
-import { Clock, Users2, MessageSquare, Edit3, UserPlus, UserCheck, Clock4, Flag, ShieldAlert, CalendarX } from "lucide-react";
+import { useEffect, useState, useRef, ChangeEvent } from "react";
+import { Clock, Star, Users2, Users, MessageSquare, Edit3, X, UserPlus, UserCheck, Clock4, GraduationCap, BookOpen,Flag, ShieldAlert, CalendarX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { sessionsApi } from "@/api/sessions.api";
 import { connectionsApi } from "@/api/connections.api";
 import { type UserPublicDto, type UserSkill, type Availability } from "@/api/types";
 import { type ApiError } from "@/api/client";
+import { parseAcademicBio, formatAcademicBio } from "@/lib/academicBio";
 
 import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";
@@ -57,6 +58,29 @@ const ViewProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const syncedRef = useRef(false);
+
+  useEffect(() => {
+    if (syncedRef.current || !me?.id || !mentor || mentor.id !== me.id) return;
+
+    try {
+      const stored = localStorage.getItem(`skillshare_academic_${me.id}`);
+      if (stored) {
+        const local = JSON.parse(stored);
+        if ((local.university || local.major) && (!mentor.bio || !mentor.bio.includes("[Academic:"))) {
+          syncedRef.current = true;
+          const clean = parseAcademicBio(mentor.bio).cleanBio;
+          const formatted = formatAcademicBio(clean, local.university, local.major);
+          usersApi.updateMyBio(formatted).then(() => {
+            setMentor(prev => prev ? { ...prev, bio: formatted } : null);
+          }).catch(() => {});
+        }
+      }
+    } catch {
+      // ignore JSON errors
+    }
+  }, [me?.id, mentor]);
+
   // Booking state
   const [bookingOpen, setBookingOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<Availability | null>(null);
@@ -68,6 +92,58 @@ const ViewProfile = () => {
 
   // Report Modal state
   const [reportModalOpen, setReportModalOpen] = useState(false);
+
+  // Friends modal state
+  const [friendsOpen, setFriendsOpen] = useState(false);
+  const [friendsList, setFriendsList] = useState<ConnectionDto[]>([]);
+  const [loadingFriends, setLoadingFriends] = useState(false);
+
+  // Confirmation dialog for removing a connected connection
+  const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
+  const [connectionToRemove, setConnectionToRemove] = useState<{ id: string; name: string } | null>(null);
+  const [removingConn, setRemovingConn] = useState(false);
+
+  const loadFriends = async () => {
+    setLoadingFriends(true);
+    try {
+      const data = await connectionsApi.getFriends();
+      setFriendsList(data);
+    } catch {
+      // ignore
+    } finally {
+      setLoadingFriends(false);
+    }
+  };
+
+  const handleConfirmRemove = async () => {
+    if (!connectionToRemove) return;
+    setRemovingConn(true);
+    try {
+      try {
+        await connectionsApi.deleteConnection(connectionToRemove.id);
+      } catch {
+        await connectionsApi.rejectRequest(connectionToRemove.id);
+      }
+      toast.success("Connection removed.");
+      if (id) {
+        const newStatus = await connectionsApi.getStatus(id);
+        setConnectionStatus(newStatus);
+      }
+      setFriendsList((prev) => prev.filter((c) => c.id !== connectionToRemove.id));
+      setConfirmRemoveOpen(false);
+      setConnectionToRemove(null);
+    } catch {
+      toast.error("Failed to remove connection.");
+    } finally {
+      setRemovingConn(false);
+    }
+  };
+
+  useEffect(() => {
+    if (me?.id) {
+      loadFriends();
+    }
+  }, [me?.id]);
 
   useEffect(() => {
     if (!id || id === "undefined") {
@@ -143,15 +219,33 @@ const ViewProfile = () => {
         setConnectionStatus(newStatus);
       } else if (s === "PENDING_RECEIVED") {
         if (connectionStatus.connectionId) {
+          // If they click "Accept" (wait, ViewProfile only has one Connect button!)
+          // Let's accept it.
           await connectionsApi.acceptRequest(connectionStatus.connectionId);
           toast.success("Request accepted!");
           const newStatus = await connectionsApi.getStatus(id);
           setConnectionStatus(newStatus);
         }
       } else if (s === "FRIENDS" || s === "ACCEPTED") {
-        toast.error("API Limitation: The backend currently lacks an endpoint to remove accepted friends.");
+        if (connectionStatus.connectionId) {
+          setConnectionToRemove({
+            id: connectionStatus.connectionId,
+            name: mentor.fullName,
+          });
+          setConfirmRemoveOpen(true);
+        }
       } else if (s === "PENDING_SENT") {
-        toast.error("API Limitation: The backend currently lacks an endpoint to cancel outgoing requests.");
+        // Request cancel with just a single press
+        if (connectionStatus.connectionId) {
+          try {
+            await connectionsApi.deleteConnection(connectionStatus.connectionId);
+          } catch {
+            await connectionsApi.rejectRequest(connectionStatus.connectionId);
+          }
+          toast.success("Connection request cancelled.");
+          const newStatus = await connectionsApi.getStatus(id);
+          setConnectionStatus(newStatus);
+        }
       }
     } catch (err: unknown) {
       toast.error((err as Error).message ?? "Connection action failed.");
@@ -238,19 +332,37 @@ const ViewProfile = () => {
   const learnSkills = skills.filter((s) => s.skillType === "LEARN");
   const unbookedSlots = slots.filter((s) => !s.isBooked);
 
+  const academic = parseAcademicBio(mentor.bio);
+  const localAcademic = (() => {
+    try {
+      const targetId = mentor?.id || id || (isOwnProfile && me?.id ? me.id : null);
+      if (!targetId) return null;
+      const stored = localStorage.getItem(`skillshare_academic_${targetId}`);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const resolvedUniversity = academic.university || localAcademic?.university || "";
+  const resolvedMajor = academic.major || localAcademic?.major || "";
+  const academicInfoStr = [resolvedUniversity, resolvedMajor].filter(Boolean).join(" • ");
+  const cleanBioText = academic.cleanBio;
+
+  // Connection button copy
   let connectLabel = "Connect";
   let ConnectIcon = UserPlus;
   const s = connectionStatus.status.toUpperCase();
-
-  if (s === "PENDING_SENT" || s === "PENDING") {
-    connectLabel = "Request Sent";
-    ConnectIcon = Clock4;
+  
+  if (s === "PENDING_SENT" || s === "PENDING") { 
+    connectLabel = "Cancel Request";
+    ConnectIcon = Clock4; 
   } else if (s === "PENDING_RECEIVED") {
     connectLabel = "Accept Request";
     ConnectIcon = UserCheck;
-  } else if (s === "FRIENDS" || s === "ACCEPTED") {
-    connectLabel = "Connected";
-    ConnectIcon = UserCheck;
+  } else if (s === "FRIENDS" || s === "ACCEPTED") { 
+    connectLabel = "Remove Connection";
+    ConnectIcon = X;
   }
 
   return (
@@ -280,126 +392,159 @@ const ViewProfile = () => {
               )}
             </div>
 
-            <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground mb-2">
-                {mentor.fullName}
-              </h1>
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground mb-2">
+              {mentor.fullName}
+            </h1>
+            
+            {cleanBioText && (
+              <p className="text-muted-foreground text-sm max-w-xl mb-4 leading-relaxed">
+                {cleanBioText}
+              </p>
+            )}
 
-              {mentor.bio && (
-                  <p className="text-muted-foreground text-sm max-w-xl mb-4 leading-relaxed">
-                    {mentor.bio}
-                  </p>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
+              {academicInfoStr ? (
+                <span className="flex items-center gap-1.5 font-medium text-foreground">
+                  <GraduationCap className="w-4 h-4 text-primary opacity-80" /> {academicInfoStr}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 font-medium text-muted-foreground/70">
+                  <GraduationCap className="w-4 h-4 text-muted-foreground/50" /> Student
+                </span>
               )}
-
-              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
               <span className="flex items-center gap-1.5">
                 <Users2 className="w-4 h-4 opacity-70" /> {mentor.reputationScore ?? 0} rep
               </span>
-              </div>
+              {isOwnProfile && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    loadFriends();
+                    setFriendsOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                >
+                  <Users className="w-4 h-4 opacity-70" /> {friendsList.length} {friendsList.length === 1 ? "friend" : "friends"}
+                </button>
+              )}
+            </div>
 
-              {/* Profile Actions */}
-              <div className="flex flex-wrap items-center gap-3">
-                {isOwnProfile ? (
-                    <Button variant="outline" size="sm" onClick={() => navigate("/create-profile", { state: { startStep: 1 } })}>
-                      Edit Profile
+            {/* Profile Actions */}
+            <div className="flex flex-wrap items-center gap-3">
+              {isOwnProfile ? (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => navigate("/settings")}>
+                    Edit Profile
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      loadFriends();
+                      setFriendsOpen(true);
+                    }}
+                    className="gap-2"
+                  >
+                    <Users className="w-4 h-4" /> All Friends ({friendsList.length})
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    size="sm"
+                    disabled={connLoading}
+                    variant={connectionStatus.status === "ACCEPTED" ? "outline" : "default"}
+                    onClick={handleConnect}
+                    className="gap-2"
+                  >
+                    <ConnectIcon className="w-4 h-4" />
+                    {connectLabel}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => {
+                      if (!me?.id) return;
+                      openChat({
+                        contactId: mentor.id,
+                        contactName: mentor.fullName,
+                        contactProfilePicture: mentor.profilePictureUrl || null,
+                        lastMessage: "",
+                        lastMessageTime: null,
+                        unreadCount: 0
+                      });
+                      openWidget();
+                    }}
+                  >
+                    <MessageSquare className="w-4 h-4" /> Message
+                  </Button>
+                  
+                  {teachSkills.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setBookingOpen(true)}
+                    >
+                      Request Session
                     </Button>
-                ) : (
-                    <>
-                      <Button
-                          size="sm"
-                          disabled={connLoading}
-                          variant={connectionStatus.status === "ACCEPTED" ? "outline" : "default"}
-                          onClick={handleConnect}
-                          className="gap-2"
-                      >
-                        <ConnectIcon className="w-4 h-4" />
-                        {connectLabel}
-                      </Button>
-                      <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-2"
-                          onClick={() => {
-                            if (!me?.id) return;
-                            openChat({
-                              contactId: mentor.id,
-                              contactName: mentor.fullName,
-                              contactProfilePicture: mentor.profilePictureUrl || null,
-                              lastMessage: "",
-                              lastMessageTime: null,
-                              unreadCount: 0
-                            });
-                            openWidget();
-                          }}
-                      >
-                        <MessageSquare className="w-4 h-4" /> Message
-                      </Button>
-
-                      {teachSkills.length > 0 && (
-                          <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => setBookingOpen(true)}
-                          >
-                            Request Session
-                          </Button>
-                      )}
-
-                      {/* 🚩 Report Button */}
-                      <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-2"
-                          onClick={() => setReportModalOpen(true)}
-                          title="Report user"
-                      >
+                  )}
+                    {/* 🚩 Report Button */}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-2"
+                        onClick={() => setReportModalOpen(true)}
+                        title="Report user"
+                    >
                         <Flag className="w-4 h-4" /> Report
-                      </Button>
-                    </>
-                )}
+                    </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── 2. SKILLS ───────────────────────────────────────── */}
+        <div className="grid md:grid-cols-2 gap-x-16 gap-y-12 mb-16">
+          
+          {/* TEACH */}
+          <div>
+            <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-4">
+              <span className="text-[hsl(var(--teach-text))] font-semibold">Can Teach</span>
+            </h2>
+            {teachSkills.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {teachSkills.map((s) => (
+                  <Badge key={s.skillId} variant="secondary" className="px-3 py-1 text-xs font-medium skill-badge-teach hover:opacity-80 transition-opacity">
+                    {s.skillName}
+                  </Badge>
+                ))}
               </div>
-            </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No skills listed to teach.</p>
+            )}
           </div>
 
-          {/* ── 2. SKILLS ───────────────────────────────────────── */}
-          <div className="grid md:grid-cols-2 gap-x-16 gap-y-12 mb-16">
-
-            {/* TEACH */}
-            <div>
-              <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-4">
-                Can Teach
-              </h2>
-              {teachSkills.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {teachSkills.map((s) => (
-                        <Badge key={s.skillId} variant="secondary" className="px-3 py-1 text-xs font-medium bg-secondary/60 hover:bg-secondary">
-                          {s.skillName}
-                        </Badge>
-                    ))}
-                  </div>
-              ) : (
-                  <p className="text-sm text-muted-foreground">No skills listed to teach.</p>
-              )}
-            </div>
-
-            {/* LEARN */}
-            <div>
-              <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-4">
-                Wants To Learn
-              </h2>
-              {learnSkills.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {learnSkills.map((s) => (
-                        <Badge key={s.skillId} variant="outline" className="px-3 py-1 text-xs font-medium border-border">
-                          {s.skillName}
-                        </Badge>
-                    ))}
-                  </div>
-              ) : (
-                  <p className="text-sm text-muted-foreground">No learning goals listed.</p>
-              )}
-            </div>
+          {/* LEARN */}
+          <div>
+            <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-4">
+              <span className="text-[hsl(var(--learn-text))] font-semibold">Wants To Learn</span>
+            </h2>
+            {learnSkills.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {learnSkills.map((s) => (
+                  <Badge key={s.skillId} variant="outline" className="px-3 py-1 text-xs font-medium skill-badge-learn hover:opacity-80 transition-opacity">
+                    {s.skillName}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No learning goals listed.</p>
+            )}
           </div>
+        </div>
 
           {/* ── 3. AVAILABILITY ───────────────────────────────────────── */}
           {!isOwnProfile && teachSkills.length > 0 && (
@@ -491,27 +636,166 @@ const ViewProfile = () => {
                   )}
                 </div>
 
-              </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-border">
-                <Button variant="outline" onClick={() => setBookingOpen(false)}>Cancel</Button>
-                <Button onClick={handleBook} disabled={!selectedSkill || !selectedSlot || booking}>
-                  {booking ? "Confirming..." : "Confirm Request"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+            </div>
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
+              <Button variant="outline" onClick={() => setBookingOpen(false)}>Cancel</Button>
+              <Button onClick={handleBook} disabled={!selectedSkill || !selectedSlot || booking}>
+                {booking ? "Confirming..." : "Confirm Request"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
-          {/* Report Modal */}
-          {mentor && (
-              <ReportUserModal
-                  open={reportModalOpen}
-                  onOpenChange={setReportModalOpen}
-                  reportedUserId={mentor.id}
-                  reportedUserName={mentor.fullName}
-              />
-          )}
-        </div>
-      </AppLayout>
+        {/* All Friends Dialog */}
+        <Dialog open={friendsOpen} onOpenChange={setFriendsOpen}>
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg w-full max-h-[85vh] flex flex-col p-5 sm:p-6 overflow-hidden">
+            <DialogHeader className="shrink-0 pb-2 border-b border-border/50">
+              <DialogTitle className="flex items-center gap-2 text-lg">
+                <Users className="w-5 h-5 text-primary" />
+                All Friends ({friendsList.length})
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto min-h-0 py-3 pr-1 overscroll-contain">
+              {loadingFriends ? (
+                <div className="py-8 text-center text-sm text-muted-foreground animate-pulse">
+                  Loading connections...
+                </div>
+              ) : friendsList.length === 0 ? (
+                <div className="py-10 text-center">
+                  <Users className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+                  <p className="text-sm font-medium text-foreground">No connections yet</p>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
+                    Connect with other students and mentors on SkillShare to build your network.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {friendsList.map((conn) => {
+                    const friend = conn.sender.id === me?.id ? conn.receiver : conn.sender;
+                    return (
+                      <div
+                        key={conn.id}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border border-border/60 hover:bg-secondary/20 transition-colors gap-3 w-full"
+                      >
+                        <div
+                          className="flex items-center gap-3 cursor-pointer min-w-0 flex-1 overflow-hidden"
+                          onClick={() => {
+                            setFriendsOpen(false);
+                            navigate(`/profile/${friend.id}`);
+                          }}
+                        >
+                          <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-xs font-semibold text-foreground overflow-hidden shrink-0 border border-border/50">
+                            {friend.profilePictureUrl ? (
+                              <img src={friend.profilePictureUrl} alt={friend.fullName} className="w-full h-full object-cover" />
+                            ) : (
+                              getInitials(friend.fullName)
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1 overflow-hidden">
+                            <p className="text-sm font-semibold text-foreground truncate hover:underline">
+                              {friend.fullName}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              <span className="font-medium text-foreground/80">{friend.reputationScore ? `${friend.reputationScore} rep` : "0 rep"}</span>
+                              {friend.bio ? ` • ${friend.bio}` : ""}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-2.5 text-xs gap-1.5"
+                            onClick={() => {
+                              setFriendsOpen(false);
+                              openChat({
+                                contactId: friend.id,
+                                contactName: friend.fullName,
+                                contactProfilePicture: friend.profilePictureUrl || null,
+                                lastMessage: "",
+                                lastMessageTime: null,
+                                unreadCount: 0
+                              });
+                              openWidget();
+                            }}
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" /> Message
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                            title="Remove connection"
+                            onClick={() => {
+                              setConnectionToRemove({
+                                id: conn.id,
+                                name: friend.fullName,
+                              });
+                              setConfirmRemoveOpen(true);
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end pt-3 border-t border-border/50 shrink-0">
+              <Button variant="outline" size="sm" onClick={() => setFriendsOpen(false)}>
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Remove Connection Confirmation Dialog */}
+        <Dialog open={confirmRemoveOpen} onOpenChange={setConfirmRemoveOpen}>
+          <DialogContent className="sm:max-w-[420px]">
+            <DialogHeader>
+              <DialogTitle>Remove Connection?</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground py-2 leading-relaxed">
+              Are you sure you want to remove <span className="font-semibold text-foreground">{connectionToRemove?.name}</span> from your connections? You will need to send a new request if you want to connect again.
+            </p>
+            <div className="flex justify-end gap-3 pt-3 border-t border-border mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setConfirmRemoveOpen(false);
+                  setConnectionToRemove(null);
+                }}
+                disabled={removingConn}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleConfirmRemove}
+                disabled={removingConn}
+              >
+                {removingConn ? "Removing..." : "Remove Connection"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+            {/* Report Modal */}
+            {mentor && (
+                <ReportUserModal
+                    open={reportModalOpen}
+                    onOpenChange={setReportModalOpen}
+                    reportedUserId={mentor.id}
+                    reportedUserName={mentor.fullName}
+                />
+            )}
+      </div>
+    </AppLayout>
   );
 };
 

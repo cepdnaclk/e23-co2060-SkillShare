@@ -62,6 +62,7 @@ export const API_ROUTES = {
   requestConnection: (receiverId: string) => `/connections/request/${receiverId}`,
   acceptConnection: (connectionId: string) => `/connections/accept/${connectionId}`,
   rejectConnection: (connectionId: string) => `/connections/reject/${connectionId}`,
+  deleteConnection: (connectionId: string) => `/connections/${connectionId}`,
   connectionStatusByUserId: (userId: string) => `/connections/status/${userId}`,
 
   // --- NOTIFICATIONS ---
