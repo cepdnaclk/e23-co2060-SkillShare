@@ -3,121 +3,281 @@ package com.zenware.skillsharebackend.service;
 import com.zenware.skillsharebackend.dto.AvailabilityRequest;
 import com.zenware.skillsharebackend.dto.AvailabilityResponse;
 import com.zenware.skillsharebackend.entity.Availability;
+import com.zenware.skillsharebackend.entity.ParticipantStatus;
+import com.zenware.skillsharebackend.entity.Session;
+import com.zenware.skillsharebackend.entity.SessionStatus;
+import com.zenware.skillsharebackend.entity.SessionType;
 import com.zenware.skillsharebackend.entity.User;
 import com.zenware.skillsharebackend.repository.AvailabilityRepository;
+import com.zenware.skillsharebackend.repository.SessionParticipantRepository;
+import com.zenware.skillsharebackend.repository.SessionRepository;
 import com.zenware.skillsharebackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor // LOGIC: Modern constructor injection
+@RequiredArgsConstructor
 public class AvailabilityService {
 
     private final AvailabilityRepository availabilityRepository;
     private final UserRepository userRepository;
+    private final SessionRepository sessionRepository;
+    private final SessionParticipantRepository sessionParticipantRepository;
+    private final Clock clock;
 
-    // --- THE SECURITY ENGINE ---
-    // LOGIC: Extracts the exact user making the request from the JWT Token.
-    private User getAuthenticatedUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Authenticated user not found!"));
+    // =========================================================
+    // AUTHENTICATED USER
+    // =========================================================
+
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication.getName() == null
+                || authentication.getName().isBlank()
+                || "anonymousUser".equals(authentication.getName())) {
+
+            throw new IllegalStateException("You must be authenticated to manage availability.");
+        }
+
+        return userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found."));
     }
 
-    private AvailabilityResponse mapToResponse(Availability availability) {
+    // =========================================================
+    // CURRENT TIME
+    // =========================================================
+
+    private LocalDateTime now() {
+        return LocalDateTime.now(clock);
+    }
+
+    // =========================================================
+    // MAP ENTITY -> RESPONSE
+    // =========================================================
+
+    @Transactional(readOnly = true)
+    public AvailabilityResponse mapToResponse(Availability availability) {
+        if (availability == null) {
+            throw new IllegalArgumentException("Availability cannot be null.");
+        }
+
+        UUID activeSessionId = availability.getActiveSessionId();
+        String sessionType = null;
+        String groupStatus = null;
+        Integer groupCapacity = null;
+        Integer groupJoinedCount = null;
+
+        if (Boolean.TRUE.equals(availability.getIsBooked()) && activeSessionId != null) {
+            Session session = sessionRepository.findById(activeSessionId).orElse(null);
+
+            if (session != null) {
+                if (session.getSessionType() != null) {
+                    sessionType = session.getSessionType().name();
+                }
+
+                if (session.getSessionType() == SessionType.GROUP) {
+                    if (session.getStatus() != null) {
+                        groupStatus = session.getStatus().name();
+                    }
+
+                    groupCapacity = session.getCapacity();
+
+                    groupJoinedCount = Math.toIntExact(
+                            sessionParticipantRepository.countBySessionIdAndStatus(
+                                    session.getId(),
+                                    ParticipantStatus.JOINED
+                            )
+                    );
+                }
+            }
+        }
+
         return AvailabilityResponse.builder()
                 .id(availability.getId())
-                .mentorId(availability.getUser().getId())
+                .mentorId(availability.getUser() != null ? availability.getUser().getId() : null)
                 .startTime(availability.getStartTime())
                 .endTime(availability.getEndTime())
-                .isBooked(availability.getIsBooked())
-                .activeSessionId(availability.getActiveSessionId())
+                .isBooked(Boolean.TRUE.equals(availability.getIsBooked()))
+                .activeSessionId(activeSessionId)
+                .sessionType(sessionType)
+                .groupStatus(groupStatus)
+                .groupCapacity(groupCapacity)
+                .groupJoinedCount(groupJoinedCount)
                 .build();
     }
+
+    // =========================================================
+    // ADD AVAILABILITY
+    // =========================================================
 
     @Transactional
     public AvailabilityResponse addAvailability(AvailabilityRequest request) {
-        // Business Logic 1: Time Travel Check!
-        if (!request.getStartTime().isBefore(request.getEndTime())) {
-            throw new IllegalArgumentException("Start time must be strictly before end time!");
+        if (request == null) {
+            throw new IllegalArgumentException("Availability request cannot be null.");
         }
 
-        if (request.getStartTime().isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Start time cannot be in the past!");
+        LocalDateTime startTime = request.getStartTime();
+        LocalDateTime endTime = request.getEndTime();
+
+        if (startTime == null) {
+            throw new IllegalArgumentException("Start time is required.");
         }
 
-        // Business Logic 2: Securely identify the mentor from the Token!
-        User mentor = getAuthenticatedUser();
+        if (endTime == null) {
+            throw new IllegalArgumentException("End time is required.");
+        }
 
-        // Business Logic 3: Overlap detection
-        int overlaps = availabilityRepository.countOverlappingSlots(
-                mentor.getId(),
-                request.getStartTime(),
-                request.getEndTime()
+        if (!startTime.isBefore(endTime)) {
+            throw new IllegalArgumentException("Start time must be before end time.");
+        }
+
+        // Compare using system/clock zone safely with a 5-minute buffer for network/clock differences
+        LocalDateTime currentTime = now().minusMinutes(5);
+
+        if (startTime.isBefore(currentTime)) {
+            throw new IllegalArgumentException("Availability must be in the future.");
+        }
+
+        if (endTime.isBefore(currentTime)) {
+            throw new IllegalArgumentException("End time must be in the future.");
+        }
+
+        User currentUser = getCurrentUser();
+
+        int overlapping = availabilityRepository.countOverlappingSlots(
+                currentUser.getId(),
+                startTime,
+                endTime
         );
 
-        if (overlaps > 0) {
-            throw new IllegalStateException("Time slot overlaps with existing availability!");
+        if (overlapping > 0) {
+            throw new IllegalStateException("You already have an availability slot overlapping this time.");
         }
 
-        // Business Logic 4: Build the actual Entity using the Builder pattern
         Availability availability = Availability.builder()
-                .user(mentor)
-                .startTime(request.getStartTime())
-                .endTime(request.getEndTime())
+                .user(currentUser)
+                .startTime(startTime)
+                .endTime(endTime)
                 .isBooked(false)
+                .activeSessionId(null)
                 .build();
 
         Availability saved = availabilityRepository.save(availability);
+
         return mapToResponse(saved);
     }
 
-    // --- NEW FEATURE: Delete Slot ---
+    // =========================================================
+    // DELETE AVAILABILITY
+    // =========================================================
+
     @Transactional
     public void deleteAvailability(UUID availabilityId) {
-        Availability availability = availabilityRepository.findById(availabilityId)
-                .orElseThrow(() -> new IllegalArgumentException("Time slot not found"));
-
-        // GUARD: You can only delete your own slots!
-        if (!availability.getUser().getId().equals(getAuthenticatedUser().getId())) {
-            throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Security Violation: You can only delete your own availability!");
+        if (availabilityId == null) {
+            throw new IllegalArgumentException("Availability ID is required.");
         }
 
-        // GUARD: Cannot delete an actively booked slot
-        if (availability.getIsBooked()) {
-            throw new IllegalStateException("You cannot delete a slot that is already booked!");
+        User currentUser = getCurrentUser();
+
+        Availability availability = availabilityRepository.findById(availabilityId)
+                .orElseThrow(() -> new IllegalArgumentException("Availability slot not found."));
+
+        if (availability.getUser() == null
+                || availability.getUser().getId() == null
+                || !availability.getUser().getId().equals(currentUser.getId())) {
+
+            throw new IllegalStateException("You can only delete your own availability slots.");
+        }
+
+        if (Boolean.TRUE.equals(availability.getIsBooked())) {
+            throw new IllegalStateException("This availability slot is currently being used by a session.");
         }
 
         availabilityRepository.delete(availability);
     }
 
+    // =========================================================
+    // MENTOR SLOTS VISIBLE TO OTHER USERS
+    // =========================================================
+
+    @Transactional(readOnly = true)
     public List<AvailabilityResponse> getMentorFreeSlots(UUID mentorId) {
-        // Just ask the repository for the unbooked slots!
-        return availabilityRepository.findByUserIdAndIsBookedFalse(mentorId)
-                .stream()
+        if (mentorId == null) {
+            throw new IllegalArgumentException("Mentor ID is required.");
+        }
+
+        userRepository.findById(mentorId)
+                .orElseThrow(() -> new IllegalArgumentException("Mentor not found."));
+
+        LocalDateTime currentTime = now();
+
+        List<Availability> slots = availabilityRepository.findByUserId(mentorId);
+
+        return slots.stream()
+                .filter(slot -> slot != null && slot.getStartTime() != null && slot.getEndTime() != null)
+                .filter(slot -> slot.getStartTime().isBefore(slot.getEndTime()))
+                .filter(slot -> slot.getStartTime().isAfter(currentTime))
+                .filter(this::isVisibleToLearners)
+                .sorted(Comparator.comparing(Availability::getStartTime))
                 .map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
+    // =========================================================
+    // DETERMINE WHETHER A SLOT IS VISIBLE
+    // =========================================================
+
+    private boolean isVisibleToLearners(Availability availability) {
+        if (!Boolean.TRUE.equals(availability.getIsBooked())) {
+            return true;
+        }
+
+        if (availability.getActiveSessionId() == null) {
+            return false;
+        }
+
+        Session session = sessionRepository.findById(availability.getActiveSessionId()).orElse(null);
+
+        if (session == null) {
+            return false;
+        }
+
+        if (session.getSessionType() == SessionType.INDIVIDUAL) {
+            return false;
+        }
+
+        if (session.getSessionType() != SessionType.GROUP) {
+            return false;
+        }
+
+        return session.getStatus() == SessionStatus.PENDING
+                || session.getStatus() == SessionStatus.ACCEPTED;
+    }
+
+    // =========================================================
+    // MY AVAILABILITY
+    // =========================================================
+
+    @Transactional(readOnly = true)
     public List<AvailabilityResponse> getMyAvailabilities() {
-        // 1. Get the email from the current JWT token
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = getCurrentUser();
 
-        // 2. Find the user in the database
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Authenticated user not found!"));
-
-        // 3. Return only their slots
         return availabilityRepository.findByUserId(currentUser.getId())
                 .stream()
+                .filter(slot -> slot != null && slot.getStartTime() != null && slot.getEndTime() != null)
+                .sorted(Comparator.comparing(Availability::getStartTime))
                 .map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 }

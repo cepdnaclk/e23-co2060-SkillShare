@@ -8,14 +8,11 @@ import { skillsApi } from "@/api/skills.api";
 import { userSkillsApi } from "@/api/userSkills.api";
 import { trendingApi } from "@/api/dashboard.api";
 import { type Skill, type UserSkill, type UserSearchResponse, type UserPublicDto } from "@/api/types";
-
 import { SkeletonList } from "@/components/SkeletonCard";
 import ErrorBanner from "@/components/ErrorBanner";
 
-// Debounce timers
 let searchTimer: ReturnType<typeof setTimeout>;
 
-// Exact backend macro-categories
 const TREND_CATEGORIES = [
   "Development & Programming",
   "Design & Creative",
@@ -23,7 +20,6 @@ const TREND_CATEGORIES = [
   "Business & Finance"
 ];
 
-// Maps frontend dropdown items to backend keywords
 const CATEGORY_MAPPER: Record<string, string> = {
   "Development & Programming": "Python",
   "Design & Creative": "UI/UX",
@@ -37,7 +33,6 @@ const getInitials = (name: string) =>
 const Search = () => {
   const navigate = useNavigate();
 
-  // Search state
   const [query, setQuery] = useState("");
   const [matchedSkills, setMatchedSkills] = useState<Skill[]>([]);
   const [matchedUsers, setMatchedUsers] = useState<UserSearchResponse[]>([]);
@@ -48,12 +43,10 @@ const Search = () => {
   const [loadingMentors, setLoadingMentors] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Trending state
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [trendMentors, setTrendMentors] = useState<UserPublicDto[]>([]);
   const [trendMentorsLoading, setTrendMentorsLoading] = useState(false);
-  
-  // Ref for autocomplete click outside
+
   const autocompleteRef = useRef<HTMLDivElement>(null);
   const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
 
@@ -67,7 +60,6 @@ const Search = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch trending mentors automatically whenever the selected category changes
   useEffect(() => {
     if (!selectedSkill && !query && selectedCategory) {
       setTrendMentorsLoading(true);
@@ -82,7 +74,6 @@ const Search = () => {
     }
   }, [selectedCategory, selectedSkill, query]);
 
-  // Search skills by query (debounced)
   const handleQueryChange = useCallback((q: string) => {
     setQuery(q);
     setIsAutocompleteOpen(true);
@@ -104,7 +95,6 @@ const Search = () => {
     }, 350);
   }, []);
 
-  // Select a skill from main search recommendations
   const selectSkill = useCallback(async (skill: Skill) => {
     setSelectedSkill(skill);
     setMatchedSkills([]);
@@ -123,11 +113,11 @@ const Search = () => {
   }, []);
 
   const clearSearch = () => {
-    setQuery(""); 
-    setMatchedSkills([]); 
-    setSelectedSkill(null); 
-    setMentors([]); 
-    setError(null); 
+    setQuery("");
+    setMatchedSkills([]);
+    setSelectedSkill(null);
+    setMentors([]);
+    setError(null);
     setNameFilter("");
     setIsAutocompleteOpen(false);
   };
@@ -137,7 +127,7 @@ const Search = () => {
   return (
     <AppLayout>
       <div className="p-4 sm:p-6 md:p-10 max-w-4xl mx-auto flex flex-col min-h-[calc(100vh-4rem)]">
-        
+
         <div className="mb-10">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-2">Explore</h1>
           <p className="text-muted-foreground text-sm">Discover skills and people to connect with.</p>
@@ -162,7 +152,6 @@ const Search = () => {
             )}
           </div>
 
-          {/* Autocomplete Dropdown */}
           {isAutocompleteOpen && (matchedUsers.length > 0 || matchedSkills.length > 0 || loadingSkills) && (
             <div className="absolute top-full mt-2 left-0 right-0 z-50 bg-background border border-border rounded-xl shadow-sm overflow-hidden max-h-80 overflow-y-auto">
               {matchedUsers.length > 0 && (
@@ -180,7 +169,7 @@ const Search = () => {
                   ))}
                 </div>
               )}
-              
+
               {(matchedSkills.length > 0 || loadingSkills) && (
                 <div className="py-2 border-t border-border/50">
                   <div className="px-4 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Skills</div>
@@ -256,8 +245,8 @@ const Search = () => {
                     key={cat}
                     onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
-                      selectedCategory === cat 
-                        ? "bg-foreground text-background border-foreground" 
+                      selectedCategory === cat
+                        ? "bg-foreground text-background border-foreground"
                         : "bg-background text-foreground border-border hover:border-foreground/30"
                     }`}
                   >
@@ -292,9 +281,9 @@ const Search = () => {
                               <h3 className="font-semibold text-foreground truncate">{mentor.fullName}</h3>
                             </div>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                              {mentor.ratingAvg != null && (
+                              {mentor.xp != null && (
                                 <span className="flex items-center gap-1 text-foreground font-medium">
-                                  <Star className="w-3.5 h-3.5 fill-current" /> {mentor.ratingAvg.toFixed(1)}
+                                  <Star className="w-3.5 h-3.5 fill-current" /> {mentor.xp}
                                 </span>
                               )}
                               <span className="flex items-center gap-1">

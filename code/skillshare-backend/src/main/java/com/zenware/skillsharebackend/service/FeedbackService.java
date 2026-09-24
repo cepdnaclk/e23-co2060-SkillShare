@@ -7,6 +7,7 @@ import com.zenware.skillsharebackend.entity.*;
 import com.zenware.skillsharebackend.repository.FeedbackRepository;
 import com.zenware.skillsharebackend.repository.SessionRepository;
 import com.zenware.skillsharebackend.repository.UserRepository;
+import com.zenware.skillsharebackend.repository.SessionParticipantRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class FeedbackService {
 
     // --- NEW: INJECT THE GAMIFICATION ENGINE ---
     private final GamificationService gamificationService;
+    private final SessionParticipantRepository sessionParticipantRepository;
 
     // --- THE SECURITY ENGINE ---
     // LOGIC: Extracts the exact user making the request from the JWT Token.
@@ -54,7 +56,15 @@ public class FeedbackService {
         User giver = getAuthenticatedUser();
         User receiver;
 
-        if (giver.getId().equals(session.getLearner().getId())) {
+        boolean isGroupSession = session.getSessionType() == SessionType.GROUP;
+
+        if (isGroupSession) {
+            boolean isJoinedLearner = sessionParticipantRepository.findBySessionIdAndUserId(session.getId(), giver.getId())
+                    .map(participant -> participant.getStatus() == ParticipantStatus.JOINED && !giver.getId().equals(session.getMentor().getId()))
+                    .orElse(false);
+            if (!isJoinedLearner) throw new com.zenware.skillsharebackend.exception.UnauthorizedAccessException("Only joined group members can contribute feedback.");
+            receiver = session.getMentor();
+        } else if (giver.getId().equals(session.getLearner().getId())) {
             receiver = session.getMentor(); // Learner is reviewing Mentor
         } else if (giver.getId().equals(session.getMentor().getId())) {
             receiver = session.getLearner(); // Mentor is reviewing Learner
@@ -80,13 +90,12 @@ public class FeedbackService {
         }
 
         // 6. Update the Receiver's Score
-        receiver.setReputationScore(receiver.getReputationScore() + totalReputationChange);
-        userRepository.save(receiver);
-
-        // --- NEW: GAMIFICATION TRIGGER ---
-        // LOGIC: If the overall feedback is positive, treat it as our "5-Star Rating" equivalent
-        if (totalReputationChange > 0) {
-            gamificationService.awardFiveStarRatingXp(receiver);
+        if (!isGroupSession) {
+            receiver.setReputationScore(receiver.getReputationScore() + totalReputationChange);
+            userRepository.save(receiver);
+            if (totalReputationChange > 0) {
+                gamificationService.awardFiveStarRatingXp(receiver);
+            }
         }
 
         // 7. Save the Feedback Entity (Using the new Builder pattern)
@@ -103,18 +112,16 @@ public class FeedbackService {
         // ---------------------------------------------------------
         // NOTIFICATION TRIGGER 1: Tell the receiver they got rated!
         // ---------------------------------------------------------
-        String sign = totalReputationChange >= 0 ? "+" : "";
-        notificationService.sendNotification(
-                receiver,
-                "You received new feedback! Reputation changed by " + sign + totalReputationChange,
-                NotificationType.SYSTEM_ALERT // Fallback to SYSTEM_ALERT to match our Enum
-        );
+        if (!isGroupSession) {
+            String sign = totalReputationChange >= 0 ? "+" : "";
+            notificationService.sendNotification(receiver, "You received new feedback! Reputation changed by " + sign + totalReputationChange, NotificationType.SYSTEM_ALERT);
+        }
 
         // 8. THE FEEDBACK LOOP CLOSURE ENGINE
         long totalFeedbacks = feedbackRepository.countBySessionId(session.getId());
 
         // LOGIC: Once both the Learner and Mentor leave feedback, the session is officially CLOSED.
-        if (totalFeedbacks == 2) {
+        if (!isGroupSession && totalFeedbacks == 2) {
             session.setStatus(SessionStatus.CLOSED);
             sessionRepository.save(session);
 
@@ -123,6 +130,23 @@ public class FeedbackService {
             // ---------------------------------------------------------
             notificationService.sendNotification(session.getLearner(), "Your session is fully closed. Thank you for leaving feedback!", NotificationType.SYSTEM_ALERT);
             notificationService.sendNotification(session.getMentor(), "Your session is fully closed. Thank you for leaving feedback!", NotificationType.SYSTEM_ALERT);
+        }
+
+        if (isGroupSession) {
+            long joinedLearners = sessionParticipantRepository.findBySessionIdOrderByJoinedAtAsc(session.getId()).stream()
+                    .filter(participant -> participant.getStatus() == ParticipantStatus.JOINED && !participant.getUser().getId().equals(session.getMentor().getId())).count();
+            if (joinedLearners > 0 && totalFeedbacks == joinedLearners) {
+                int combinedWeight = (int) Math.round(feedbackRepository.findBySessionId(session.getId()).stream().mapToInt(Feedback::getWeight).average().orElse(0));
+                receiver.setReputationScore(receiver.getReputationScore() + combinedWeight);
+                userRepository.save(receiver);
+                if (combinedWeight > 0) gamificationService.awardFiveStarRatingXp(receiver);
+                session.setStatus(SessionStatus.CLOSED);
+                sessionRepository.save(session);
+                String sign = combinedWeight >= 0 ? "+" : "";
+                notificationService.sendNotification(receiver, "Your group gave shared feedback. Reputation changed by " + sign + combinedWeight, NotificationType.SYSTEM_ALERT);
+            } else {
+                notificationService.sendNotification(receiver, "A group member submitted feedback. The shared result will be applied after every attendee responds.", NotificationType.SYSTEM_ALERT);
+            }
         }
 
         // CRITICAL FIX: Map to DTO *inside* the @Transactional boundary.

@@ -3,6 +3,7 @@ package com.zenware.skillsharebackend.controller;
 import com.zenware.skillsharebackend.dto.SessionRequest;
 import com.zenware.skillsharebackend.dto.SessionResponse;
 import com.zenware.skillsharebackend.entity.SessionStatus;
+import com.zenware.skillsharebackend.entity.ParticipantStatus;
 import com.zenware.skillsharebackend.service.SessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +15,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/sessions")
-@RequiredArgsConstructor // LOGIC: Constructor Injection
+@RequiredArgsConstructor
 public class SessionController {
 
     private final SessionService sessionService;
@@ -24,13 +25,60 @@ public class SessionController {
         return ResponseEntity.ok(sessionService.bookSession(request));
     }
 
+    @GetMapping("/groups")
+    public ResponseEntity<List<SessionResponse>> getGroupSessions() {
+        return ResponseEntity.ok(sessionService.getOpenGroupSessions());
+    }
+
+    @GetMapping("/explore/groups")
+    public ResponseEntity<List<SessionResponse>> exploreGroupSessions() {
+        return ResponseEntity.ok(sessionService.exploreGroupSessions());
+    }
+
+    @GetMapping("/groups/mine")
+    public ResponseEntity<List<SessionResponse>> getMyGroupSessions() {
+        return ResponseEntity.ok(sessionService.getMyGroupSessions());
+    }
+
+    @GetMapping("/{sessionId}")
+    public ResponseEntity<SessionResponse> getGroupSession(@PathVariable UUID sessionId) {
+        return ResponseEntity.ok(sessionService.getGroupSession(sessionId));
+    }
+
+    @PostMapping("/{sessionId}/join")
+    public ResponseEntity<SessionResponse> joinGroupSession(@PathVariable UUID sessionId) {
+        return ResponseEntity.ok(sessionService.joinGroupSession(sessionId));
+    }
+
+    @PostMapping("/{sessionId}/decline")
+    public ResponseEntity<SessionResponse> declineGroupInvitation(@PathVariable UUID sessionId) {
+        return ResponseEntity.ok(sessionService.declineGroupInvitation(sessionId));
+    }
+
+    @PostMapping("/{sessionId}/leave")
+    public ResponseEntity<SessionResponse> leaveGroupSession(@PathVariable UUID sessionId) {
+        return ResponseEntity.ok(sessionService.leaveGroupSession(sessionId));
+    }
+
+    @PostMapping("/{sessionId}/invite/{userId}")
+    public ResponseEntity<SessionResponse> inviteToGroupSession(@PathVariable UUID sessionId, @PathVariable UUID userId) {
+        return ResponseEntity.ok(sessionService.inviteToGroupSession(sessionId, userId));
+    }
+
+    @PatchMapping("/{sessionId}/participants/{userId}/status")
+    public ResponseEntity<SessionResponse> updateGroupParticipantStatus(@PathVariable UUID sessionId, @PathVariable UUID userId, @RequestParam ParticipantStatus status) {
+        return ResponseEntity.ok(sessionService.updateGroupParticipantStatus(sessionId, userId, status));
+    }
+
+    @DeleteMapping("/{sessionId}/participants/{userId}")
+    public ResponseEntity<SessionResponse> removeGroupParticipant(@PathVariable UUID sessionId, @PathVariable UUID userId) {
+        return ResponseEntity.ok(sessionService.removeGroupParticipant(sessionId, userId));
+    }
+
     @PatchMapping("/{sessionId}/status")
     public ResponseEntity<SessionResponse> updateStatus(
             @PathVariable UUID sessionId,
             @RequestParam SessionStatus status) {
-
-        // SECURITY UPGRADE: Removed @RequestParam UUID mentorId
-        // The Mentor's identity is now pulled directly from the JWT Context!
         SessionResponse updatedSession = sessionService.updateSessionStatus(sessionId, status);
         return ResponseEntity.ok(updatedSession);
     }
@@ -43,8 +91,6 @@ public class SessionController {
 
     @PutMapping("/{sessionId}/cancel")
     public ResponseEntity<SessionResponse> cancelSession(@PathVariable UUID sessionId) {
-        // SECURITY UPGRADE: Removed @RequestParam UUID userId
-        // The Canceling User's identity is pulled directly from JWT!
         return ResponseEntity.ok(sessionService.cancelSession(sessionId));
     }
 
@@ -64,7 +110,6 @@ public class SessionController {
         return ResponseEntity.ok("Expiration Engine Run Complete! Automatically refunded and expired " + expiredCount + " sessions.");
     }
 
-    // PATCH: /api/sessions/{sessionId}/meeting-link
     @PatchMapping("/{sessionId}/meeting-link")
     public ResponseEntity<SessionResponse> addMeetingLink(
             @PathVariable UUID sessionId,

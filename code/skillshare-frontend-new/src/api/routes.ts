@@ -41,6 +41,16 @@ export const API_ROUTES = {
   addMeetingLink: (sessionId: string) => `/sessions/${sessionId}/meeting-link`,
   learnerSessionsByUserId: (userId: string) => `/sessions/learner/${userId}`,
   mentorSessionsByUserId: (userId: string) => `/sessions/mentor/${userId}`,
+  SESSIONS_GROUPS: '/sessions/groups',
+  SESSIONS_MY_GROUPS: '/sessions/groups/mine',
+  SESSIONS_EXPLORE_GROUPS: '/sessions/explore/groups',
+  groupSessionById: (sessionId: string) => `/sessions/${sessionId}`,
+  joinGroupSession: (sessionId: string) => `/sessions/${sessionId}/join`,
+  declineGroupInvitation: (sessionId: string) => `/sessions/${sessionId}/decline`,
+  leaveGroupSession: (sessionId: string) => `/sessions/${sessionId}/leave`,
+  removeGroupParticipant: (sessionId: string, userId: string) => `/sessions/${sessionId}/participants/${userId}`,
+  inviteToGroupSession: (sessionId: string, userId: string) => `/sessions/${sessionId}/invite/${userId}`,
+  updateGroupParticipantStatus: (sessionId: string, userId: string) => `/sessions/${sessionId}/participants/${userId}/status`,
 
   // --- FEEDBACK ---
   FEEDBACK_LEAVE: '/feedback/leave',

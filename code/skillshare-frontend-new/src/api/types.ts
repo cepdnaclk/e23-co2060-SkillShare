@@ -3,7 +3,8 @@
 // -------------------------------------------------------------
 
 // --- ENUMS ---
-export type SessionStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED' | 'CLOSED' | 'CANCELLED' | 'EXPIRED';
+export type SessionStatus = 'OPEN' | 'FULL' | 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED' | 'CLOSED' | 'CANCELLED' | 'EXPIRED';
+export type SessionType = 'INDIVIDUAL' | 'GROUP';
 export type ConnectionStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 export type NotificationType = 'SESSION_UPDATE' | 'SYSTEM_ALERT' | 'MESSAGE';
 
@@ -107,6 +108,10 @@ export interface AvailabilityResponse {
   endTime: string;
   isBooked: boolean;
   activeSessionId: string | null; // UUID (nullable)
+  sessionType: "INDIVIDUAL" | "GROUP" | null;
+  groupStatus: "PENDING" | "ACCEPTED" | "COMPLETED" | "CANCELLED" | null;
+  groupCapacity: number | null;
+  groupJoinedCount: number | null;
 }
 
 /** @alias BUG-04 fix — MySchedule.tsx imported Availability; canonical type is AvailabilityResponse */
@@ -116,24 +121,41 @@ export type Availability = AvailabilityResponse;
 export interface SessionRequest {
   skillId: string; // UUID
   availabilityId: string; // UUID
+  sessionType?: SessionType;
+  capacity?: number;
 }
 
 export interface SessionResponse {
-  id: string; // UUID
-  learnerId: string; // UUID
-  learnerName: string;
-  learnerProfilePictureUrl: string;
-  mentorId: string; // UUID
+  id: string;
+  learnerId: string | null;
+  learnerName: string | null;
+  learnerProfilePictureUrl: string | null;
+  mentorId: string;
   mentorName: string;
   mentorProfilePictureUrl: string;
-  skillId: string; // UUID
+  skillId: string;
   skillName: string;
   startTime: string;
   endTime: string;
   status: SessionStatus;
-  meetingLink: string;
+  meetingLink: string | null;
   creditValue: number;
   createdAt: string;
+  sessionType: SessionType;
+  capacity: number | null;
+  participantCount: number | null;
+  participants: SessionParticipant[];
+  availabilityId: string | null; // NEW — matches an Availability slot to its group session
+}
+
+export interface SessionParticipant {
+  userId: string;
+  userName: string;
+  profilePictureUrl: string | null;
+  status: 'INVITED' | 'PENDING' | 'JOINED' | 'DECLINED';
+  joinedAt: string;
+  invitedByUserId?: string | null;
+  invitedByUserName?: string | null;
 }
 
 /** @alias Sessions.tsx and MySchedule.tsx imported Session; canonical type is SessionResponse */

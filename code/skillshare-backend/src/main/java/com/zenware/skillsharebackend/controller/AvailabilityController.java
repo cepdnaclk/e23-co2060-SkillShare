@@ -3,43 +3,63 @@ package com.zenware.skillsharebackend.controller;
 import com.zenware.skillsharebackend.dto.AvailabilityRequest;
 import com.zenware.skillsharebackend.dto.AvailabilityResponse;
 import com.zenware.skillsharebackend.service.AvailabilityService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
-import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/availability")
-@RequiredArgsConstructor // LOGIC: Modern constructor injection
+@RequiredArgsConstructor
 public class AvailabilityController {
 
     private final AvailabilityService availabilityService;
 
     @PostMapping("/add")
-    public ResponseEntity<AvailabilityResponse> addAvailability(@Valid @RequestBody AvailabilityRequest request) {
-        // LOGIC: try-catch is GONE!
-        // Any error thrown by the service is caught by your GlobalExceptionHandler.
-        return ResponseEntity.ok(availabilityService.addAvailability(request));
+    public ResponseEntity<AvailabilityResponse> addAvailability(
+            @Valid @RequestBody AvailabilityRequest request
+    ) {
+        return ResponseEntity.ok(
+                availabilityService.addAvailability(request)
+        );
     }
 
-    // --- FEATURE: Secure Delete Endpoint ---
     @DeleteMapping("/{availabilityId}")
-    public ResponseEntity<String> deleteAvailability(@PathVariable UUID availabilityId) {
-        // LOGIC: No userId needed in the URL. The service extracts it securely from JWT!
+    public ResponseEntity<String> deleteAvailability(
+            @PathVariable UUID availabilityId
+    ) {
         availabilityService.deleteAvailability(availabilityId);
-        return ResponseEntity.ok("Availability slot deleted successfully.");
+
+        return ResponseEntity.ok(
+                "Availability slot deleted successfully."
+        );
     }
 
+    /*
+     * Public mentor availability used when booking a session.
+     *
+     * The service returns:
+     * - free slots
+     * - active group-session slots
+     *
+     * Individual-booked slots are hidden.
+     */
     @GetMapping("/mentor/{mentorId}")
-    public ResponseEntity<List<AvailabilityResponse>> getMentorSlots(@PathVariable UUID mentorId) {
-        return ResponseEntity.ok(availabilityService.getMentorFreeSlots(mentorId));
+    public ResponseEntity<List<AvailabilityResponse>> getMentorSlots(
+            @PathVariable UUID mentorId
+    ) {
+        return ResponseEntity.ok(
+                availabilityService.getMentorFreeSlots(mentorId)
+        );
     }
 
     @GetMapping("/my-slots")
     public ResponseEntity<List<AvailabilityResponse>> getMyAvailabilities() {
-        return ResponseEntity.ok(availabilityService.getMyAvailabilities());
+        return ResponseEntity.ok(
+                availabilityService.getMyAvailabilities()
+        );
     }
 }

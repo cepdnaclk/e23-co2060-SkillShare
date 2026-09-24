@@ -16,6 +16,7 @@ import ViewProfile from "./pages/ViewProfile";
 import MySchedule from "./pages/MySchedule";
 import Notifications from "./pages/Notifications";
 import Sessions from "./pages/Sessions";
+import GroupSessionDetail from "./pages/GroupSessionDetail";
 import Settings from "./pages/Settings";
 
 import NotFound from "./pages/NotFound";
@@ -68,6 +69,9 @@ const App = () => (
             } />
             <Route path="/sessions" element={
               <ProtectedRoute><Sessions /></ProtectedRoute>
+            } />
+            <Route path="/sessions/group/:id" element={
+              <ProtectedRoute><GroupSessionDetail /></ProtectedRoute>
             } />
             <Route path="/settings" element={
               <ProtectedRoute><Settings /></ProtectedRoute>

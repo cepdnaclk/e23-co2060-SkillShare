@@ -1,7 +1,8 @@
 ﻿import { useEffect, useState, ChangeEvent } from "react";
-import { Clock, Star, Users2, MessageSquare, Edit3, X, UserPlus, UserCheck, Clock4 } from "lucide-react";
+import { Clock, Star, Users2, Users, MessageSquare, Edit3, UserPlus, UserCheck, Clock4 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { useChat } from "@/context/ChatContext";
@@ -10,7 +11,7 @@ import { userSkillsApi } from "@/api/userSkills.api";
 import { availabilityApi } from "@/api/availability.api";
 import { sessionsApi } from "@/api/sessions.api";
 import { connectionsApi } from "@/api/connections.api";
-import { type User, type UserSkill, type Availability } from "@/api/types";
+import { type User, type UserSkill, type Availability, type Session } from "@/api/types";
 import { type ApiError } from "@/api/client";
 
 import { useAuth } from "@/context/AuthContext";
@@ -47,6 +48,7 @@ const ViewProfile = () => {
   const [mentor, setMentor] = useState<User | null>(null);
   const [skills, setSkills] = useState<UserSkill[]>([]);
   const [slots, setSlots] = useState<Availability[]>([]);
+  const [mentorGroupSessions, setMentorGroupSessions] = useState<Session[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<{ status: string; connectionId: string | null }>({ status: "NONE", connectionId: null });
   const [connLoading, setConnLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -56,12 +58,14 @@ const ViewProfile = () => {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<Availability | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<UserSkill | null>(null);
+  const [sessionType, setSessionType] = useState<"INDIVIDUAL" | "GROUP">("INDIVIDUAL");
+  const [groupCapacity, setGroupCapacity] = useState(2);
   const [booking, setBooking] = useState(false);
 
   // Upload pic state
   const [uploadingPic, setUploadingPic] = useState(false);
 
-  useEffect(() => {
+  const loadProfile = async () => {
     if (!id || id === "undefined") {
       setLoading(false);
       setError("Invalid profile user ID.");
@@ -70,22 +74,29 @@ const ViewProfile = () => {
 
     setLoading(true);
 
-    Promise.all([
-      usersApi.getById(id),
-      userSkillsApi.getByUser(id).catch(() => [] as UserSkill[]),
-      availabilityApi.getMentorSlots(id).catch(() => [] as Availability[]),
-      connectionsApi.getStatus(id).catch(() => ({ status: "NONE", connectionId: null })),
-    ])
-      .then(([u, sk, av, statusData]) => {
-        setMentor(u as User);
-        setSkills(sk as UserSkill[]);
-        setSlots(av as Availability[]);
-        setConnectionStatus(statusData as { status: string; connectionId: string | null });
-      })
-      .catch((err: ApiError) => {
-        setError((err as Error).message ?? "Could not load profile.");
-      })
-      .finally(() => setLoading(false));
+    try {
+      const [u, sk, av, statusData, allGroups] = await Promise.all([
+        usersApi.getById(id),
+        userSkillsApi.getByUser(id).catch(() => [] as UserSkill[]),
+        availabilityApi.getMentorSlots(id).catch(() => [] as Availability[]),
+        connectionsApi.getStatus(id).catch(() => ({ status: "NONE", connectionId: null })),
+        sessionsApi.getGroups().catch(() => [] as Session[]),
+      ]);
+      setMentor(u as User);
+      setSkills(sk as UserSkill[]);
+      setSlots(av as Availability[]);
+      setConnectionStatus(statusData as { status: string; connectionId: string | null });
+      // Only this mentor's open (PENDING/ACCEPTED, upcoming) group sessions matter here.
+      setMentorGroupSessions((allGroups as Session[]).filter(g => g.mentorId === id));
+    } catch (err: unknown) {
+      setError((err as ApiError as Error).message ?? "Could not load profile.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProfile();
   }, [id]);
 
   useEffect(() => {
@@ -123,7 +134,7 @@ const ViewProfile = () => {
     }
   };
 
-    const handleConnect = async () => {
+  const handleConnect = async () => {
     if (!id || connLoading) return;
     setConnLoading(true);
     try {
@@ -135,8 +146,6 @@ const ViewProfile = () => {
         setConnectionStatus(newStatus);
       } else if (s === "PENDING_RECEIVED") {
         if (connectionStatus.connectionId) {
-          // If they click "Accept" (wait, ViewProfile only has one Connect button!)
-          // Let's accept it.
           await connectionsApi.acceptRequest(connectionStatus.connectionId);
           toast.success("Request accepted!");
           const newStatus = await connectionsApi.getStatus(id);
@@ -154,18 +163,32 @@ const ViewProfile = () => {
     }
   };
 
+  const clampCapacity = (raw: string) => {
+    const digits = raw.replace(/[^0-9]/g, "");
+    if (digits === "") { setGroupCapacity(2); return; }
+    setGroupCapacity(Math.min(5, Math.max(2, parseInt(digits, 10))));
+  };
+
   const handleBook = async () => {
     if (!selectedSlot || !selectedSkill || !me?.id) return;
     setBooking(true);
     try {
-      await sessionsApi.book(String(selectedSkill.skillId), String(selectedSlot.id));
-      toast.success("Session booked! Waiting for confirmation.");
+      await sessionsApi.book(
+        String(selectedSkill.skillId),
+        String(selectedSlot.id),
+        sessionType,
+        sessionType === "GROUP" ? groupCapacity : undefined
+      );
+      toast.success(
+        sessionType === "GROUP"
+          ? "Group request sent! The mentor needs to accept the session and approve each learner, including you."
+          : "Session booked! Waiting for confirmation."
+      );
       refreshUser(me.id);
       setBookingOpen(false);
-      if (id) {
-        const av = await availabilityApi.getMentorSlots(id);
-        setSlots(av);
-      }
+      setSessionType("INDIVIDUAL");
+      setGroupCapacity(2);
+      await loadProfile();
     } catch (err: unknown) {
       toast.error((err as Error).message ?? "Failed to book session.");
     } finally {
@@ -202,22 +225,37 @@ const ViewProfile = () => {
   const isOwnProfile = me?.id === mentor.id;
   const teachSkills = skills.filter((s) => s.skillType === "TEACH");
   const learnSkills = skills.filter((s) => s.skillType === "LEARN");
-  const unbookedSlots = slots.filter((s) => !s.isBooked);
+
+  // Map each occupied slot to the group session sitting on it (if any), so a
+  // slot reserved by a group request stays visible instead of disappearing.
+  const groupSessionByAvailabilityId = new Map<string, Session>();
+  mentorGroupSessions.forEach(g => {
+    if (g.availabilityId) groupSessionByAvailabilityId.set(g.availabilityId, g);
+  });
+
+  const now = new Date();
+  // Visible slots = open slots (bookable) + group-session slots (joinable),
+  // sorted by time. Individually-booked slots (booked, no matching group)
+  // stay hidden since those are someone else's private session.
+  const visibleSlots = slots
+    .filter((s) => new Date(s.startTime) > now)
+    .filter((s) => !s.isBooked || groupSessionByAvailabilityId.has(s.id))
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
   // Connection button copy
   let connectLabel = "Connect";
   let ConnectIcon = UserPlus;
   const s = connectionStatus.status.toUpperCase();
-  
-  if (s === "PENDING_SENT" || s === "PENDING") { 
-    connectLabel = "Request Sent"; 
-    ConnectIcon = Clock4; 
+
+  if (s === "PENDING_SENT" || s === "PENDING") {
+    connectLabel = "Request Sent";
+    ConnectIcon = Clock4;
   } else if (s === "PENDING_RECEIVED") {
     connectLabel = "Accept Request";
     ConnectIcon = UserCheck;
-  } else if (s === "FRIENDS" || s === "ACCEPTED") { 
-    connectLabel = "Connected"; 
-    ConnectIcon = UserCheck; 
+  } else if (s === "FRIENDS" || s === "ACCEPTED") {
+    connectLabel = "Connected";
+    ConnectIcon = UserCheck;
   }
 
   return (
@@ -235,7 +273,7 @@ const ViewProfile = () => {
                 getInitials(mentor.fullName)
               )}
             </div>
-            
+
             {isOwnProfile && (
               <label
                 className={`absolute bottom-0 right-0 w-8 h-8 rounded-full bg-background border border-border shadow-sm flex items-center justify-center cursor-pointer focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:bg-secondary transition-colors ${uploadingPic ? 'opacity-50 pointer-events-none' : ''}`}
@@ -251,7 +289,7 @@ const ViewProfile = () => {
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground mb-2">
               {mentor.fullName}
             </h1>
-            
+
             {mentor.bio && (
               <p className="text-muted-foreground text-sm max-w-xl mb-4 leading-relaxed">
                 {mentor.bio}
@@ -304,7 +342,7 @@ const ViewProfile = () => {
                   >
                     <MessageSquare className="w-4 h-4" /> Message
                   </Button>
-                  
+
                   {teachSkills.length > 0 && (
                     <Button
                       size="sm"
@@ -322,7 +360,7 @@ const ViewProfile = () => {
 
         {/* ── 2. SKILLS ───────────────────────────────────────── */}
         <div className="grid md:grid-cols-2 gap-x-16 gap-y-12 mb-16">
-          
+
           {/* TEACH */}
           <div>
             <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-4">
@@ -366,25 +404,58 @@ const ViewProfile = () => {
             <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-4">
               Upcoming Availability
             </h2>
-            {unbookedSlots.length > 0 ? (
+            {visibleSlots.length > 0 ? (
               <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {unbookedSlots.slice(0, 6).map((slot) => (
-                  <div key={slot.id} className="p-3 border border-border/60 rounded-xl text-sm text-muted-foreground flex items-center justify-between group">
-                    <span className="flex items-center gap-2">
-                      <Clock className="w-3.5 h-3.5" />
-                      {fmt(slot.startTime)}
-                    </span>
-                    <button 
-                      className="text-foreground text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
-                      onClick={() => {
-                        setSelectedSlot(slot);
-                        setBookingOpen(true);
-                      }}
-                    >
-                      Select
-                    </button>
-                  </div>
-                ))}
+                {visibleSlots.slice(0, 6).map((slot) => {
+                  const groupSession = groupSessionByAvailabilityId.get(slot.id);
+
+                  if (groupSession) {
+                    const capacity = groupSession.capacity ?? 5;
+                    const joined = groupSession.participantCount ?? 0;
+                    const isFull = joined >= capacity;
+                    return (
+                      <button
+                        key={slot.id}
+                        onClick={() => navigate(`/sessions/group/${groupSession.id}`)}
+                        className="p-3 border border-primary/30 bg-primary/5 rounded-xl text-sm flex flex-col gap-1.5 text-left hover:border-primary/50 transition-colors"
+                      >
+                        <span className="flex items-center gap-2 text-muted-foreground">
+                          <Clock className="w-3.5 h-3.5" />
+                          {fmt(slot.startTime)}
+                        </span>
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded-full bg-primary/10 text-primary flex items-center gap-1">
+                            <Users className="w-3 h-3" /> Group
+                          </span>
+                          <span className="text-xs font-medium text-foreground">
+                            {joined}/{capacity} joined
+                          </span>
+                        </span>
+                        <span className="text-xs text-primary font-medium">
+                          {isFull ? "View group (full)" : "View & request to join"}
+                        </span>
+                      </button>
+                    );
+                  }
+
+                  return (
+                    <div key={slot.id} className="p-3 border border-border/60 rounded-xl text-sm text-muted-foreground flex items-center justify-between group">
+                      <span className="flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5" />
+                        {fmt(slot.startTime)}
+                      </span>
+                      <button
+                        className="text-foreground text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
+                        onClick={() => {
+                          setSelectedSlot(slot);
+                          setBookingOpen(true);
+                        }}
+                      >
+                        Select
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">No upcoming availability.</p>
@@ -399,7 +470,48 @@ const ViewProfile = () => {
               <DialogTitle>Request Session</DialogTitle>
             </DialogHeader>
             <div className="py-4 space-y-6">
-              
+              <div className="space-y-2">
+                <label className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
+                  Session type
+                </label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={sessionType === "INDIVIDUAL" ? "default" : "outline"}
+                    onClick={() => setSessionType("INDIVIDUAL")}
+                  >
+                    Individual
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={sessionType === "GROUP" ? "default" : "outline"}
+                    onClick={() => setSessionType("GROUP")}
+                  >
+                    Group
+                  </Button>
+                </div>
+                {sessionType === "GROUP" && (
+                  <div className="pt-2 space-y-1.5">
+                    <label className="text-sm text-muted-foreground" htmlFor="group-capacity">
+                      Maximum learners (2–5)
+                    </label>
+                    <Input
+                      id="group-capacity"
+                      type="number"
+                      min={2}
+                      max={5}
+                      value={groupCapacity}
+                      onChange={e => clampCapacity(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      The mentor must accept the session and approve each learner, including you, before it's confirmed.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-3">
                 <label className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
                   Select a skill
@@ -411,8 +523,8 @@ const ViewProfile = () => {
                         key={s.skillId}
                         onClick={() => setSelectedSkill(s)}
                         className={`px-3 py-1.5 rounded-lg text-sm transition-colors border ${
-                          selectedSkill?.skillId === s.skillId 
-                            ? "bg-foreground text-background border-foreground" 
+                          selectedSkill?.skillId === s.skillId
+                            ? "bg-foreground text-background border-foreground"
                             : "bg-background text-foreground border-border hover:border-foreground/30"
                         }`}
                       >
@@ -429,31 +541,38 @@ const ViewProfile = () => {
                 <label className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
                   Select a time
                 </label>
-                {unbookedSlots.length > 0 ? (
+                {visibleSlots.filter(s => !groupSessionByAvailabilityId.has(s.id)).length > 0 ? (
                   <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2">
-                    {unbookedSlots.map((s) => (
-                      <button
-                        key={s.id}
-                        onClick={() => setSelectedSlot(s)}
-                        className={`px-3 py-2 text-left rounded-lg text-sm transition-colors border ${
-                          selectedSlot?.id === s.id 
-                            ? "bg-foreground text-background border-foreground" 
-                            : "bg-background text-foreground border-border hover:border-foreground/30"
-                        }`}
-                      >
-                        {fmt(s.startTime)}
-                      </button>
-                    ))}
+                    {visibleSlots
+                      .filter(s => !groupSessionByAvailabilityId.has(s.id))
+                      .map((s) => (
+                        <button
+                          key={s.id}
+                          onClick={() => setSelectedSlot(s)}
+                          className={`px-3 py-2 text-left rounded-lg text-sm transition-colors border ${
+                            selectedSlot?.id === s.id
+                              ? "bg-foreground text-background border-foreground"
+                              : "bg-background text-foreground border-border hover:border-foreground/30"
+                          }`}
+                        >
+                          {fmt(s.startTime)}
+                        </button>
+                      ))}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">No time slots available.</p>
                 )}
               </div>
-
             </div>
             <div className="flex justify-end gap-3 pt-4 border-t border-border">
               <Button variant="outline" onClick={() => setBookingOpen(false)}>Cancel</Button>
-              <Button onClick={handleBook} disabled={!selectedSkill || !selectedSlot || booking}>
+              <Button
+                onClick={handleBook}
+                disabled={
+                  !selectedSkill || !selectedSlot || booking ||
+                  (sessionType === "GROUP" && (groupCapacity < 2 || groupCapacity > 5))
+                }
+              >
                 {booking ? "Confirming..." : "Confirm Request"}
               </Button>
             </div>

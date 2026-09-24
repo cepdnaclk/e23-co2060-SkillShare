@@ -3,6 +3,7 @@ package com.zenware.skillsharebackend.dto;
 import lombok.Data;
 
 import java.util.UUID;
+import com.zenware.skillsharebackend.entity.SessionType;
 
 @Data
 public class SessionRequest {
@@ -13,4 +14,6 @@ public class SessionRequest {
 
     private UUID skillId;
     private UUID availabilityId;
+    private SessionType sessionType;
+    private Integer capacity;
 }

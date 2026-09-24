@@ -25,7 +25,7 @@ public class Session {
     // LOGIC: Added FetchType.LAZY for performance.
     // It prevents pulling the entire User object unless explicitly requested.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "learner_id", nullable = false)
+    @JoinColumn(name = "learner_id")
     private User learner;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -44,6 +44,15 @@ public class Session {
 
     @Column(name = "availability_id")
     private UUID availabilityId;
+
+    /** Individual sessions retain the learner/mentor model; group sessions use SessionParticipant. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "session_type", nullable = false, columnDefinition = "varchar(20) default 'INDIVIDUAL'")
+    @Builder.Default
+    private SessionType sessionType = SessionType.INDIVIDUAL;
+
+    @Column(name = "capacity")
+    private Integer capacity;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
