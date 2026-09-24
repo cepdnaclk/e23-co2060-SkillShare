@@ -1,4 +1,4 @@
-import type { User } from "./api";
+import type { UserPrivateDto as User } from "@/api/types";
 
 const TOKEN_KEY = "skillshare_token";
 const USER_KEY = "skillshare_user";
