@@ -140,8 +140,8 @@ Having successfully delivered our MVP, we have aggressively expanded Skill-Share
 
 ## Links
 
-- [Project Repository](https://github.com/cepdnaclk/e23-2YP-SkillShare.git)
-- [Project Page](https://cepdnaclk.github.io/e23-2YP-SkillShare/)
+- [Project Repository](https://github.com/cepdnaclk/e23-co2060-SkillShare.git)
+- [Project Page](https://cepdnaclk.github.io/e23-co2060-SkillShare/)
 - [Department of Computer Engineering](http://www.ce.pdn.ac.lk/)
 - [University of Peradeniya](https://eng.pdn.ac.lk/)
 

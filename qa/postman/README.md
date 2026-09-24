@@ -54,11 +54,10 @@ newman run qa/postman/SkillShare-API.postman_collection.json \
 - **Dynamic Skill/Availability/Session IDs:** Instead of relying on hardcoded Database IDs, the tests extract real IDs from the creation responses and pass them to subsequent requests via Collection Variables.
 - **Date/Time Handling:** The availability creation script automatically generates a local timestamp (in `YYYY-MM-DDTHH:mm:ss` format) starting precisely 5 minutes in the future to safely satisfy backend rules.
 
-## Completion Lifecycle Limitations
-**IMPORTANT:** The `07 Completion Lifecycle` request will likely fail with a `400 Bad Request` during an automated fast Newman run.
-- **Why?** The backend strictly enforces that a session can only be marked as `COMPLETED` *after* its scheduled end time has passed.
-- **How to test it:** Run the first 6 folders. Wait 10 minutes until the dynamic end time has passed. Then manually trigger the "Complete Session" request in Postman.
-- **Why not automate the wait?** Injecting a 10-minute wait into the regression suite ruins the feedback loop. We intentionally isolated this test.
+## Completion Lifecycle Behavior
+- **Early Completion Supported:** The backend supports marking an accepted session as `COMPLETED` prior to its scheduled end time. The completion request succeeds with `HTTP 200 OK`.
+- **Automated Validation:** The `07 Completion Lifecycle` tests in the Postman collection validate this behavior directly during automated Newman runs without requiring manual wait delays.
+
 
 ## What should NOT be committed
 - Do not commit the generated `reports/` directory.

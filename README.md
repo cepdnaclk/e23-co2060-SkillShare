@@ -128,7 +128,7 @@ mvnw.cmd spring-boot:run
 The project includes automated backend testing and API-level integration/regression testing.
 
 **Backend Automated Testing**
-- ~196 tests
+- 199 tests
 - 0 failures
 - 0 errors
 - 0 skipped

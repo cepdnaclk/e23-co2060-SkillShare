@@ -38,11 +38,10 @@ src/api/
   chat.api.ts        — getRecentChats, getHistory, markAsRead, getUnreadCount
 ```
 
-### Compatibility Layer
+### Migration Status
 
-`src/lib/api.ts` and `src/lib/chatApi.ts` are now **compatibility re-export layers** that re-export everything from `src/api/*`. All existing UI consumers continue to work unchanged.
+All UI pages import directly from `src/api/*`. The historical `src/lib/api.ts` and `src/lib/chatApi.ts` compatibility layers have been fully migrated and removed.
 
-> **TODO**: Migrate UI pages to import directly from `src/api/*` and remove the compatibility layers once migration is complete.
 
 ---
 
@@ -96,7 +95,7 @@ The REST API controllers include `/api` in their own `@RequestMapping`. There is
 |-------|---------|
 | Server root | `http://localhost:8080` |
 | REST controller mapping | `@RequestMapping("/api/users")` → `http://localhost:8080/api/users` |
-| `VITE_API_BASE_URL` | `http://localhost:8080/api` |
+| `VITE_API_URL` | `http://localhost:8080` |
 | Route constant (from `routes.ts`) | `/users/me` (no `/api` prefix) |
 | Final URL constructed by client | `http://localhost:8080/api` + `/users/me` = `http://localhost:8080/api/users/me` ✅ |
 
@@ -109,10 +108,11 @@ The client includes a path-stripping safeguard: if a path accidentally starts wi
 Copy `.env.example` to `.env` and update as needed:
 
 ```
-VITE_API_BASE_URL=http://localhost:8080/api
+VITE_API_URL=http://localhost:8080
 ```
 
-The client reads `VITE_API_BASE_URL` first, then falls back to `VITE_API_URL`, then to `http://localhost:8080/api`.
+The client reads `VITE_API_URL` (falling back to `VITE_API_BASE_URL`, then defaulting to `http://localhost:8080/api`).
+
 
 > **Never commit `.env` files.** They are already `.gitignore`d.
 
@@ -183,11 +183,11 @@ The correct connection URLs are:
 - Local: `ws://localhost:8080/ws`
 - Production (HTTPS): `wss://<host>/ws`
 
-The `chatSocketService.ts` derives this correctly by stripping `/api` from `VITE_API_BASE_URL` before constructing the WebSocket URL:
+The `chatSocketService.ts` derives this correctly by stripping `/api` from the configured base URL (`VITE_API_URL` / `VITE_API_BASE_URL`) before constructing the WebSocket URL:
 
 ```ts
-// VITE_API_BASE_URL = "http://localhost:8080/api"
-// → strip /api → "http://localhost:8080"
+// VITE_API_URL = "http://localhost:8080"
+// → strip /api if present → "http://localhost:8080"
 // → replace http → ws → "ws://localhost:8080"
 // → append /ws → "ws://localhost:8080/ws" ✅
 const WS_URL = `${_apiBase.replace(/\/api\/?$/, "").replace(/^http/, "ws")}/ws`;
@@ -251,13 +251,11 @@ The backend returns `LocalDateTime` **without timezone information**. All timest
 | Raw message body logged at `console.warn` in chatSocketService | Low | Known, should be removed before production |
 | `Skill` and `Notification` returned as raw entities (not DTOs) | Low | Known, documented |
 | JWT in `localStorage` (XSS exposure) | Medium | Known, deferred security work |
-| `src/lib/api.ts` compatibility layer still exists | Low | TODO — migrate UI consumers and remove |
 
 ---
 
 ## Deferred Work
 
-- Migrate all UI pages to import from `src/api/*` directly and remove `src/lib/api.ts` compatibility layer
 - Add React Query hooks layer if the project grows to need shared cache management
 - Migrate token storage from `localStorage` to `httpOnly` cookies (security improvement)
 - Remove debug `console.warn` message body logging from `chatSocketService.ts` before production
