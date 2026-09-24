@@ -70,6 +70,7 @@ export interface UserPublicDto {
   level: number | null;
   reputationScore: number | null;
   profilePictureUrl: string | null;
+  isActive: boolean | null;
 }
 
 export interface UserSearchResponse {
