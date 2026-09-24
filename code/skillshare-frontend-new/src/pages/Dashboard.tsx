@@ -8,13 +8,13 @@ import { type Session, type FeedbackResponse, type UserSkill } from "@/api/types
 
 import { useAuth } from "@/context/AuthContext";
 import ErrorBanner from "@/components/ErrorBanner";
-import { 
-  Calendar, BookOpen, GraduationCap, Clock, Inbox, PlayCircle, Trophy, Sparkles, Plus, Search, ChevronRight, ArrowRight
+import {
+  Calendar, BookOpen, GraduationCap, Clock, Inbox, PlayCircle, Plus, Search, ChevronRight, ArrowRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SkillPickerModal } from "@/components/SkillPickerModal";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 /* Helpers */
@@ -201,6 +201,7 @@ const Dashboard = () => {
   };
 
   const firstName = user?.fullName?.split(" ")[0] ?? "there";
+
   const teachSkills = userSkills.filter(s => s.skillType === "TEACH");
   const learnSkills = userSkills.filter(s => s.skillType === "LEARN");
 
@@ -250,11 +251,12 @@ const Dashboard = () => {
             <p className="text-muted-foreground mt-1">Here is what is happening today.</p>
           </div>
           
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2.5">
             <Button onClick={() => navigate("/search")} variant="default" className="gap-2 shadow-sm transition-transform active:scale-95">
               <Search className="w-4 h-4" /> Explore Skills
             </Button>
-            <Button onClick={() => navigate("/my-schedule")} variant="outline" className="gap-2 bg-background hover:bg-secondary transition-transform active:scale-95">
+
+            <Button onClick={() => navigate("/my-schedule")} variant="outline" className="gap-2 ml-1 bg-background hover:bg-secondary transition-transform active:scale-95">
               <Calendar className="w-4 h-4" /> My Schedule
             </Button>
           </div>
@@ -381,31 +383,21 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
-            {/* STAT CARDS (MOVED TO BOTTOM) */}
+            {/* STAT CARDS */}
             {user && (
               <div className="pt-6 border-t border-border/40 mt-8">
                 <p className="text-[10px] uppercase font-semibold tracking-widest text-muted-foreground mb-4">Overview</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <StatCard 
-                    label="Credits" 
-                    value={user.credits ?? 0} 
-                    icon={Sparkles} 
-                  />
-                  <StatCard 
-                    label="Reputation" 
-                    value={user.reputationScore ?? 0} 
-                    icon={Trophy} 
-                  />
-                  <StatCard 
-                    label="Upcoming" 
-                    value={upcomingLearner.length + upcomingMentor.length} 
-                    icon={Calendar} 
+                <div className="grid grid-cols-2 gap-4">
+                  <StatCard
+                    label="Upcoming"
+                    value={upcomingLearner.length + upcomingMentor.length}
+                    icon={Calendar}
                     onClick={() => navigate("/sessions")}
                   />
-                  <StatCard 
-                    label="Feedback" 
-                    value={feedback.length} 
-                    icon={Inbox} 
+                  <StatCard
+                    label="Feedback"
+                    value={feedback.length}
+                    icon={Inbox}
                     onClick={() => navigate("/notifications")}
                   />
                 </div>

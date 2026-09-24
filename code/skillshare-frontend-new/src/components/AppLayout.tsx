@@ -9,6 +9,8 @@ import {
   LogOut,
   Layers,
   Coins,
+  Flame,
+  Star,
   Settings as SettingsIcon,
   Trophy,
   Menu,
@@ -30,6 +32,7 @@ const baseNavItems = [
   { path: "/search",        icon: Search,       label: "Explore" },
   { path: "/sessions",      icon: Layers,       label: "Sessions" },
   { path: "/my-schedule",   icon: Calendar,     label: "Schedule" },
+  { path: "/leaderboard",   icon: Trophy,       label: "Leaderboard" },
   { path: "/notifications", icon: Bell,         label: "Notifications" },
   { path: "/settings",      icon: SettingsIcon, label: "Settings" },
 ];
@@ -158,27 +161,6 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           <div className="flex-1" />
 
           <div className="border-t border-border pt-3 space-y-0.5">
-            {user && (
-              isCollapsed ? (
-                <Tooltip delayDuration={0}>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center justify-center h-10 w-10 mx-auto rounded-md text-xs text-muted-foreground hover:bg-secondary">
-                      <Coins className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    {user.credits ?? 0} credits
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
-                <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
-                  <Coins className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" aria-hidden />
-                  <span className="font-medium text-foreground">{user.credits ?? 0}</span>
-                  <span>credits</span>
-                </div>
-              )
-            )}
-
             {isCollapsed ? (
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
@@ -245,12 +227,34 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             </Link>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Credit Indicator - Visible everywhere */}
+          <div className="flex items-center gap-2">
+            {/* Gamification Metrics - Visible in header */}
             {user && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold border border-primary/20 shadow-sm">
-                <Coins className="w-4 h-4" aria-hidden />
-                <span>{user.credits ?? 0} <span className="hidden sm:inline">Credits</span></span>
+              <div className="flex items-center gap-1.5">
+                {/* Level */}
+                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-secondary border border-border text-xs font-semibold text-foreground">
+                  <Trophy className="w-3.5 h-3.5 text-primary flex-shrink-0" aria-hidden />
+                  <span className="hidden sm:inline">LVL </span>
+                  <span>{user.level ?? 1}</span>
+                </div>
+                {/* XP */}
+                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-secondary border border-border text-xs font-semibold text-foreground">
+                  <Flame className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" aria-hidden />
+                  <span>{user.xp ?? 0}</span>
+                  <span className="hidden sm:inline text-muted-foreground font-normal">XP</span>
+                </div>
+                {/* Reputation */}
+                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-secondary border border-border text-xs font-semibold text-foreground">
+                  <Star className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" aria-hidden />
+                  <span>{user.reputationScore ?? 0}</span>
+                  <span className="hidden sm:inline text-muted-foreground font-normal">Rp</span>
+                </div>
+                {/* Credits */}
+                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary">
+                  <Coins className="w-3.5 h-3.5 flex-shrink-0" aria-hidden />
+                  <span>{user.credits ?? 0}</span>
+                  <span className="hidden md:inline text-primary/70 font-normal">Credits</span>
+                </div>
               </div>
             )}
 

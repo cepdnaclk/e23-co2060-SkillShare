@@ -19,6 +19,7 @@ import Sessions from "./pages/Sessions";
 import Settings from "./pages/settings";
 import Admin from "./pages/Admin";
 import AdminReports from "@/pages/AdminReports.tsx";
+import Leaderboard from "@/pages/Leaderboard.tsx";
 
 import NotFound from "./pages/NotFound";
 import OAuth2RedirectHandler from "@/components/OAuth2RedirectHandler";
@@ -73,6 +74,9 @@ const App = () => (
             } />
             <Route path="/settings" element={
               <ProtectedRoute><Settings /></ProtectedRoute>
+            } />
+            <Route path="/leaderboard" element={
+              <ProtectedRoute><Leaderboard /></ProtectedRoute>
             } />
             <Route path="/admin" element={
               <ProtectedRoute requiredRole="ADMIN"><Admin /></ProtectedRoute>

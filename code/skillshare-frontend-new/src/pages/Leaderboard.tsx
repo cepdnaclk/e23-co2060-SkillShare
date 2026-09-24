@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Trophy, Medal, TrendingUp, ChevronRight, Star } from "lucide-react";
+import { Trophy, Flame, Medal, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { trendingApi } from "@/api/dashboard.api";
@@ -99,13 +99,15 @@ const Leaderboard = () => {
                     )}
                   </div>
 
-                  <div className="hidden sm:flex items-center gap-4 shrink-0 text-xs text-muted-foreground bg-secondary/50 px-3 py-1.5 rounded-lg border border-border/50">
-                    {user.reputationScore !== undefined && (
-                      <span className="flex items-center gap-1.5 font-medium">
-                        <TrendingUp className="w-3.5 h-3.5 text-primary" /> {user.reputationScore} Rep
-                      </span>
-                    )}
-
+                  <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-secondary border border-border text-xs font-semibold text-foreground">
+                      <Trophy className="w-3.5 h-3.5 text-primary flex-shrink-0" aria-hidden />
+                      <span>LVL {user.level ?? 1}</span>
+                    </div>
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-secondary border border-border text-xs font-semibold text-foreground">
+                      <Flame className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" aria-hidden />
+                      <span>{user.xp ?? 0} XP</span>
+                    </div>
                   </div>
 
                   <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />

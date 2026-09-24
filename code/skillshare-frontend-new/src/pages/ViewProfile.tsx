@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, ChangeEvent } from "react";
-import { Clock, Star, Users2, Users, MessageSquare, Edit3, X, UserPlus, UserCheck, Clock4, GraduationCap, BookOpen, Flag, ShieldAlert, CalendarX } from "lucide-react";
+import { Clock, Star, Trophy, Flame, Users, MessageSquare, Edit3, X, UserPlus, UserCheck, Clock4, GraduationCap, BookOpen, Flag, ShieldAlert, CalendarX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -410,9 +410,20 @@ const ViewProfile = () => {
                   <GraduationCap className="w-4 h-4 text-muted-foreground/50" /> Student
                 </span>
               )}
-              <span className="flex items-center gap-1.5">
-                <Users2 className="w-4 h-4 opacity-70" /> {mentor.reputationScore ?? 0} rep
-              </span>
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-secondary border border-border text-xs font-semibold text-foreground">
+                  <Trophy className="w-3.5 h-3.5 text-primary flex-shrink-0" aria-hidden />
+                  <span>LVL {mentor.level ?? 1}</span>
+                </div>
+                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-secondary border border-border text-xs font-semibold text-foreground">
+                  <Flame className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" aria-hidden />
+                  <span>{mentor.xp ?? 0} XP</span>
+                </div>
+                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-secondary border border-border text-xs font-semibold text-foreground">
+                  <Star className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" aria-hidden />
+                  <span>{mentor.reputationScore ?? 0} Rp</span>
+                </div>
+              </div>
               {isOwnProfile && (
                 <button
                   type="button"
