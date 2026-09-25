@@ -391,7 +391,7 @@ While the core platform is fully functional and verified, the following enhancem
 ## Links
 
 - [Project Repository](https://github.com/cepdnaclk/e23-co2060-SkillShare)
-- [Project Page](https://projects.ce.pdn.ac.lk/e23-co2060-SkillShare/)
+- [Project Page](https://projects.ce.pdn.ac.lk/co2060/e23/SkillShare/)
 - [Department of Computer Engineering](https://www.ce.pdn.ac.lk/)
 - [University of Peradeniya](https://eng.pdn.ac.lk/)
 
