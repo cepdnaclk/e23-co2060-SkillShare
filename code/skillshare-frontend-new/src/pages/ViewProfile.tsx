@@ -325,6 +325,7 @@ const ViewProfile = () => {
   }
 
   const isOwnProfile = me?.id === mentor.id;
+  const isMentorAdmin = mentor.role === "ADMIN";
   const teachSkills = skills.filter((s) => s.skillType === "TEACH");
   const learnSkills = skills.filter((s) => s.skillType === "LEARN");
   const unbookedSlots = slots.filter((s) => !s.isBooked);
@@ -390,9 +391,16 @@ const ViewProfile = () => {
           </div>
 
           <div className="flex-1">
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground mb-2">
-              {mentor.fullName}
-            </h1>
+            <div className="flex items-center flex-wrap gap-3 mb-2">
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
+                {mentor.fullName}
+              </h1>
+              {isMentorAdmin && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full border border-blue-500 text-blue-600 text-sm font-medium bg-transparent">
+                  Admin
+                </span>
+              )}
+            </div>
             
             {cleanBioText && (
               <p className="text-muted-foreground text-sm max-w-xl mb-4 leading-relaxed">

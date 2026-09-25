@@ -71,6 +71,7 @@ export interface UserPublicDto {
   reputationScore: number | null;
   profilePictureUrl: string | null;
   isActive: boolean | null;
+  role: UserRole;
 }
 
 export interface UserSearchResponse {

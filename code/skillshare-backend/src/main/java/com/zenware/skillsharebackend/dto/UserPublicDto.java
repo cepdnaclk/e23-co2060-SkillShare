@@ -1,11 +1,13 @@
 package com.zenware.skillsharebackend.dto;
 
+import java.util.UUID;
+
+import com.zenware.skillsharebackend.entity.Role;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.UUID;
 
 @Data
 @Builder
@@ -15,6 +17,9 @@ public class UserPublicDto {
     private UUID id;
     private String fullName;
     private String bio;
+
+    // Role (e.g. so the frontend can show an "Admin" badge on public profiles)
+    private Role role;
 
     // Gamification Stats
     private Integer xp;

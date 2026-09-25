@@ -90,6 +90,7 @@ public class UserController {
                 .id(user.getId())
                 .fullName(user.getFullName())
                 .bio(user.getBio())
+                .role(user.getRole())
                 .isActive(user.getIsActive() != null ? user.getIsActive() : true)
                 .profilePictureUrl(user.getProfilePictureUrl())
                 .xp(user.getXp() != null ? user.getXp() : 0)
