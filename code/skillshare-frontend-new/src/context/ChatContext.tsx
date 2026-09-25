@@ -18,6 +18,12 @@ interface ActiveConversation {
   contactId: string;
   contactName: string;
   contactPicture: string | null;
+  // Full contact record as received from the inbox/contact list. Kept around
+  // so we can re-insert it into the inbox after sending a message, without
+  // waiting on (and racing) a server refetch. This is what lets a
+  // conversation with someone who isn't a friend/existing contact yet
+  // survive being closed and reopened.
+  contact: RecentChat;
   messages: ChatHistoryMessage[];
   isLoadingHistory: boolean;
   isTyping: boolean;
@@ -55,12 +61,38 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [activeConversation, setActiveConversation] = useState<ActiveConversation | null>(null);
 
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
+
+  // Contacts we've locally added/bumped to the inbox (e.g. right after
+  // sending a message) that the server hasn't confirmed yet via
+  // getRecentChats(). refreshInbox() keeps these around until the server
+  // response actually includes them, so a just-started conversation never
+  // silently disappears because of a race with backend persistence — or
+  // because the "recent chats" endpoint doesn't (yet) know about a contact
+  // who isn't an existing friend/connection.
+  const optimisticInboxRef = useRef<Map<string, RecentChat>>(new Map());
+
   // Use a ref for the user object to avoid triggering reconnect cleanup cycles when user profile updates
   const userRef = useRef(user);
   useEffect(() => {
     userRef.current = user;
   }, [user]);
+
+  // Refs mirroring state that the WebSocket handlers need to read live,
+  // without forcing the socket effect below to reconnect on every change.
+  const activeConversationRef = useRef(activeConversation);
+  useEffect(() => {
+    activeConversationRef.current = activeConversation;
+  }, [activeConversation]);
+
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  const viewRef = useRef(view);
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
 
   // ── Connect WebSocket when user is logged in ─────────────────────────────
   useEffect(() => {
@@ -73,6 +105,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const unsubMsg = chatSocketService.onMessage((dto: ChatMessageDto) => {
       const incomingId = dto.senderId as string;
 
+      // Is the user actively looking at this exact conversation right now?
+      const activeConv = activeConversationRef.current;
+      const isViewingThisContact =
+        isOpenRef.current && viewRef.current === "chat" && activeConv?.contactId === incomingId;
+
       // Append to active conversation if it matches
       setActiveConversation((prev) => {
         if (!prev || prev.contactId !== incomingId) return prev;
@@ -82,13 +119,34 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           receiverId: dto.receiverId as string,
           content: dto.content,
           timestamp: dto.timestamp ?? new Date().toISOString(),
-          isRead: true,
+          // Only true if we're actually about to mark it read server-side —
+          // otherwise this falsely flags an unseen message as read locally.
+          isRead: isViewingThisContact,
         };
         return { ...prev, messages: [...prev.messages, newMsg] };
       });
 
-      // Refresh the inbox for snippet + unread badge update
-      refreshInbox();
+      if (isViewingThisContact) {
+        // If the conversation is open and visible, mark the message read on
+        // the server, and only refresh the inbox AFTER that call settles.
+        // Previously refreshInbox() ran unconditionally on the next line,
+        // right after firing markAsRead without awaiting it — the inbox
+        // fetch would win the race and return the pre-read unread count.
+        // That stale count then stuck around (nothing re-fetched it after),
+        // which is why closing the chat still showed it as unread.
+        chatApi
+          .markAsRead(incomingId)
+          .catch(() => {
+            // silent — worst case the badge is briefly stale
+          })
+          .finally(() => {
+            refreshInbox();
+          });
+      } else {
+        // Not viewing this contact right now — genuinely unread, refresh
+        // immediately so the badge/snippet update.
+        refreshInbox();
+      }
     });
 
     const unsubTyping = chatSocketService.onTyping((status) => {
@@ -121,7 +179,19 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         chatApi.getRecentChats(),
         chatApi.getUnreadCount(),
       ]);
-      setInbox(chats);
+
+      // Reconcile with any optimistic entries: drop the ones the server has
+      // now caught up with, and keep (prepended) any it hasn't — including
+      // contacts the "recent chats" endpoint may never return because they
+      // aren't a friend/connection. This is what stops a conversation from
+      // vanishing after you send a message and back out of it.
+      const serverIds = new Set(chats.map((c) => c.contactId));
+      for (const id of optimisticInboxRef.current.keys()) {
+        if (serverIds.has(id)) optimisticInboxRef.current.delete(id);
+      }
+      const stillPending = Array.from(optimisticInboxRef.current.values());
+
+      setInbox([...stillPending, ...chats]);
       setTotalUnread(count);
     } catch {
       // silent — badge simply won't update
@@ -151,6 +221,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       contactId: contact.contactId,
       contactName: contact.contactName,
       contactPicture: contact.contactProfilePicture,
+      contact,
       messages: [],
       isLoadingHistory: true,
       isTyping: false,
@@ -201,6 +272,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setActiveConversation((prev) =>
         prev ? { ...prev, messages: [...prev.messages, optimisticMsg] } : prev
       );
+
+      // Keep this contact pinned in the inbox (bumped to the top) the
+      // moment we send to them — whether or not they were already there,
+      // and whether or not they're a friend/connection. Without this, a
+      // brand-new or non-friend contact could be wiped out by the next
+      // refreshInbox() if the server hasn't persisted/indexed the message
+      // yet (or never surfaces non-friends from getRecentChats() at all).
+      optimisticInboxRef.current.set(activeConversation.contactId, activeConversation.contact);
+      setInbox((prev) => [
+        activeConversation.contact,
+        ...prev.filter((c) => c.contactId !== activeConversation.contactId),
+      ]);
 
       // Publish over WebSocket
       chatSocketService.sendMessage(dto);
