@@ -33,7 +33,7 @@ title: SkillShare
 10. [Final Implementation Scope](#final-implementation-scope)
 11. [Documentation](#documentation)
 12. [Future Scope](#future-scope)
-13. [Project Links](#project-links)
+13. [Links](#links)
 
 ---
 
@@ -388,11 +388,12 @@ While the core platform is fully functional and verified, the following enhancem
 
 ---
 
-## Project Links
+## Links
 
-- **Source Code Repository:** [cepdnaclk/e23-co2060-SkillShare](https://github.com/cepdnaclk/e23-co2060-SkillShare)
-- **Department of Computer Engineering:** [Department Website](https://ce.pdn.ac.lk/)
-- **Faculty of Engineering:** [University of Peradeniya](https://eng.pdn.ac.lk/)
+- [Project Repository](https://github.com/cepdnaclk/e23-co2060-SkillShare)
+- [Project Page](https://projects.ce.pdn.ac.lk/e23-co2060-SkillShare/)
+- [Department of Computer Engineering](https://www.ce.pdn.ac.lk/)
+- [University of Peradeniya](https://eng.pdn.ac.lk/)
 
 ---
 
