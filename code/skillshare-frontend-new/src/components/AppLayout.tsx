@@ -18,11 +18,14 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ShieldCheck,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { notificationsApi } from "@/api/notifications.api";
+import { useTheme } from "@/context/ThemeContext";
 
 
 interface AppLayoutProps { children: React.ReactNode; }
@@ -44,6 +47,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem("skillshare-sidebar") === "true");
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     localStorage.setItem("skillshare-sidebar", String(isCollapsed));
@@ -165,7 +169,13 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Link to={user?.id ? `/profile/${user.id}` : "/dashboard"} aria-label="My profile" className={cn("flex items-center justify-center h-10 w-10 mx-auto rounded-md transition-colors", isProfileActive ? "bg-primary/10" : "hover:bg-secondary")}>
-                    <div className="w-6 h-6 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-bold flex-shrink-0">{getInitials(user?.fullName ?? "")}</div>
+                    <div className="w-6 h-6 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-bold flex-shrink-0 overflow-hidden">
+                      {user?.profilePictureUrl ? (
+                        <img src={user.profilePictureUrl} alt={user.fullName || "User"} className="w-full h-full object-cover" />
+                      ) : (
+                        getInitials(user?.fullName ?? "")
+                      )}
+                    </div>
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right">My Profile</TooltipContent>
@@ -182,10 +192,14 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 )}
               >
                 <div
-                  className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-bold flex-shrink-0"
+                  className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-bold flex-shrink-0 overflow-hidden"
                   aria-hidden
                 >
-                  {getInitials(user?.fullName ?? "")}
+                  {user?.profilePictureUrl ? (
+                    <img src={user.profilePictureUrl} alt={user.fullName || "User"} className="w-full h-full object-cover" />
+                  ) : (
+                    getInitials(user?.fullName ?? "")
+                  )}
                 </div>
                 <span className="truncate">{user?.fullName ?? "My Profile"}</span>
               </Link>
@@ -258,14 +272,27 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               </div>
             )}
 
+            {/* Theme Toggle */}
+            <button
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label="Toggle theme"
+              className="w-8 h-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+
             {/* Profile Avatar - Mobile only since desktop has it in sidebar */}
             <Link
               to={user?.id ? `/profile/${user.id}` : "/dashboard"}
               aria-label="My profile"
               className="md:hidden"
             >
-              <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-semibold border border-primary/15">
-                {getInitials(user?.fullName ?? "")}
+              <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-semibold border border-primary/15 overflow-hidden">
+                {user?.profilePictureUrl ? (
+                  <img src={user.profilePictureUrl} alt={user.fullName || "User"} className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(user?.fullName ?? "")
+                )}
               </div>
             </Link>
 
@@ -328,8 +355,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                   to={user?.id ? `/profile/${user.id}` : "/dashboard"}
                   className="flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
                 >
-                  <div className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-bold flex-shrink-0" aria-hidden>
-                    {getInitials(user?.fullName ?? "")}
+                  <div className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-bold flex-shrink-0 overflow-hidden" aria-hidden>
+                    {user?.profilePictureUrl ? (
+                      <img src={user.profilePictureUrl} alt={user.fullName || "User"} className="w-full h-full object-cover" />
+                    ) : (
+                      getInitials(user?.fullName ?? "")
+                    )}
                   </div>
                   <span className="truncate">{user?.fullName ?? "My Profile"}</span>
                 </Link>

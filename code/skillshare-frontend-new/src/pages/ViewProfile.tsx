@@ -390,8 +390,13 @@ const ViewProfile = () => {
           </div>
 
           <div className="flex-1">
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground mb-2">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground mb-2 flex items-center gap-3">
               {mentor.fullName}
+              {mentor.role === "ADMIN" && (
+                <span className="inline-flex items-center rounded-full border border-blue-500/30 bg-transparent px-2.5 py-0.5 text-xs font-semibold text-blue-500 shadow-sm" aria-label="Admin">
+                  Admin
+                </span>
+              )}
             </h1>
             
             {cleanBioText && (

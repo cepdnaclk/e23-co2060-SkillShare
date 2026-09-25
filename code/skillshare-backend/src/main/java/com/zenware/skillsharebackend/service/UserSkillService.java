@@ -98,6 +98,7 @@ public class UserSkillService {
                 .userBio(userSkill.getUser().getBio())
                 .userRatingAvg(0.0) // We will hardcode to 0.0 for now, unless User entity has ratingAvg
                 .userReputationScore(userSkill.getUser().getReputationScore() != null ? userSkill.getUser().getReputationScore() : 0)
+                .userProfilePictureUrl(userSkill.getUser().getProfilePictureUrl())
                 .skillId(userSkill.getSkill().getId())
                 .skillType(userSkill.getId().getSkillType())
                 .skillName(userSkill.getSkill().getName())
@@ -169,7 +170,7 @@ public class UserSkillService {
                 // 3. Keep only the unique users
                 .distinct()
                 .limit(10)
-                .map(user -> new UserSearchResponse(user.getId(), user.getFullName()))
+                .map(user -> new UserSearchResponse(user.getId(), user.getFullName(), user.getProfilePictureUrl()))
                 .collect(Collectors.toList());
     }
 }

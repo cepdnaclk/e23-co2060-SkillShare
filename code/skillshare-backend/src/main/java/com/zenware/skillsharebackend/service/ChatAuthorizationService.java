@@ -1,40 +1,33 @@
 package com.zenware.skillsharebackend.service;
 
-import com.zenware.skillsharebackend.entity.Connection;
-import com.zenware.skillsharebackend.entity.ConnectionStatus;
-import com.zenware.skillsharebackend.repository.ConnectionRepository;
-import com.zenware.skillsharebackend.repository.SessionRepository;
+import com.zenware.skillsharebackend.entity.User;
+import com.zenware.skillsharebackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class ChatAuthorizationService {
 
-    private final ConnectionRepository connectionRepository;
-    private final SessionRepository sessionRepository;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public boolean isAuthorizedToChat(UUID senderId, UUID receiverId) {
-        if (senderId == null || receiverId == null) {
+        if (senderId == null || receiverId == null || senderId.equals(receiverId)) {
             return false;
         }
-        
-        if (senderId.equals(receiverId)) {
-            return false; // A user may never chat with themselves
-        }
-        
-        // Check if they are accepted friends
-        Optional<Connection> conn = connectionRepository.findExistingConnection(senderId, receiverId);
-        if (conn.isPresent() && conn.get().getStatus() == ConnectionStatus.ACCEPTED) {
-            return true;
-        }
-        
-        // Check if they share a session
-        return sessionRepository.countSharedSessions(senderId, receiverId) > 0;
+
+        boolean isSenderActive = userRepository.findById(senderId)
+                .map(User::getIsActive)
+                .orElse(false);
+
+        boolean isReceiverActive = userRepository.findById(receiverId)
+                .map(User::getIsActive)
+                .orElse(false);
+
+        return isSenderActive && isReceiverActive;
     }
 }

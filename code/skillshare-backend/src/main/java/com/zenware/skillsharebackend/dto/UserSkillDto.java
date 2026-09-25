@@ -17,6 +17,7 @@ public class UserSkillDto {
     private String userBio;
     private Double userRatingAvg;
     private Integer userReputationScore;
+    private String userProfilePictureUrl;
     
     private UUID skillId;
     private String skillType;

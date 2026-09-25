@@ -1,9 +1,7 @@
 package com.zenware.skillsharebackend.service;
 
-import com.zenware.skillsharebackend.entity.Connection;
-import com.zenware.skillsharebackend.entity.ConnectionStatus;
-import com.zenware.skillsharebackend.repository.ConnectionRepository;
-import com.zenware.skillsharebackend.repository.SessionRepository;
+import com.zenware.skillsharebackend.entity.User;
+import com.zenware.skillsharebackend.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,57 +19,78 @@ import static org.mockito.Mockito.*;
 class ChatAuthorizationServiceTest {
 
     @Mock
-    private ConnectionRepository connectionRepository;
-
-    @Mock
-    private SessionRepository sessionRepository;
+    private UserRepository userRepository;
 
     @InjectMocks
     private ChatAuthorizationService chatAuthorizationService;
 
     @Test
-    void isAuthorizedToChat_AcceptedFriend_ReturnsTrue() {
+    void isAuthorizedToChat_ActiveSenderAndReceiver_ReturnsTrue() {
         UUID senderId = UUID.randomUUID();
         UUID receiverId = UUID.randomUUID();
-        Connection connection = Connection.builder().status(ConnectionStatus.ACCEPTED).build();
 
-        when(connectionRepository.findExistingConnection(senderId, receiverId)).thenReturn(Optional.of(connection));
+        User sender = User.builder().isActive(true).build();
+        User receiver = User.builder().isActive(true).build();
+
+        when(userRepository.findById(senderId)).thenReturn(Optional.of(sender));
+        when(userRepository.findById(receiverId)).thenReturn(Optional.of(receiver));
 
         assertTrue(chatAuthorizationService.isAuthorizedToChat(senderId, receiverId));
-        verify(connectionRepository).findExistingConnection(senderId, receiverId);
-        verifyNoInteractions(sessionRepository);
+        verify(userRepository).findById(senderId);
+        verify(userRepository).findById(receiverId);
     }
 
     @Test
-    void isAuthorizedToChat_PendingFriend_ChecksSharedSession() {
+    void isAuthorizedToChat_InactiveSender_ReturnsFalse() {
         UUID senderId = UUID.randomUUID();
         UUID receiverId = UUID.randomUUID();
-        Connection connection = Connection.builder().status(ConnectionStatus.PENDING).build();
 
-        when(connectionRepository.findExistingConnection(senderId, receiverId)).thenReturn(Optional.of(connection));
-        when(sessionRepository.countSharedSessions(senderId, receiverId)).thenReturn(1L);
+        User sender = User.builder().isActive(false).build();
+        User receiver = User.builder().isActive(true).build();
 
-        assertTrue(chatAuthorizationService.isAuthorizedToChat(senderId, receiverId));
+        when(userRepository.findById(senderId)).thenReturn(Optional.of(sender));
+        // Strict stubbing might fail if it short circuits, but since it checks sender then receiver, it will evaluate receiver.
+        when(userRepository.findById(receiverId)).thenReturn(Optional.of(receiver));
+
+        assertFalse(chatAuthorizationService.isAuthorizedToChat(senderId, receiverId));
     }
 
     @Test
-    void isAuthorizedToChat_SharedSession_ReturnsTrue() {
+    void isAuthorizedToChat_InactiveReceiver_ReturnsFalse() {
         UUID senderId = UUID.randomUUID();
         UUID receiverId = UUID.randomUUID();
 
-        when(connectionRepository.findExistingConnection(senderId, receiverId)).thenReturn(Optional.empty());
-        when(sessionRepository.countSharedSessions(senderId, receiverId)).thenReturn(1L);
+        User sender = User.builder().isActive(true).build();
+        User receiver = User.builder().isActive(false).build();
 
-        assertTrue(chatAuthorizationService.isAuthorizedToChat(senderId, receiverId));
+        when(userRepository.findById(senderId)).thenReturn(Optional.of(sender));
+        when(userRepository.findById(receiverId)).thenReturn(Optional.of(receiver));
+
+        assertFalse(chatAuthorizationService.isAuthorizedToChat(senderId, receiverId));
     }
 
     @Test
-    void isAuthorizedToChat_UnrelatedUsers_ReturnsFalse() {
+    void isAuthorizedToChat_NonexistentSender_ReturnsFalse() {
         UUID senderId = UUID.randomUUID();
         UUID receiverId = UUID.randomUUID();
 
-        when(connectionRepository.findExistingConnection(senderId, receiverId)).thenReturn(Optional.empty());
-        when(sessionRepository.countSharedSessions(senderId, receiverId)).thenReturn(0L);
+        User receiver = User.builder().isActive(true).build();
+
+        when(userRepository.findById(senderId)).thenReturn(Optional.empty());
+        when(userRepository.findById(receiverId)).thenReturn(Optional.of(receiver));
+
+        assertFalse(chatAuthorizationService.isAuthorizedToChat(senderId, receiverId));
+    }
+
+    @Test
+    void isAuthorizedToChat_NonexistentReceiver_ReturnsFalse() {
+        UUID senderId = UUID.randomUUID();
+        UUID receiverId = UUID.randomUUID();
+
+        User sender = User.builder().isActive(true).build();
+
+        when(userRepository.findById(senderId)).thenReturn(Optional.of(sender));
+        when(userRepository.findById(receiverId)).thenReturn(Optional.empty());
 
         assertFalse(chatAuthorizationService.isAuthorizedToChat(senderId, receiverId));
     }
@@ -81,8 +100,7 @@ class ChatAuthorizationServiceTest {
         UUID senderId = UUID.randomUUID();
 
         assertFalse(chatAuthorizationService.isAuthorizedToChat(senderId, senderId));
-        verifyNoInteractions(connectionRepository);
-        verifyNoInteractions(sessionRepository);
+        verifyNoInteractions(userRepository);
     }
 
     @Test
@@ -90,5 +108,6 @@ class ChatAuthorizationServiceTest {
         assertFalse(chatAuthorizationService.isAuthorizedToChat(null, UUID.randomUUID()));
         assertFalse(chatAuthorizationService.isAuthorizedToChat(UUID.randomUUID(), null));
         assertFalse(chatAuthorizationService.isAuthorizedToChat(null, null));
+        verifyNoInteractions(userRepository);
     }
 }
