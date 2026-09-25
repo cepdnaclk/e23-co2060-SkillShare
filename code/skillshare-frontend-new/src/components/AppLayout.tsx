@@ -238,7 +238,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Theme Toggle */}
+            {/* Theme Toggle (Dark|Light) */}
             <button
               onClick={toggleTheme}
               aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
