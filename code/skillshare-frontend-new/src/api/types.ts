@@ -71,11 +71,13 @@ export interface UserPublicDto {
   reputationScore: number | null;
   profilePictureUrl: string | null;
   isActive: boolean | null;
+  role?: string;
 }
 
 export interface UserSearchResponse {
   id: string; // UUID
   fullName: string;
+  profilePictureUrl: string | null;
 }
 
 // --- SKILLS & USER SKILLS ---
@@ -98,6 +100,7 @@ export interface UserSkillDto {
   userBio: string;
   userRatingAvg: number;
   userReputationScore: number;
+  userProfilePictureUrl: string | null;
   skillId: string; // UUID
   skillType: string;
   skillName: string;

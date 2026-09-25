@@ -12,4 +12,5 @@ import java.util.UUID;
 public class UserSearchResponse {
     private UUID id;
     private String fullName;
+    private String profilePictureUrl;
 }

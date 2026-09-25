@@ -95,6 +95,7 @@ public class TrendingService {
                 .xp(user.getXp() != null ? user.getXp() : 0)
                 .level(user.getLevel() != null ? user.getLevel() : 1)
                 .reputationScore(user.getReputationScore() != null ? user.getReputationScore() : 0)
+                .role(user.getRole() != null ? user.getRole().name() : "USER")
                 .build();
     }
 }

@@ -24,5 +24,6 @@ public class UserPublicDto {
     // We will use this in the next step!
     private String profilePictureUrl;
     private Boolean isActive;
+    private String role;
 
 }

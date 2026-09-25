@@ -284,8 +284,12 @@ const Search = () => {
                         className="flex flex-col p-5 rounded-2xl border border-border bg-card text-left transition-colors hover:border-foreground/20"
                       >
                         <div className="flex items-start gap-4 w-full">
-                          <div className="w-12 h-12 shrink-0 rounded-full bg-secondary flex items-center justify-center font-medium text-foreground">
-                            {getInitials(mentor.fullName)}
+                          <div className="w-12 h-12 shrink-0 rounded-full bg-secondary flex items-center justify-center font-medium text-foreground overflow-hidden">
+                            {mentor.profilePictureUrl ? (
+                              <img src={mentor.profilePictureUrl} alt={mentor.fullName} className="w-full h-full object-cover" />
+                            ) : (
+                              getInitials(mentor.fullName)
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-center mb-1">
@@ -335,8 +339,12 @@ const Search = () => {
                     className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-2xl border border-border bg-card text-left transition-colors hover:border-foreground/20 group"
                   >
                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className="w-12 h-12 rounded-full bg-secondary text-foreground flex items-center justify-center font-medium flex-shrink-0">
-                        {initials}
+                      <div className="w-12 h-12 rounded-full bg-secondary text-foreground flex items-center justify-center font-medium flex-shrink-0 overflow-hidden">
+                        {us.userProfilePictureUrl ? (
+                          <img src={us.userProfilePictureUrl} alt={us.userName} className="w-full h-full object-cover" />
+                        ) : (
+                          initials
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
