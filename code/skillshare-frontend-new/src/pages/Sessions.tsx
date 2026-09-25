@@ -19,6 +19,7 @@ import { toast } from "sonner";
 
 // Import Report Modal
 import { ReportUserModal } from "@/components/ReportUserModal";
+import { a } from "vitest/dist/chunks/suite.d.FvehnV49.js";
 
 const formatDate = (date: string) =>
   new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
@@ -277,7 +278,9 @@ const SessionRow = ({ session: s, role, onAction, onReport, actionLoading, rated
             Mark Completed
           </Button>
         )}
-        {role === "learner" && s.status === "COMPLETED" && !ratedSessionIds.includes(s.id) && (
+
+        {/* FIX (Bug 5): both roles can now leave feedback on a COMPLETED session, not just the learner */}
+        {(role === "learner" || role === "mentor") && s.status === "COMPLETED" && !ratedSessionIds.includes(s.id) && (
           <Button size="sm" variant="secondary" onClick={() => onAction(s, "feedback")} disabled={isBusy} className="h-8 text-xs">
             Leave Feedback
           </Button>
@@ -295,7 +298,7 @@ const SessionRow = ({ session: s, role, onAction, onReport, actionLoading, rated
         </Button>
       </div>
     </div>
-    
+
   );
 };
 
@@ -367,7 +370,7 @@ const Sessions = () => {
     sessionId: string;
   } | null>(null);
 
-  // NEW: which tab is active — persisted per-visit via URL-less local state
+  // which tab is active — persisted per-visit via local state
   const [activeTab, setActiveTab] = useState<"teaching" | "learning">("teaching");
 
   useEffect(() => {
@@ -459,6 +462,13 @@ const Sessions = () => {
     setRatedSessionIds(prev => [...prev, id]);
   };
 
+  // FIX (Bug 5): the feedback dialog must name whichever side the CURRENT user is NOT —
+  // previously this was hardcoded to feedbackSession.mentorName, which was wrong whenever
+  // a mentor (rather than the learner) opened the dialog to rate their learner.
+  const feedbackRateName = feedbackSession
+    ? (feedbackSession.learnerId === user?.id ? feedbackSession.mentorName : feedbackSession.learnerName)
+    : "";
+
   // Derived filtered lists
   const isPast = (st: string) => ["COMPLETED", "REJECTED", "CANCELLED", "EXPIRED"].includes(st);
   const isUpcoming = (st: string) => ["PENDING", "ACCEPTED"].includes(st);
@@ -532,7 +542,7 @@ const Sessions = () => {
 
       <FeedbackDialog
         session={feedbackSession}
-        rateName={feedbackSession ? feedbackSession.mentorName : ""}
+        rateName={feedbackRateName}
         onClose={() => setFeedbackSession(null)}
         onSubmitted={onFeedbackSubmitted}
       />
