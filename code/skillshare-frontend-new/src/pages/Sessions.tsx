@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Check, X, Clock, Calendar, Video, MessageSquare, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import AppLayout from "@/components/AppLayout";
 import { sessionsApi } from "@/api/sessions.api";
 import { feedbackApi } from "@/api/feedback.api";
@@ -57,8 +58,8 @@ const FeedbackDialog = ({ session, rateName, onClose, onSubmitted }: FeedbackDia
       toast.error((err as Error).message ?? "Feedback submitted.");
       onSubmitted(session.id);
       onClose();
-    } finally { 
-      setSubmitting(false); 
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -82,8 +83,8 @@ const FeedbackDialog = ({ session, rateName, onClose, onSubmitted }: FeedbackDia
                   key={tag.name}
                   onClick={() => toggle(tag.name)}
                   className={`px-3 py-1.5 rounded-md text-sm transition-colors border ${
-                    isSel 
-                      ? "bg-foreground text-background border-foreground" 
+                    isSel
+                      ? "bg-foreground text-background border-foreground"
                       : "bg-background text-foreground border-border hover:border-foreground/30"
                   }`}
                 >
@@ -205,7 +206,7 @@ const SessionRow = ({ session: s, role, onAction, onReport, actionLoading, rated
 
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-border/60 rounded-xl bg-card hover:border-border transition-colors gap-4">
-      
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <span className="font-semibold text-foreground truncate">{s.skillName}</span>
@@ -220,7 +221,7 @@ const SessionRow = ({ session: s, role, onAction, onReport, actionLoading, rated
         </div>
         {s.meetingLink && s.status === "ACCEPTED" && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <a
+            <a  
               href={s.meetingLink.startsWith("http://") || s.meetingLink.startsWith("https://") ? s.meetingLink : `https://${s.meetingLink}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -294,6 +295,54 @@ const SessionRow = ({ session: s, role, onAction, onReport, actionLoading, rated
         </Button>
       </div>
     </div>
+    
+  );
+};
+
+// Renders the Upcoming/Past grouped list for a single role — shared by both tabs
+interface SessionGroupProps {
+  role: "learner" | "mentor";
+  upcoming: Session[];
+  past: Session[];
+  emptyLabel: string;
+  onAction: (session: Session, action: "accept" | "reject" | "complete" | "feedback" | "cancel" | "link") => void;
+  onReport: (session: Session) => void;
+  actionLoading: string | null;
+  ratedSessionIds: string[];
+}
+
+const SessionGroup = ({ role, upcoming, past, emptyLabel, onAction, onReport, actionLoading, ratedSessionIds }: SessionGroupProps) => {
+  if (upcoming.length === 0 && past.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground bg-secondary/30 p-4 rounded-xl border border-border/50">
+        {emptyLabel}
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {upcoming.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-foreground">Upcoming</h3>
+          <div className="grid gap-3">
+            {upcoming.map(s => (
+              <SessionRow key={s.id} session={s} role={role} onAction={onAction} onReport={onReport} actionLoading={actionLoading} ratedSessionIds={ratedSessionIds} />
+            ))}
+          </div>
+        </div>
+      )}
+      {past.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-foreground">Past</h3>
+          <div className="grid gap-3 opacity-80">
+            {past.map(s => (
+              <SessionRow key={s.id} session={s} role={role} onAction={onAction} onReport={onReport} actionLoading={actionLoading} ratedSessionIds={ratedSessionIds} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -303,10 +352,10 @@ const Sessions = () => {
   const [mentorSessions, setMentorSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [ratedSessionIds, setRatedSessionIds] = useState<string[]>([]);
-  
+
   const [feedbackSession, setFeedbackSession] = useState<Session | null>(null);
   const [meetingLinkSession, setMeetingLinkSession] = useState<Session | null>(null);
 
@@ -317,6 +366,9 @@ const Sessions = () => {
     userName: string;
     sessionId: string;
   } | null>(null);
+
+  // NEW: which tab is active — persisted per-visit via URL-less local state
+  const [activeTab, setActiveTab] = useState<"teaching" | "learning">("teaching");
 
   useEffect(() => {
     if (!user?.id) {
@@ -411,7 +463,6 @@ const Sessions = () => {
   const isPast = (st: string) => ["COMPLETED", "REJECTED", "CANCELLED", "EXPIRED"].includes(st);
   const isUpcoming = (st: string) => ["PENDING", "ACCEPTED"].includes(st);
 
-  // BUG-06: Sort deterministically — upcoming: earliest first; past: most-recent first.
   const byStartAsc  = (a: Session, b: Session) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
   const byStartDesc = (a: Session, b: Session) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime();
 
@@ -420,6 +471,9 @@ const Sessions = () => {
 
   const upcomingMentor = mentorSessions.filter(s => isUpcoming(s.status)).sort(byStartAsc);
   const pastMentor     = mentorSessions.filter(s => isPast(s.status)).sort(byStartDesc);
+
+  // Badge counts for the tab triggers — pending items a mentor needs to act on, surfaced on the Teaching tab
+  const pendingMentorCount = mentorSessions.filter(s => s.status === "PENDING").length;
 
   return (
     <AppLayout>
@@ -434,71 +488,45 @@ const Sessions = () => {
         {loading ? (
           <div className="space-y-6"><SkeletonList count={3} /></div>
         ) : (
-          <div className="space-y-12">
-            
-            {/* MENTOR SESSIONS */}
-            <section>
-              <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-4">Teaching</h2>
-              {upcomingMentor.length > 0 || pastMentor.length > 0 ? (
-                <div className="space-y-8">
-                  {upcomingMentor.length > 0 && (
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-medium text-foreground">Upcoming</h3>
-                      <div className="grid gap-3">
-                        {upcomingMentor.map(s => (
-                          <SessionRow key={s.id} session={s} role="mentor" onAction={handleAction} onReport={handleReport} actionLoading={actionLoading} ratedSessionIds={ratedSessionIds} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {pastMentor.length > 0 && (
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-medium text-foreground">Past</h3>
-                      <div className="grid gap-3 opacity-80">
-                        {pastMentor.map(s => (
-                          <SessionRow key={s.id} session={s} role="mentor" onAction={handleAction} onReport={handleReport} actionLoading={actionLoading} ratedSessionIds={ratedSessionIds} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground bg-secondary/30 p-4 rounded-xl border border-border/50">You have no teaching sessions.</p>
-              )}
-            </section>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "teaching" | "learning")}>
+            <TabsList className="mb-8">
+              <TabsTrigger value="teaching" className="gap-1.5">
+                Teaching
+                {pendingMentorCount > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-[10px] font-semibold rounded-full bg-primary text-primary-foreground">
+                    {pendingMentorCount}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="learning">Learning</TabsTrigger>
+            </TabsList>
 
-            {/* LEARNER SESSIONS */}
-            <section>
-              <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-4">Learning</h2>
-              {upcomingLearner.length > 0 || pastLearner.length > 0 ? (
-                <div className="space-y-8">
-                  {upcomingLearner.length > 0 && (
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-medium text-foreground">Upcoming</h3>
-                      <div className="grid gap-3">
-                        {upcomingLearner.map(s => (
-                          <SessionRow key={s.id} session={s} role="learner" onAction={handleAction} onReport={handleReport} actionLoading={actionLoading} ratedSessionIds={ratedSessionIds} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {pastLearner.length > 0 && (
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-medium text-foreground">Past</h3>
-                      <div className="grid gap-3 opacity-80">
-                        {pastLearner.map(s => (
-                          <SessionRow key={s.id} session={s} role="learner" onAction={handleAction} onReport={handleReport} actionLoading={actionLoading} ratedSessionIds={ratedSessionIds} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground bg-secondary/30 p-4 rounded-xl border border-border/50">You have no learning sessions.</p>
-              )}
-            </section>
+            <TabsContent value="teaching">
+              <SessionGroup
+                role="mentor"
+                upcoming={upcomingMentor}
+                past={pastMentor}
+                emptyLabel="You have no teaching sessions."
+                onAction={handleAction}
+                onReport={handleReport}
+                actionLoading={actionLoading}
+                ratedSessionIds={ratedSessionIds}
+              />
+            </TabsContent>
 
-          </div>
+            <TabsContent value="learning">
+              <SessionGroup
+                role="learner"
+                upcoming={upcomingLearner}
+                past={pastLearner}
+                emptyLabel="You have no learning sessions."
+                onAction={handleAction}
+                onReport={handleReport}
+                actionLoading={actionLoading}
+                ratedSessionIds={ratedSessionIds}
+              />
+            </TabsContent>
+          </Tabs>
         )}
       </div>
 
