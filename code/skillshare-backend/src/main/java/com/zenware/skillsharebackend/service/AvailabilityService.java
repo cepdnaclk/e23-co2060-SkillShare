@@ -120,4 +120,10 @@ public class AvailabilityService {
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
+
+    @Transactional
+    public int cleanupExpiredUnbookedSlots() {
+        LocalDateTime now = LocalDateTime.now();
+        return availabilityRepository.deleteExpiredUnbookedSlots(now);
+    }
 }

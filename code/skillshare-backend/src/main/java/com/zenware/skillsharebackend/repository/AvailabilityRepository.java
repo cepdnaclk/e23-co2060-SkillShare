@@ -54,4 +54,8 @@ public interface AvailabilityRepository extends JpaRepository<Availability, UUID
             @Param("availabilityId") UUID availabilityId,
             @Param("sessionId") UUID sessionId
     );
+
+    @Modifying(flushAutomatically = true)
+    @Query("DELETE FROM Availability a WHERE a.isBooked = false AND a.startTime < :cutoff")
+    int deleteExpiredUnbookedSlots(@Param("cutoff") LocalDateTime cutoff);
 }
