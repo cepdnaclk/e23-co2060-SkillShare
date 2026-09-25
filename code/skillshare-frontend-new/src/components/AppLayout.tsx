@@ -81,6 +81,19 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   const getInitials = (name: string) =>
     name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) ?? "?";
 
+  // Shared avatar renderer: shows the user's real profile photo when they
+  // have one, and falls back to their initials otherwise. Used everywhere
+  // the sidebar/header shows the logged-in user's own avatar.
+  const renderAvatar = (className: string, textClassName: string) => (
+    <div className={cn(className, "overflow-hidden")}>
+      {user?.profilePictureUrl ? (
+        <img src={user.profilePictureUrl} alt={user?.fullName ?? "Profile"} className="w-full h-full object-cover" />
+      ) : (
+        <span className={textClassName}>{getInitials(user?.fullName ?? "")}</span>
+      )}
+    </div>
+  );
+
   const isProfileActive = location.pathname === `/profile/${user?.id}`;
 
   return (
@@ -175,7 +188,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Link to={user?.id ? `/profile/${user.id}` : "/dashboard"} aria-label="My profile" className={cn("flex items-center justify-center h-10 w-10 mx-auto rounded-md transition-colors", isProfileActive ? "bg-primary/10" : "hover:bg-secondary")}>
-                    <div className="w-6 h-6 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-bold flex-shrink-0">{getInitials(user?.fullName ?? "")}</div>
+                    {renderAvatar(
+                      "w-6 h-6 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-bold flex-shrink-0",
+                      "text-[10px] font-bold"
+                    )}
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right">My Profile</TooltipContent>
@@ -191,12 +207,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                     : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                 )}
               >
-                <div
-                  className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-bold flex-shrink-0"
-                  aria-hidden
-                >
-                  {getInitials(user?.fullName ?? "")}
-                </div>
+                {renderAvatar(
+                  "w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-bold flex-shrink-0",
+                  "text-[9px] font-bold"
+                )}
                 <span className="truncate">{user?.fullName ?? "My Profile"}</span>
               </Link>
             )}
@@ -282,9 +296,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               aria-label="My profile"
               className="md:hidden"
             >
-              <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-semibold border border-primary/15">
-                {getInitials(user?.fullName ?? "")}
-              </div>
+              {renderAvatar(
+                "w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-semibold border border-primary/15",
+                "text-xs font-semibold"
+              )}
             </Link>
 
             {/* Mobile Menu Toggle */}
@@ -346,9 +361,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                   to={user?.id ? `/profile/${user.id}` : "/dashboard"}
                   className="flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
                 >
-                  <div className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-bold flex-shrink-0" aria-hidden>
-                    {getInitials(user?.fullName ?? "")}
-                  </div>
+                  {renderAvatar(
+                    "w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[9px] font-bold flex-shrink-0",
+                    "text-[9px] font-bold"
+                  )}
                   <span className="truncate">{user?.fullName ?? "My Profile"}</span>
                 </Link>
                 <button
