@@ -1,27 +1,33 @@
 package com.zenware.skillsharebackend.service;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.zenware.skillsharebackend.dto.AvailabilityRequest;
 import com.zenware.skillsharebackend.dto.AvailabilityResponse;
 import com.zenware.skillsharebackend.entity.Availability;
 import com.zenware.skillsharebackend.entity.User;
 import com.zenware.skillsharebackend.repository.AvailabilityRepository;
 import com.zenware.skillsharebackend.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor // LOGIC: Modern constructor injection
+@Slf4j
 public class AvailabilityService {
 
     private final AvailabilityRepository availabilityRepository;
     private final UserRepository userRepository;
+    private final Clock clock;
 
     // --- THE SECURITY ENGINE ---
     // LOGIC: Extracts the exact user making the request from the JWT Token.
@@ -49,7 +55,7 @@ public class AvailabilityService {
             throw new IllegalArgumentException("Start time must be strictly before end time!");
         }
 
-        if (request.getStartTime().isBefore(LocalDateTime.now())) {
+        if (request.getStartTime().isBefore(LocalDateTime.now(clock))) {
             throw new IllegalArgumentException("Start time cannot be in the past!");
         }
 
@@ -99,8 +105,11 @@ public class AvailabilityService {
     }
 
     public List<AvailabilityResponse> getMentorFreeSlots(UUID mentorId) {
-        // Just ask the repository for the unbooked slots!
-        return availabilityRepository.findByUserIdAndIsBookedFalse(mentorId)
+        // FIX: was findByUserIdAndIsBookedFalse — returned unbooked slots even
+        // after their startTime had already passed. Learners could see/attempt
+        // to book expired offerings. Now filtered to future slots only.
+        LocalDateTime now = LocalDateTime.now(clock);
+        return availabilityRepository.findByUserIdAndIsBookedFalseAndStartTimeAfter(mentorId, now)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -119,5 +128,18 @@ public class AvailabilityService {
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    // FIX (this bug): the actual cleanup job. Bulk-deletes unbooked slots whose
+    // window has closed, so they stop appearing in "My Slots" for good, not just
+    // in the learner-facing free-slots query above.
+    @Transactional
+    public int cleanupExpiredUnbookedSlots() {
+        LocalDateTime now = LocalDateTime.now(clock);
+        int deleted = availabilityRepository.deleteExpiredUnbookedSlots(now);
+        if (deleted > 0) {
+            log.info("Deleted {} expired, never-booked availability slots.", deleted);
+        }
+        return deleted;
     }
 }

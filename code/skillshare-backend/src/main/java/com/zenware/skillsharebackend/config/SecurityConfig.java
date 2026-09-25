@@ -1,6 +1,7 @@
 package com.zenware.skillsharebackend.config;
 
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,7 +16,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
@@ -53,6 +54,8 @@ public class SecurityConfig {
                                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/feedback/**", "/api/user-skills/**").permitAll()
                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                 .requestMatchers("/api/sessions/expire-overdue").hasRole("ADMIN")
+                                // FIX (this bug): admin-only manual trigger for the availability cleanup engine
+                                .requestMatchers("/api/availability/cleanup-expired").hasRole("ADMIN")
 
                                 // BLACKLIST: Every other single endpoint requires a valid JWT Token!
                                 .anyRequest().authenticated())

@@ -20,6 +20,10 @@ public interface AvailabilityRepository extends JpaRepository<Availability, UUID
     // Logic: Find all unbooked slots for a specific mentor so learners can see them
     List<Availability> findByUserIdAndIsBookedFalse(UUID userId);
 
+    // FIX: excludes slots whose startTime has already passed — used by
+    // getMentorFreeSlots so learners never see/book a stale, expired offering.
+    List<Availability> findByUserIdAndIsBookedFalseAndStartTimeAfter(UUID userId, LocalDateTime now);
+
     Optional<Availability> findByUserIdAndStartTime(UUID userId, LocalDateTime startTime);
 
     @Query("SELECT COUNT(a) FROM Availability a WHERE a.user.id = :userId AND a.startTime < :endTime AND a.endTime > :startTime")
@@ -54,4 +58,11 @@ public interface AvailabilityRepository extends JpaRepository<Availability, UUID
             @Param("availabilityId") UUID availabilityId,
             @Param("sessionId") UUID sessionId
     );
+
+    // FIX (this bug): bulk-deletes availability slots that were never booked
+    // and whose window has already closed. Safe — Session.availabilityId is a
+    // plain UUID column, not a mapped FK, so this cannot orphan session history.
+    @Modifying(flushAutomatically = true)
+    @Query("DELETE FROM Availability a WHERE a.isBooked = false AND a.startTime < :cutoff")
+    int deleteExpiredUnbookedSlots(@Param("cutoff") LocalDateTime cutoff);
 }
