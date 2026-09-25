@@ -183,6 +183,25 @@ public class FeedbackControllerTest {
     }
 
     @Test
+    void submitFeedback_MentorToLearner_Valid_Returns200AndUpdatesReputation() throws Exception {
+        FeedbackRequest request = new FeedbackRequest();
+        request.setSessionId(completedSession.getId());
+        request.setSelectedTags(List.of("HIGHLY_ENGAGED", "FRIENDLY"));
+
+        mockMvc.perform(post("/api/feedback/leave")
+                        .header("Authorization", mentorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.giverId").value(mentor.getId().toString()))
+                .andExpect(jsonPath("$.receiverId").value(learner.getId().toString()));
+
+        User updatedLearner = userRepository.findById(learner.getId()).orElseThrow();
+        assertTrue(updatedLearner.getReputationScore() > 0);
+    }
+
+    @Test
     void submitFeedback_Unauthenticated_Returns401() throws Exception {
         FeedbackRequest request = new FeedbackRequest();
         request.setSessionId(completedSession.getId());

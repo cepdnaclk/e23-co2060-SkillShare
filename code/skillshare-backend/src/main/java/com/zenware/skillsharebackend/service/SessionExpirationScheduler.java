@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 public class SessionExpirationScheduler {
 
     private final SessionService sessionService;
+    private final AvailabilityService availabilityService;
 
     @Scheduled(fixedDelay = 60000)
     public void autoExpireSessions() {
@@ -27,8 +28,13 @@ public class SessionExpirationScheduler {
             } else {
                 log.debug("No overdue sessions to expire.");
             }
+            
+            int deletedCount = availabilityService.cleanupExpiredUnbookedSlots();
+            if (deletedCount > 0) {
+                log.info("Successfully deleted {} expired, never-booked availability slots.", deletedCount);
+            }
         } catch (Exception e) {
-            log.error("Failed to execute scheduled session expiration", e);
+            log.error("Failed to execute scheduled expiration/cleanup tasks", e);
         }
     }
 }

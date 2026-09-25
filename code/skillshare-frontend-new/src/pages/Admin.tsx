@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import AppLayout from "@/components/AppLayout";
 import ErrorBanner from "@/components/ErrorBanner";
 import { adminApi } from "@/api/admin.api";
+import { reportApi } from "@/api/report.api";
 import type { AdminOverviewDto, AdminSessionDto, AdminUserDto, Skill } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Activity, Ban, CheckCircle2, Plus, Search, ShieldCheck, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -42,24 +44,39 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pendingReportsCount, setPendingReportsCount] = useState(0);
 
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const highlightedUserId = searchParams.get("highlight");
   const highlightedRowRef = useRef<HTMLTableRowElement | null>(null);
 
+  const activeTab = searchParams.get("tab") === "sessions" ? "sessions" : "users";
+
+  const setActiveTab = (tab: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (tab === "users") {
+      next.delete("tab");
+    } else {
+      next.set("tab", tab);
+    }
+    setSearchParams(next, { replace: true });
+  };
+
   const loadAll = async () => {
     setError(null);
-    const [overviewRes, usersRes, skillsRes, sessionsRes] = await Promise.all([
+    const [overviewRes, usersRes, skillsRes, sessionsRes, reportsRes] = await Promise.all([
       adminApi.getOverview(),
       adminApi.getUsers(search),
       adminApi.getSkills(),
       adminApi.getSessions(),
+      reportApi.getAllReports(),
     ]);
     setOverview(overviewRes);
     setUsers(usersRes);
     setSkills(skillsRes);
     setSessions(sessionsRes);
+    setPendingReportsCount(reportsRes.filter((r) => r.status === "PENDING").length);
   };
 
   useEffect(() => {
@@ -73,10 +90,14 @@ const Admin = () => {
 
   // Auto-scroll to highlighted user row after data finishes loading
   useEffect(() => {
-    if (!loading && highlightedUserId && highlightedRowRef.current) {
-      highlightedRowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (!loading && highlightedUserId) {
+      if (activeTab !== "users") {
+        setActiveTab("users");
+        return;
+      }
+      highlightedRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-  }, [loading, highlightedUserId]);
+  }, [loading, highlightedUserId, activeTab]);
 
   const filteredUsers = useMemo(() => users, [users]);
 
@@ -142,10 +163,18 @@ const Admin = () => {
               <Button
                   variant="destructive"
                   onClick={() => navigate("/admin/reports")}
-                  className="gap-2"
+                  className="relative gap-2"
               >
                 <ShieldAlert className="h-4 w-4" />
                 View Reports
+                {pendingReportsCount > 0 && (
+                    <span
+                        className="absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-background px-1 text-[11px] font-semibold text-destructive ring-2 ring-destructive"
+                        aria-label={`${pendingReportsCount} pending reports`}
+                    >
+                      {pendingReportsCount > 99 ? "99+" : pendingReportsCount}
+                    </span>
+                )}
               </Button>
 
               <Button
@@ -176,8 +205,21 @@ const Admin = () => {
                     </div>
                 )}
 
-                <section className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.8fr)]">
-                  <Card className="border-border/60 shadow-sm">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList>
+                    <TabsTrigger value="users" className="gap-2">
+                      <Users className="h-4 w-4" />
+                      Users & Skills
+                    </TabsTrigger>
+                    <TabsTrigger value="sessions" className="gap-2">
+                      <Activity className="h-4 w-4" />
+                      Sessions
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="users" className="mt-4">
+                    <section className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.8fr)]">
+                      <Card className="border-border/60 shadow-sm">
                     <CardContent className="p-0">
                       <div className="flex flex-col gap-3 border-b border-border p-4 md:flex-row md:items-center md:justify-between">
                         <div className="flex items-center gap-2">
@@ -295,10 +337,12 @@ const Admin = () => {
                       </div>
                     </CardContent>
                   </Card>
-                </section>
+                    </section>
+                  </TabsContent>
 
-                <Card className="border-border/60 shadow-sm">
-                  <CardContent className="p-0">
+                  <TabsContent value="sessions" className="mt-4">
+                    <Card className="border-border/60 shadow-sm">
+                      <CardContent className="p-0">
                     <div className="flex items-center gap-2 border-b border-border p-4">
                       <Activity className="h-4 w-4 text-muted-foreground" />
                       <h2 className="font-semibold">Recent Sessions</h2>
@@ -333,6 +377,8 @@ const Admin = () => {
                     </div>
                   </CardContent>
                 </Card>
+                  </TabsContent>
+                </Tabs>
               </>
           )}
         </div>
