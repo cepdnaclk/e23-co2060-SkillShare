@@ -19,7 +19,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
+import java.util.TimeZone;
+import org.springframework.jdbc.core.JdbcTemplate;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -45,6 +52,13 @@ class ChatRestControllerTest {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("brokerMessageConverter")
+    private org.springframework.messaging.converter.MessageConverter brokerMessageConverter;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -98,6 +112,63 @@ class ChatRestControllerTest {
     }
 
     // --- HISTORY TESTS ---
+
+    @Test
+    void websocketSerializesTheSameIsoInstantAsRest() throws Exception {
+        var dto = com.zenware.skillsharebackend.dto.ChatMessageDto.builder()
+                .senderId(user1.getId()).receiverId(user2.getId()).content("Hello")
+                .timestamp(Instant.parse("2026-09-26T02:37:00Z")).build();
+        var headers = new org.springframework.messaging.MessageHeaders(java.util.Map.of(
+                org.springframework.messaging.MessageHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
+        var message = brokerMessageConverter.toMessage(dto, headers);
+        org.junit.jupiter.api.Assertions.assertNotNull(message);
+        String json = message.getPayload() instanceof byte[] bytes
+                ? new String(bytes, java.nio.charset.StandardCharsets.UTF_8) : message.getPayload().toString();
+        assertEquals("2026-09-26T02:37:00Z", objectMapper.readTree(json).get("timestamp").asText());
+    }
+
+    @Test
+    void timestampSurvivesPersistenceHistoryAndServerTimezoneChanges() throws Exception {
+        TimeZone original = TimeZone.getDefault();
+        try {
+            for (String zone : new String[]{"UTC", "Asia/Colombo", "America/New_York"}) {
+                TimeZone.setDefault(TimeZone.getTimeZone(zone));
+                Instant before = Instant.now().minusSeconds(1);
+                ChatMessage saved = chatMessageRepository.saveAndFlush(ChatMessage.builder()
+                        .sender(user1).receiver(user2).content(zone).build());
+                Instant expected = saved.getTimestamp().truncatedTo(ChronoUnit.MICROS);
+                assertTrue(expected.isAfter(before));
+                LocalDateTime stored = jdbcTemplate.queryForObject(
+                        "select timestamp from chat_messages where id = ?",
+                        (rs, row) -> rs.getObject(1, LocalDateTime.class), saved.getId());
+                assertEquals(LocalDateTime.ofInstant(expected, ZoneOffset.UTC), stored);
+                TimeZone.setDefault(TimeZone.getTimeZone("Pacific/Honolulu"));
+                assertEquals(expected, chatMessageRepository.findById(saved.getId()).orElseThrow().getTimestamp());
+                String body = mockMvc.perform(get("/api/chat/history/" + user2.getId())
+                                .header("Authorization", user1Token))
+                        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+                assertEquals(expected, Instant.parse(objectMapper.readTree(body)
+                        .get("content").get(0).get("timestamp").asText()));
+                String recent = mockMvc.perform(get("/api/chat/recent").header("Authorization", user1Token))
+                        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+                assertEquals(expected, Instant.parse(objectMapper.readTree(recent).get(0)
+                        .get("lastMessageTime").asText()));
+            }
+        } finally {
+            TimeZone.setDefault(original);
+        }
+    }
+
+    @Test
+    void legacyUtcRowIsReturnedAsAnExplicitInstant() throws Exception {
+        ChatMessage saved = chatMessageRepository.saveAndFlush(ChatMessage.builder()
+                .sender(user1).receiver(user2).content("Legacy").build());
+        jdbcTemplate.update("update chat_messages set timestamp = TIMESTAMP '2026-09-26 02:37:00' where id = ?",
+                saved.getId());
+        mockMvc.perform(get("/api/chat/history/" + user2.getId()).header("Authorization", user1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].timestamp").value("2026-09-26T02:37:00Z"));
+    }
 
     @Test
     void getHistory_Authenticated_ReturnsHistory() throws Exception {

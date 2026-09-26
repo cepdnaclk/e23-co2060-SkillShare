@@ -3,9 +3,12 @@ package com.zenware.skillsharebackend.entity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+import com.zenware.skillsharebackend.persistence.ChatTimestampConverter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Entity
@@ -41,10 +44,17 @@ public class ChatMessage {
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    // Automatically stamps the exact millisecond the message hits the database
-    @CreationTimestamp
+    // Keep the legacy timestamp column, but store UTC independently of the JVM timezone.
+    @Convert(converter = ChatTimestampConverter.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     @Column(name = "timestamp", updatable = false)
-    private LocalDateTime timestamp;
+    private Instant timestamp;
+
+    @PrePersist
+    void stampTimestamp() {
+        // PostgreSQL timestamps retain microseconds; acknowledgements must match reloads exactly.
+        timestamp = Instant.now().truncatedTo(ChronoUnit.MICROS);
+    }
 
     // To display a notification dot or "Read" status in the UI
     @Column(name = "is_read", nullable = false)

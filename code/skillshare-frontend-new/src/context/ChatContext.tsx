@@ -46,8 +46,6 @@ const ChatContext = createContext<ChatContextType | null>(null);
 export function ChatProvider({ children }: { children: ReactNode }) {
   const { user, token } = useAuth();
 
-  console.warn("[ChatProvider] Rendered. User present:", !!user, "Token present:", !!token);
-
   const [isOpen, setIsOpen] = useState(false);
   const [view, setView] = useState<"inbox" | "chat">("inbox");
   const [inbox, setInbox] = useState<RecentChat[]>([]);
@@ -83,13 +81,34 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   // ── Connect WebSocket when user is logged in ─────────────────────────────
   useEffect(() => {
-    console.warn("[ChatProvider] useEffect triggered. Token:", token ? "Exists" : "Null");
     if (!token || !userRef.current) return;
 
-    console.warn("[ChatProvider] Initiating WebSocket connection...");
     chatSocketService.connect(token);
 
     const unsubMsg = chatSocketService.onMessage((dto: ChatMessageDto) => {
+      if (dto.senderId === userRef.current?.id) {
+        // Use the same saved timestamp as the receiver and subsequent history loads.
+        setActiveConversation((prev) => {
+          if (!prev || prev.contactId !== dto.receiverId) return prev;
+          const saved: ChatHistoryMessage = {
+            id: dto.id ?? dto.clientMessageId ?? crypto.randomUUID(),
+            senderId: dto.senderId,
+            receiverId: dto.receiverId,
+            content: dto.content,
+            timestamp: dto.timestamp,
+            isRead: false,
+          };
+          const index = prev.messages.findIndex(
+            (message) => message.id === dto.clientMessageId || message.id === dto.id
+          );
+          const messages = [...prev.messages];
+          if (index >= 0) messages[index] = { ...saved, isRead: messages[index].isRead };
+          else messages.push(saved);
+          return { ...prev, messages };
+        });
+        refreshInbox();
+        return;
+      }
       const incomingId = dto.senderId as string;
 
       // Is the user actively looking at this exact conversation right now?
@@ -161,7 +180,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
-      console.warn("[ChatProvider] Cleaning up WebSocket connection...");
       unsubMsg();
       unsubTyping();
       chatSocketService.disconnect();
@@ -247,7 +265,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     (content: string) => {
       if (!user || !activeConversation || !content.trim()) return;
 
+      const clientMessageId = crypto.randomUUID();
       const dto: ChatMessageRequest = {
+        clientMessageId,
         senderId: user.id,
         receiverId: activeConversation.contactId,
         content: content.trim(),
@@ -255,7 +275,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
       // Optimistic update — append to local state immediately
       const optimisticMsg: ChatHistoryMessage = {
-        id: crypto.randomUUID(),
+        id: clientMessageId,
         senderId: user.id,
         receiverId: activeConversation.contactId,
         content: content.trim(),

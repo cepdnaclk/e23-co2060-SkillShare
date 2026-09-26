@@ -92,6 +92,7 @@ public class TrendingService {
                 .id(user.getId())
                 .fullName(user.getFullName())
                 .bio(user.getBio())
+                .profilePictureUrl(user.getProfilePictureUrl())
                 .xp(user.getXp() != null ? user.getXp() : 0)
                 .level(user.getLevel() != null ? user.getLevel() : 1)
                 .reputationScore(user.getReputationScore() != null ? user.getReputationScore() : 0)

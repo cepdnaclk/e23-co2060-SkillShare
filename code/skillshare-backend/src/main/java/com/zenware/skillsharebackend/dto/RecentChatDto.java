@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
@@ -17,6 +17,6 @@ public class RecentChatDto {
     private String contactName;
     private String contactProfilePicture;
     private String lastMessage;
-    private LocalDateTime lastMessageTime;
+    private Instant lastMessageTime;
     private long unreadCount;
 }

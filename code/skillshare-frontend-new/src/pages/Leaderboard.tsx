@@ -8,6 +8,7 @@ import type { UserPublicDto } from "@/api/types";
 import { SkeletonList } from "@/components/SkeletonCard";
 import ErrorBanner from "@/components/ErrorBanner";
 import { parseAcademicBio } from "@/lib/academicBio";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -86,9 +87,10 @@ const Leaderboard = () => {
                   </div>
 
                   {/* Avatar */}
-                  <div className="w-11 h-11 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-sm">
-                    {getInitials(user.fullName)}
-                  </div>
+                  <Avatar className="w-11 h-11 text-primary font-semibold text-sm">
+                    <AvatarImage src={user.profilePictureUrl || undefined} alt={user.fullName} className="object-cover" />
+                    <AvatarFallback className="bg-primary/10">{getInitials(user.fullName)}</AvatarFallback>
+                  </Avatar>
 
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{user.fullName}</p>

@@ -224,16 +224,19 @@ export interface Notification {
 
 // --- CHAT & WEBSOCKET ---
 export interface ChatMessageRequest {
+  clientMessageId?: string; // Correlates the server acknowledgement with the optimistic message
   senderId: string; // UUID
   receiverId: string; // UUID
   content: string;
 }
 
 export interface ChatMessageDto {
+  id?: string;
+  clientMessageId?: string;
   senderId: string; // UUID
   receiverId: string; // UUID
   content: string;
-  timestamp: string; // LocalDateTime
+  timestamp: string; // ISO-8601 instant with UTC Z suffix
 }
 
 export interface TypingStatusDto {
@@ -257,7 +260,7 @@ export interface ChatMessageResponse {
   receiverId: string; // UUID
   content: string;
   isRead: boolean;
-  timestamp: string; // LocalDateTime
+  timestamp: string; // ISO-8601 instant with UTC Z suffix
 }
 
 // --- COMMON WRAPPERS ---

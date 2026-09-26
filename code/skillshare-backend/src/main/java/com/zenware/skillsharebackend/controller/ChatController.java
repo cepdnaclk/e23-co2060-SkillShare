@@ -12,8 +12,6 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import com.zenware.skillsharebackend.dto.TypingStatusDto;
 
-import java.time.LocalDateTime;
-
 import org.springframework.messaging.simp.user.SimpUserRegistry;
 
 @Controller // Notice this is @Controller, not @RestController!
@@ -56,15 +54,17 @@ public class ChatController {
                     .isRead(false)
                     .build());
 
-            System.out.println("✅ Message successfully saved to PostgreSQL!");
-
             // 3. Update the DTO with the exact server timestamp
             chatMessageDto.setTimestamp(savedMsg.getTimestamp());
+            chatMessageDto.setId(savedMsg.getId());
 
             // 4. Instantly push the message to the receiver's active WebSocket connection
             messagingTemplate.convertAndSendToUser(receiver.getEmail(), "/queue/messages", chatMessageDto);
-
-            System.out.println("✅ Message routed to user email: " + receiver.getEmail() + " at /queue/messages\n");
+            // New clients reconcile their optimistic message with the persisted instant.
+            // Older clients do not request acknowledgements and keep the original protocol.
+            if (chatMessageDto.getClientMessageId() != null) {
+                messagingTemplate.convertAndSendToUser(sender.getEmail(), "/queue/messages", chatMessageDto);
+            }
 
         } catch (com.zenware.skillsharebackend.exception.UnauthorizedAccessException e) {
             System.err.println("❌ UNAUTHORIZED CHAT MESSAGE: " + e.getMessage());

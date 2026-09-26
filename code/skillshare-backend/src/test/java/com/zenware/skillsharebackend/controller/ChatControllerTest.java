@@ -16,11 +16,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.security.Principal;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 class ChatControllerTest {
@@ -75,6 +77,29 @@ class ChatControllerTest {
 
         verify(chatMessageRepository).save(any(ChatMessage.class));
         verify(messagingTemplate).convertAndSendToUser(eq(receiver.getEmail()), eq("/queue/messages"), eq(messageDto));
+    }
+
+    @Test
+    void processMessage_AcknowledgesPersistedInstantToBothUsers() {
+        when(principal.getName()).thenReturn(sender.getEmail());
+        when(userRepository.findByEmail(sender.getEmail())).thenReturn(Optional.of(sender));
+        when(userRepository.findById(receiver.getId())).thenReturn(Optional.of(receiver));
+        when(chatAuthorizationService.isAuthorizedToChat(sender.getId(), receiver.getId())).thenReturn(true);
+        Instant savedTime = Instant.parse("2026-09-26T02:37:00Z");
+        UUID savedId = UUID.randomUUID();
+        UUID clientId = UUID.randomUUID();
+        messageDto.setClientMessageId(clientId);
+        messageDto.setTimestamp(Instant.EPOCH); // Client clocks cannot override server time.
+        when(chatMessageRepository.save(any(ChatMessage.class))).thenReturn(
+                ChatMessage.builder().id(savedId).timestamp(savedTime).build());
+
+        chatController.processMessage(messageDto, principal);
+
+        assertEquals(savedTime, messageDto.getTimestamp());
+        assertEquals(savedId, messageDto.getId());
+        assertEquals(clientId, messageDto.getClientMessageId());
+        verify(messagingTemplate).convertAndSendToUser(receiver.getEmail(), "/queue/messages", messageDto);
+        verify(messagingTemplate).convertAndSendToUser(sender.getEmail(), "/queue/messages", messageDto);
     }
 
     @Test
