@@ -1,6 +1,6 @@
 # SkillShare
 
-[SkillShare](https://skillsharezenware.vercel.app/)
+[Visit SkillShare platform](https://skillsharezenware.vercel.app/)
 
 A university-oriented peer-to-peer skill-sharing platform developed by ZenWare that allows students to discover skills, share knowledge, arrange individual learning sessions, exchange credits, communicate with peers, and build reputation/progress.
 
